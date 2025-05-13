@@ -1,0 +1,3363 @@
+                                %%%%%%%%%%%%%%%
+                           %%%%%%%%%%%%%%%%%%%%%%%%
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                    %%%%%%%%%%%%%%%%%%%%%%%%
+                                     %%%%%%%%%%%%%%%%%%%%%%%%
+                 ###############      %%%%%%%%%%%%%%%%%%%%%%%%
+                ##################     %%%%%%%%%%%%%%%%%%%%%%%
+                ###################     %%%%%%%%%%%%%%%%%%%%%%%
+                ####################     %%%%%%%%%%%%%%%%%%%%%%
+                #####################     %%%%%%%%%%%%%%%%%%%%%
+                ######################     %%%%%%%%%%%%%%%%%%%%
+                #######################     %%%%%%%%%%%%%%%%%%
+                 #######################     %%%%%%%%%%%%%%%%%
+                 ######################     %%%%%%%%%%%%%%%%%
+                  ####################     %%%%%%%%%%%%%%%%%
+                    #################     %%%%%%%%%%%%%%%%%
+                     ###############     %%%%%%%%%%%%%%%%
+                       ############     %%%%%%%%%%%%%%%
+                          ########     %%%%%%%%%%%%%%
+                                      %%%%%%%%%%%
+
+                 | The OpenMC Monte Carlo Code
+       Copyright | 2011-2024 MIT, UChicago Argonne LLC, and contributors
+         License | https://docs.openmc.org/en/latest/license.html
+         Version | 0.15.0
+        Git SHA1 | 84fb85977f46e162fea8f5a20ea653a3ec62ac24
+       Date/Time | 2025-04-03 07:14:16
+   MPI Processes | 1
+  OpenMP Threads | 16
+
+ Reading settings XML file...
+ Reading cross sections XML file...
+ Reading materials XML file...
+ Reading geometry XML file...
+ Reading Zr91 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Zr91.h5
+ Reading Zr96 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Zr96.h5
+ Reading U235 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U235.h5
+ Reading U238 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U238.h5
+ Reading H1 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/H1.h5
+ Reading Zr90 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Zr90.h5
+ Reading Zr92 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Zr92.h5
+ Reading Zr94 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Zr94.h5
+ Reading K39 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/K39.h5
+ Reading K41 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/K41.h5
+ Reading Na23 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Na23.h5
+ Reading Be9 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Be9.h5
+ Reading O16 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/O16.h5
+ Reading O17 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/O17.h5
+ Reading O18 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/O18.h5
+ Reading C12 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/C12.h5
+ Reading C13 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/C13.h5
+ Reading Cr50 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cr50.h5
+ Reading Cr52 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cr52.h5
+ Reading Cr53 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cr53.h5
+ Reading Cr54 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cr54.h5
+ Reading Fe54 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Fe54.h5
+ Reading Fe56 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Fe56.h5
+ Reading Fe57 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Fe57.h5
+ Reading Fe58 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Fe58.h5
+ Reading Mn55 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Mn55.h5
+ Reading Ni58 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ni58.h5
+ Reading Ni60 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ni60.h5
+ Reading Ni61 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ni61.h5
+ Reading Ni62 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ni62.h5
+ Reading Ni64 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ni64.h5
+ Reading P31 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/P31.h5
+ Reading S32 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/S32.h5
+ Reading S33 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/S33.h5
+ Reading S34 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/S34.h5
+ Reading S36 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/S36.h5
+ Reading Si28 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Si28.h5
+ Reading Si29 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Si29.h5
+ Reading Si30 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Si30.h5
+ Reading B10 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/B10.h5
+ Reading B11 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/B11.h5
+ Reading c_H_in_ZrH from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/c_H_in_ZrH.h5
+ Reading c_Be from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/c_Be.h5
+ Reading c_Be_in_BeO from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/c_Be_in_BeO.h5
+ Minimum neutron data temperature: 600 K
+ Maximum neutron data temperature: 600 K
+ Preparing distributed cell instances...
+ Reading plot XML file...
+ Writing summary.h5 file...
+ Reading Br81 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Br81.h5
+ Reading Kr82 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Kr82.h5
+ Reading Kr83 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Kr83.h5
+ Reading Kr84 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Kr84.h5
+ Reading Kr85 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Kr85.h5
+ Reading Kr86 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Kr86.h5
+ Reading Sr89 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sr89.h5
+ Reading Sr90 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sr90.h5
+ Reading Y89 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Y89.h5
+ Reading Y90 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Y90.h5
+ Reading Y91 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Y91.h5
+ Reading Zr93 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Zr93.h5
+ Reading Zr95 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Zr95.h5
+ Reading Nb95 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nb95.h5
+ Reading Mo95 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Mo95.h5
+ Reading Mo96 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Mo96.h5
+ Reading Mo97 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Mo97.h5
+ Reading Mo98 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Mo98.h5
+ Reading Mo99 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Mo99.h5
+ Reading Mo100 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Mo100.h5
+ Reading Tc99 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Tc99.h5
+ Reading Ru100 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ru100.h5
+ Reading Ru101 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ru101.h5
+ Reading Ru102 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ru102.h5
+ Reading Ru103 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ru103.h5
+ Reading Ru104 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ru104.h5
+ Reading Ru105 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ru105.h5
+ Reading Ru106 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ru106.h5
+ Reading Rh103 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Rh103.h5
+ Reading Rh104 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Rh104.h5
+ Reading Rh105 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Rh105.h5
+ Reading Pd104 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pd104.h5
+ Reading Pd105 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pd105.h5
+ Reading Pd106 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pd106.h5
+ Reading Pd107 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pd107.h5
+ Reading Pd108 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pd108.h5
+ Reading Pd109 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pd109.h5
+ Reading Ag107 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ag107.h5
+ Reading Ag109 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ag109.h5
+ Reading Ag110_m1 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ag110_m1.h5
+ Reading Ag111 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ag111.h5
+ Reading Cd110 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cd110.h5
+ Reading Cd111 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cd111.h5
+ Reading Cd112 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cd112.h5
+ Reading Cd113 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cd113.h5
+ Reading Cd114 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cd114.h5
+ Reading In113 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/In113.h5
+ Reading In115 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/In115.h5
+ Reading Sb121 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sb121.h5
+ Reading Sb123 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sb123.h5
+ Reading Sb125 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sb125.h5
+ Reading Te127_m1 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Te127_m1.h5
+ Reading Te129_m1 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Te129_m1.h5
+ Reading Te132 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Te132.h5
+ Reading I127 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/I127.h5
+ Reading I128 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/I128.h5
+ Reading I129 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/I129.h5
+ Reading I130 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/I130.h5
+ Reading I131 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/I131.h5
+ Reading I132 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/I132.h5
+ Reading I135 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/I135.h5
+ Reading Xe128 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe128.h5
+ Reading Xe130 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe130.h5
+ Reading Xe131 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe131.h5
+ Reading Xe132 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe132.h5
+ Reading Xe133 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe133.h5
+ Reading Xe134 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe134.h5
+ Reading Xe135 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe135.h5
+ Reading Xe136 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Xe136.h5
+ Reading Cs133 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cs133.h5
+ Reading Cs134 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cs134.h5
+ Reading Cs135 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cs135.h5
+ Reading Cs136 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cs136.h5
+ Reading Cs137 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cs137.h5
+ Reading Ba134 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ba134.h5
+ Reading Ba137 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ba137.h5
+ Reading Ba140 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ba140.h5
+ Reading La139 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/La139.h5
+ Reading La140 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/La140.h5
+ Reading Ce140 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ce140.h5
+ Reading Ce141 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ce141.h5
+ Reading Ce142 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ce142.h5
+ Reading Ce143 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ce143.h5
+ Reading Ce144 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ce144.h5
+ Reading Pr141 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pr141.h5
+ Reading Pr142 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pr142.h5
+ Reading Pr143 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pr143.h5
+ Reading Nd142 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd142.h5
+ Reading Nd143 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd143.h5
+ Reading Nd144 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd144.h5
+ Reading Nd145 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd145.h5
+ Reading Nd146 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd146.h5
+ Reading Nd147 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd147.h5
+ Reading Nd148 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd148.h5
+ Reading Nd149 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd149.h5
+ Reading Nd150 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Nd150.h5
+ Reading Pm147 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pm147.h5
+ Reading Pm148 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pm148.h5
+ Reading Pm148_m1 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pm148_m1.h5
+ Reading Pm149 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pm149.h5
+ Reading Pm150 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pm150.h5
+ Reading Pm151 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pm151.h5
+ Reading Sm147 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm147.h5
+ Reading Sm148 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm148.h5
+ Reading Sm149 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm149.h5
+ Reading Sm150 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm150.h5
+ Reading Sm151 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm151.h5
+ Reading Sm152 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm152.h5
+ Reading Sm153 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm153.h5
+ Reading Sm154 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Sm154.h5
+ Reading Eu151 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Eu151.h5
+ Reading Eu152 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Eu152.h5
+ Reading Eu153 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Eu153.h5
+ Reading Eu154 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Eu154.h5
+ Reading Eu155 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Eu155.h5
+ Reading Eu156 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Eu156.h5
+ Reading Eu157 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Eu157.h5
+ Reading Gd152 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd152.h5
+ Reading Gd154 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd154.h5
+ Reading Gd155 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd155.h5
+ Reading Gd156 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd156.h5
+ Reading Gd157 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd157.h5
+ Reading Gd158 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd158.h5
+ Reading Gd159 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd159.h5
+ Reading Gd160 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Gd160.h5
+ Reading Tb159 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Tb159.h5
+ Reading Tb160 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Tb160.h5
+ Reading Tb161 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Tb161.h5
+ Reading Dy160 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Dy160.h5
+ Reading Dy161 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Dy161.h5
+ Reading Dy162 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Dy162.h5
+ Reading Dy163 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Dy163.h5
+ Reading Dy164 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Dy164.h5
+ Reading Ho165 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ho165.h5
+ Reading Er162 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Er162.h5
+ Reading Er164 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Er164.h5
+ Reading Er166 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Er166.h5
+ Reading Er167 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Er167.h5
+ Reading Er168 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Er168.h5
+ Reading Er169 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Er169.h5
+ Reading Er170 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Er170.h5
+ Reading Tm169 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Tm169.h5
+ Reading Tm170 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Tm170.h5
+ Reading Tm171 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Tm171.h5
+ Reading Hf174 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Hf174.h5
+ Reading Hf176 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Hf176.h5
+ Reading Hf177 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Hf177.h5
+ Reading Hf178 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Hf178.h5
+ Reading Hf179 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Hf179.h5
+ Reading Hf180 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Hf180.h5
+ Reading Hf181 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Hf181.h5
+ Reading Ta181 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ta181.h5
+ Reading Ta182 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Ta182.h5
+ Reading Th230 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Th230.h5
+ Reading Th231 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Th231.h5
+ Reading Th232 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Th232.h5
+ Reading Th233 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Th233.h5
+ Reading Th234 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Th234.h5
+ Reading Pa231 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pa231.h5
+ Reading Pa232 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pa232.h5
+ Reading Pa233 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pa233.h5
+ Reading U232 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U232.h5
+ Reading U233 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U233.h5
+ Reading U234 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U234.h5
+ Reading U236 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U236.h5
+ Reading U237 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U237.h5
+ Reading U239 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/U239.h5
+ Reading Np236 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Np236.h5
+ Reading Np237 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Np237.h5
+ Reading Np238 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Np238.h5
+ Reading Np239 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Np239.h5
+ Reading Pu236 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu236.h5
+ Reading Pu237 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu237.h5
+ Reading Pu238 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu238.h5
+ Reading Pu239 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu239.h5
+ Reading Pu240 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu240.h5
+ Reading Pu241 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu241.h5
+ Reading Pu242 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu242.h5
+ Reading Pu243 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Pu243.h5
+ Reading Am241 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Am241.h5
+ Reading Am242 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Am242.h5
+ Reading Am242_m1 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Am242_m1.h5
+ Reading Am243 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Am243.h5
+ Reading Am244 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Am244.h5
+ Reading Am244_m1 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Am244_m1.h5
+ Reading Cm242 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cm242.h5
+ Reading Cm243 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cm243.h5
+ Reading Cm244 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cm244.h5
+ Reading Cm245 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cm245.h5
+ Reading Cm246 from
+ /home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/neut
+ ron/Cm246.h5
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.53382
+        2/1    1.35158
+        3/1    1.37874
+        4/1    1.47016
+        5/1    1.33706
+        6/1    1.37929
+        7/1    1.50353
+        8/1    1.35848
+        9/1    1.32891
+       10/1    1.30809
+       11/1    1.37447
+       12/1    1.41120
+       13/1    1.36382
+       14/1    1.35720
+       15/1    1.42518
+       16/1    1.54176
+       17/1    1.52007
+       18/1    1.33528
+       19/1    1.36254
+       20/1    1.60134
+       21/1    1.34646
+       22/1    1.52900
+       23/1    1.44425
+       24/1    1.22674
+       25/1    1.39484
+       26/1    1.49447
+       27/1    1.46605
+       28/1    1.38021
+       29/1    1.63080
+       30/1    1.48489
+       31/1    1.41986
+       32/1    1.40477
+       33/1    1.44726
+       34/1    1.44680
+       35/1    1.39566
+       36/1    1.43659
+       37/1    1.50725
+       38/1    1.32310
+       39/1    1.40699
+       40/1    1.40404
+       41/1    1.51107
+       42/1    1.27643
+       43/1    1.51496
+       44/1    1.46295
+       45/1    1.44696
+       46/1    1.45776
+       47/1    1.46093
+       48/1    1.35970
+       49/1    1.25087
+       50/1    1.37607
+       51/1    1.32277
+       52/1    1.46710    1.39494 +/- 0.07216
+       53/1    1.43174    1.40721 +/- 0.04343
+       54/1    1.29238    1.37850 +/- 0.04204
+       55/1    1.42887    1.38857 +/- 0.03409
+       56/1    1.46642    1.40155 +/- 0.03071
+       57/1    1.40654    1.40226 +/- 0.02596
+       58/1    1.33713    1.39412 +/- 0.02391
+       59/1    1.44220    1.39946 +/- 0.02175
+       60/1    1.48290    1.40781 +/- 0.02117
+       61/1    1.50351    1.41651 +/- 0.02103
+       62/1    1.27436    1.40466 +/- 0.02256
+       63/1    1.35378    1.40075 +/- 0.02112
+       64/1    1.32025    1.39500 +/- 0.02038
+       65/1    1.41431    1.39628 +/- 0.01902
+       66/1    1.42800    1.39827 +/- 0.01790
+       67/1    1.37484    1.39689 +/- 0.01687
+       68/1    1.38822    1.39641 +/- 0.01591
+       69/1    1.40277    1.39674 +/- 0.01505
+       70/1    1.26284    1.39005 +/- 0.01577
+       71/1    1.36742    1.38897 +/- 0.01504
+       72/1    1.41006    1.38993 +/- 0.01437
+       73/1    1.58840    1.39856 +/- 0.01622
+       74/1    1.37366    1.39752 +/- 0.01556
+       75/1    1.37237    1.39651 +/- 0.01496
+       76/1    1.59174    1.40402 +/- 0.01622
+       77/1    1.43901    1.40532 +/- 0.01566
+       78/1    1.30621    1.40178 +/- 0.01550
+       79/1    1.40527    1.40190 +/- 0.01496
+       80/1    1.28322    1.39794 +/- 0.01498
+       81/1    1.28313    1.39424 +/- 0.01496
+       82/1    1.40069    1.39444 +/- 0.01448
+       83/1    1.51781    1.39818 +/- 0.01453
+       84/1    1.22495    1.39308 +/- 0.01498
+       85/1    1.34281    1.39165 +/- 0.01462
+       86/1    1.34274    1.39029 +/- 0.01427
+       87/1    1.44170    1.39168 +/- 0.01395
+       88/1    1.44589    1.39311 +/- 0.01365
+       89/1    1.40047    1.39329 +/- 0.01330
+       90/1    1.35999    1.39246 +/- 0.01299
+       91/1    1.45798    1.39406 +/- 0.01277
+       92/1    1.39961    1.39419 +/- 0.01246
+       93/1    1.31691    1.39239 +/- 0.01230
+       94/1    1.35789    1.39161 +/- 0.01205
+       95/1    1.35682    1.39084 +/- 0.01180
+       96/1    1.39922    1.39102 +/- 0.01154
+       97/1    1.40485    1.39131 +/- 0.01130
+       98/1    1.48178    1.39320 +/- 0.01122
+       99/1    1.50261    1.39543 +/- 0.01121
+      100/1    1.44996    1.39652 +/- 0.01104
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 6.7199e+00 seconds
+   Reading cross sections          = 6.5172e+00 seconds
+ Total time in simulation          = 4.5465e+00 seconds
+   Time in transport only          = 4.5160e+00 seconds
+   Time in inactive batches        = 2.1557e-01 seconds
+   Time in active batches          = 4.3309e+00 seconds
+   Time synchronizing fission bank = 3.2797e-03 seconds
+     Sampling source sites         = 2.5372e-03 seconds
+     SEND/RECV source sites        = 5.2788e-04 seconds
+   Time accumulating tallies       = 1.9422e-02 seconds
+   Time writing statepoints        = 5.0334e-03 seconds
+ Total time for finalization       = 4.2001e-05 seconds
+ Total time elapsed                = 1.1693e+01 seconds
+ Calculation Rate (inactive)       = 92776.9 particles/second
+ Calculation Rate (active)         = 4618 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.40663 +/- 0.01055
+ k-effective (Track-length)  = 1.39652 +/- 0.01104
+ k-effective (Absorption)    = 1.41297 +/- 0.00658
+ Combined k-effective        = 1.40969 +/- 0.00628
+ Leakage Fraction            = 0.02605 +/- 0.00113
+
+ Creating state point openmc_simulation_n0.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.52886
+        2/1    1.48364
+        3/1    1.51302
+        4/1    1.61270
+        5/1    1.36884
+        6/1    1.55711
+        7/1    1.51997
+        8/1    1.55756
+        9/1    1.51584
+       10/1    1.55751
+       11/1    1.38887
+       12/1    1.42086
+       13/1    1.39358
+       14/1    1.38614
+       15/1    1.38047
+       16/1    1.39537
+       17/1    1.54999
+       18/1    1.44113
+       19/1    1.34306
+       20/1    1.33021
+       21/1    1.28898
+       22/1    1.27348
+       23/1    1.40045
+       24/1    1.27461
+       25/1    1.35077
+       26/1    1.39290
+       27/1    1.30160
+       28/1    1.38704
+       29/1    1.35114
+       30/1    1.36610
+       31/1    1.46920
+       32/1    1.32733
+       33/1    1.35990
+       34/1    1.48208
+       35/1    1.36056
+       36/1    1.33408
+       37/1    1.29904
+       38/1    1.23477
+       39/1    1.43581
+       40/1    1.56535
+       41/1    1.49196
+       42/1    1.33559
+       43/1    1.39643
+       44/1    1.40002
+       45/1    1.45156
+       46/1    1.40065
+       47/1    1.44201
+       48/1    1.25028
+       49/1    1.19320
+       50/1    1.33858
+       51/1    1.34157
+       52/1    1.34673    1.34415 +/- 0.00258
+       53/1    1.34160    1.34330 +/- 0.00171
+       54/1    1.42697    1.36422 +/- 0.02095
+       55/1    1.51201    1.39377 +/- 0.03372
+       56/1    1.26901    1.37298 +/- 0.03450
+       57/1    1.40418    1.37744 +/- 0.02950
+       58/1    1.35622    1.37479 +/- 0.02568
+       59/1    1.31751    1.36842 +/- 0.02353
+       60/1    1.42013    1.37359 +/- 0.02167
+       61/1    1.43307    1.37900 +/- 0.02033
+       62/1    1.44787    1.38474 +/- 0.01943
+       63/1    1.37983    1.38436 +/- 0.01788
+       64/1    1.36681    1.38311 +/- 0.01660
+       65/1    1.36954    1.38220 +/- 0.01548
+       66/1    1.42918    1.38514 +/- 0.01477
+       67/1    1.37464    1.38452 +/- 0.01389
+       68/1    1.34452    1.38230 +/- 0.01328
+       69/1    1.32407    1.37923 +/- 0.01293
+       70/1    1.37309    1.37893 +/- 0.01227
+       71/1    1.35907    1.37798 +/- 0.01171
+       72/1    1.39513    1.37876 +/- 0.01119
+       73/1    1.37095    1.37842 +/- 0.01070
+       74/1    1.33388    1.37656 +/- 0.01041
+       75/1    1.45507    1.37971 +/- 0.01047
+       76/1    1.42043    1.38127 +/- 0.01018
+       77/1    1.48101    1.38497 +/- 0.01047
+       78/1    1.40872    1.38581 +/- 0.01012
+       79/1    1.33998    1.38423 +/- 0.00990
+       80/1    1.44073    1.38612 +/- 0.00974
+       81/1    1.40048    1.38658 +/- 0.00944
+       82/1    1.28701    1.38347 +/- 0.00965
+       83/1    1.45095    1.38551 +/- 0.00958
+       84/1    1.60005    1.39182 +/- 0.01123
+       85/1    1.45024    1.39349 +/- 0.01103
+       86/1    1.35304    1.39237 +/- 0.01078
+       87/1    1.45294    1.39401 +/- 0.01061
+       88/1    1.39871    1.39413 +/- 0.01033
+       89/1    1.36585    1.39340 +/- 0.01009
+       90/1    1.36292    1.39264 +/- 0.00986
+       91/1    1.19303    1.38777 +/- 0.01078
+       92/1    1.24889    1.38447 +/- 0.01103
+       93/1    1.40076    1.38485 +/- 0.01077
+       94/1    1.44743    1.38627 +/- 0.01062
+       95/1    1.48229    1.38840 +/- 0.01060
+       96/1    1.42595    1.38922 +/- 0.01040
+       97/1    1.26855    1.38665 +/- 0.01049
+       98/1    1.29966    1.38484 +/- 0.01043
+       99/1    1.42189    1.38560 +/- 0.01025
+      100/1    1.27078    1.38330 +/- 0.01030
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.3500e+00 seconds
+   Time in transport only          = 4.3379e+00 seconds
+   Time in inactive batches        = 1.3858e+00 seconds
+   Time in active batches          = 2.9642e+00 seconds
+   Time synchronizing fission bank = 3.6795e-03 seconds
+     Sampling source sites         = 2.7096e-03 seconds
+     SEND/RECV source sites        = 7.1904e-04 seconds
+   Time accumulating tallies       = 1.3555e-03 seconds
+   Time writing statepoints        = 3.2731e-03 seconds
+ Total time for finalization       = 3.6173e-05 seconds
+ Total time elapsed                = 4.7696e+00 seconds
+ Calculation Rate (inactive)       = 14431.9 particles/second
+ Calculation Rate (active)         = 6747.2 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.37732 +/- 0.01017
+ k-effective (Track-length)  = 1.38330 +/- 0.01030
+ k-effective (Absorption)    = 1.38115 +/- 0.00591
+ Combined k-effective        = 1.38014 +/- 0.00570
+ Leakage Fraction            = 0.02400 +/- 0.00111
+
+ Creating state point openmc_simulation_n1.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.55321
+        2/1    1.49311
+        3/1    1.51480
+        4/1    1.44875
+        5/1    1.42951
+        6/1    1.41753
+        7/1    1.28603
+        8/1    1.51238
+        9/1    1.42000
+       10/1    1.41697
+       11/1    1.54491
+       12/1    1.49497
+       13/1    1.32766
+       14/1    1.35558
+       15/1    1.48329
+       16/1    1.47137
+       17/1    1.31068
+       18/1    1.33206
+       19/1    1.62669
+       20/1    1.42420
+       21/1    1.54418
+       22/1    1.46429
+       23/1    1.49615
+       24/1    1.45415
+       25/1    1.35918
+       26/1    1.20746
+       27/1    1.49051
+       28/1    1.26497
+       29/1    1.44224
+       30/1    1.30249
+       31/1    1.31255
+       32/1    1.32162
+       33/1    1.40336
+       34/1    1.41836
+       35/1    1.37790
+       36/1    1.22797
+       37/1    1.50445
+       38/1    1.32335
+       39/1    1.20392
+       40/1    1.30393
+       41/1    1.32430
+       42/1    1.37331
+       43/1    1.28102
+       44/1    1.42491
+       45/1    1.24853
+       46/1    1.38040
+       47/1    1.34919
+       48/1    1.31683
+       49/1    1.32648
+       50/1    1.47500
+       51/1    1.46396
+       52/1    1.34066    1.40231 +/- 0.06165
+       53/1    1.40552    1.40338 +/- 0.03561
+       54/1    1.59086    1.45025 +/- 0.05321
+       55/1    1.42794    1.44579 +/- 0.04145
+       56/1    1.45007    1.44650 +/- 0.03385
+       57/1    1.46149    1.44864 +/- 0.02869
+       58/1    1.39905    1.44244 +/- 0.02561
+       59/1    1.26124    1.42231 +/- 0.03026
+       60/1    1.44981    1.42506 +/- 0.02720
+       61/1    1.33413    1.41679 +/- 0.02596
+       62/1    1.36654    1.41261 +/- 0.02406
+       63/1    1.39203    1.41102 +/- 0.02219
+       64/1    1.37157    1.40821 +/- 0.02074
+       65/1    1.54766    1.41750 +/- 0.02143
+       66/1    1.28423    1.40917 +/- 0.02170
+       67/1    1.27319    1.40117 +/- 0.02190
+       68/1    1.59356    1.41186 +/- 0.02325
+       69/1    1.42400    1.41250 +/- 0.02200
+       70/1    1.41035    1.41239 +/- 0.02087
+       71/1    1.39501    1.41157 +/- 0.01987
+       72/1    1.45202    1.41340 +/- 0.01904
+       73/1    1.34108    1.41026 +/- 0.01846
+       74/1    1.49351    1.41373 +/- 0.01801
+       75/1    1.41342    1.41372 +/- 0.01728
+       76/1    1.39283    1.41291 +/- 0.01662
+       77/1    1.46289    1.41476 +/- 0.01610
+       78/1    1.31419    1.41117 +/- 0.01592
+       79/1    1.33716    1.40862 +/- 0.01557
+       80/1    1.36982    1.40733 +/- 0.01510
+       81/1    1.53367    1.41140 +/- 0.01516
+       82/1    1.37826    1.41037 +/- 0.01472
+       83/1    1.40430    1.41018 +/- 0.01427
+       84/1    1.43028    1.41077 +/- 0.01385
+       85/1    1.49073    1.41306 +/- 0.01364
+       86/1    1.41425    1.41309 +/- 0.01326
+       87/1    1.34297    1.41120 +/- 0.01303
+       88/1    1.26890    1.40745 +/- 0.01323
+       89/1    1.54846    1.41107 +/- 0.01338
+       90/1    1.41186    1.41109 +/- 0.01304
+       91/1    1.34679    1.40952 +/- 0.01282
+       92/1    1.44814    1.41044 +/- 0.01254
+       93/1    1.38679    1.40989 +/- 0.01226
+       94/1    1.38988    1.40943 +/- 0.01199
+       95/1    1.58554    1.41335 +/- 0.01235
+       96/1    1.29000    1.41066 +/- 0.01238
+       97/1    1.39447    1.41032 +/- 0.01211
+       98/1    1.28923    1.40780 +/- 0.01212
+       99/1    1.28290    1.40525 +/- 0.01215
+      100/1    1.47114    1.40657 +/- 0.01197
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.4301e+00 seconds
+   Time in transport only          = 4.4160e+00 seconds
+   Time in inactive batches        = 1.4025e+00 seconds
+   Time in active batches          = 3.0276e+00 seconds
+   Time synchronizing fission bank = 3.7067e-03 seconds
+     Sampling source sites         = 2.7776e-03 seconds
+     SEND/RECV source sites        = 6.6500e-04 seconds
+   Time accumulating tallies       = 1.2821e-03 seconds
+   Time writing statepoints        = 5.0767e-03 seconds
+ Total time for finalization       = 3.8646e-05 seconds
+ Total time elapsed                = 4.8459e+00 seconds
+ Calculation Rate (inactive)       = 14260.3 particles/second
+ Calculation Rate (active)         = 6605.96 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.39775 +/- 0.00999
+ k-effective (Track-length)  = 1.40657 +/- 0.01197
+ k-effective (Absorption)    = 1.39495 +/- 0.00702
+ Combined k-effective        = 1.39192 +/- 0.00667
+ Leakage Fraction            = 0.02230 +/- 0.00117
+
+ Creating state point openmc_simulation_n2.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.50383
+        2/1    1.41579
+        3/1    1.45202
+        4/1    1.33319
+        5/1    1.26131
+        6/1    1.44821
+        7/1    1.36988
+        8/1    1.45813
+        9/1    1.34931
+       10/1    1.35697
+       11/1    1.48916
+       12/1    1.44690
+       13/1    1.40556
+       14/1    1.49508
+       15/1    1.40669
+       16/1    1.37028
+       17/1    1.37649
+       18/1    1.51493
+       19/1    1.50157
+       20/1    1.31838
+       21/1    1.50569
+       22/1    1.28809
+       23/1    1.32768
+       24/1    1.45287
+       25/1    1.46361
+       26/1    1.53367
+       27/1    1.50929
+       28/1    1.35165
+       29/1    1.51639
+       30/1    1.32709
+       31/1    1.48684
+       32/1    1.29681
+       33/1    1.41354
+       34/1    1.13859
+       35/1    1.40673
+       36/1    1.31182
+       37/1    1.22318
+       38/1    1.38588
+       39/1    1.20975
+       40/1    1.46903
+       41/1    1.56228
+       42/1    1.43047
+       43/1    1.43852
+       44/1    1.43683
+       45/1    1.38920
+       46/1    1.54724
+       47/1    1.39687
+       48/1    1.42874
+       49/1    1.34244
+       50/1    1.36699
+       51/1    1.27243
+       52/1    1.35304    1.31273 +/- 0.04031
+       53/1    1.44443    1.35663 +/- 0.04969
+       54/1    1.41252    1.37060 +/- 0.03781
+       55/1    1.44601    1.38569 +/- 0.03294
+       56/1    1.35431    1.38046 +/- 0.02740
+       57/1    1.38117    1.38056 +/- 0.02316
+       58/1    1.35768    1.37770 +/- 0.02026
+       59/1    1.37753    1.37768 +/- 0.01787
+       60/1    1.37641    1.37755 +/- 0.01598
+       61/1    1.44181    1.38339 +/- 0.01559
+       62/1    1.36388    1.38177 +/- 0.01432
+       63/1    1.35459    1.37968 +/- 0.01334
+       64/1    1.52961    1.39039 +/- 0.01635
+       65/1    1.17709    1.37617 +/- 0.02083
+       66/1    1.45391    1.38103 +/- 0.02008
+       67/1    1.38184    1.38107 +/- 0.01886
+       68/1    1.34099    1.37885 +/- 0.01792
+       69/1    1.48351    1.38436 +/- 0.01783
+       70/1    1.41353    1.38581 +/- 0.01697
+       71/1    1.26548    1.38008 +/- 0.01713
+       72/1    1.33646    1.37810 +/- 0.01645
+       73/1    1.41245    1.37959 +/- 0.01579
+       74/1    1.30153    1.37634 +/- 0.01547
+       75/1    1.34430    1.37506 +/- 0.01489
+       76/1    1.39376    1.37578 +/- 0.01432
+       77/1    1.49234    1.38010 +/- 0.01444
+       78/1    1.33351    1.37843 +/- 0.01402
+       79/1    1.48205    1.38201 +/- 0.01399
+       80/1    1.31677    1.37983 +/- 0.01369
+       81/1    1.58325    1.38639 +/- 0.01478
+       82/1    1.34142    1.38499 +/- 0.01438
+       83/1    1.42843    1.38630 +/- 0.01400
+       84/1    1.34478    1.38508 +/- 0.01363
+       85/1    1.53421    1.38934 +/- 0.01391
+       86/1    1.27453    1.38615 +/- 0.01389
+       87/1    1.32313    1.38445 +/- 0.01361
+       88/1    1.42792    1.38559 +/- 0.01330
+       89/1    1.41275    1.38629 +/- 0.01297
+       90/1    1.36744    1.38582 +/- 0.01265
+       91/1    1.31955    1.38420 +/- 0.01245
+       92/1    1.20972    1.38005 +/- 0.01284
+       93/1    1.47594    1.38228 +/- 0.01273
+       94/1    1.49374    1.38481 +/- 0.01269
+       95/1    1.43483    1.38592 +/- 0.01246
+       96/1    1.32675    1.38464 +/- 0.01225
+       97/1    1.46429    1.38633 +/- 0.01211
+       98/1    1.42237    1.38708 +/- 0.01188
+       99/1    1.26030    1.38450 +/- 0.01192
+      100/1    1.43396    1.38548 +/- 0.01172
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.3598e+00 seconds
+   Time in transport only          = 4.3457e+00 seconds
+   Time in inactive batches        = 1.3963e+00 seconds
+   Time in active batches          = 2.9635e+00 seconds
+   Time synchronizing fission bank = 3.9257e-03 seconds
+     Sampling source sites         = 2.8728e-03 seconds
+     SEND/RECV source sites        = 7.3224e-04 seconds
+   Time accumulating tallies       = 1.1473e-03 seconds
+   Time writing statepoints        = 5.0455e-03 seconds
+ Total time for finalization       = 3.4659e-05 seconds
+ Total time elapsed                = 4.7755e+00 seconds
+ Calculation Rate (inactive)       = 14324 particles/second
+ Calculation Rate (active)         = 6748.77 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.38214 +/- 0.01130
+ k-effective (Track-length)  = 1.38548 +/- 0.01172
+ k-effective (Absorption)    = 1.37490 +/- 0.00644
+ Combined k-effective        = 1.37591 +/- 0.00658
+ Leakage Fraction            = 0.02350 +/- 0.00093
+
+ Creating state point openmc_simulation_n3.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.64497
+        2/1    1.45292
+        3/1    1.57533
+        4/1    1.44641
+        5/1    1.41531
+        6/1    1.35172
+        7/1    1.50439
+        8/1    1.32346
+        9/1    1.39183
+       10/1    1.27693
+       11/1    1.49135
+       12/1    1.30448
+       13/1    1.52754
+       14/1    1.37697
+       15/1    1.43059
+       16/1    1.40153
+       17/1    1.29938
+       18/1    1.33750
+       19/1    1.32550
+       20/1    1.48423
+       21/1    1.52326
+       22/1    1.30998
+       23/1    1.37686
+       24/1    1.38602
+       25/1    1.31667
+       26/1    1.28187
+       27/1    1.30117
+       28/1    1.44931
+       29/1    1.38552
+       30/1    1.57818
+       31/1    1.41963
+       32/1    1.34864
+       33/1    1.47886
+       34/1    1.40061
+       35/1    1.41385
+       36/1    1.35607
+       37/1    1.37512
+       38/1    1.41554
+       39/1    1.33347
+       40/1    1.42783
+       41/1    1.48626
+       42/1    1.35181
+       43/1    1.55383
+       44/1    1.45504
+       45/1    1.34035
+       46/1    1.36154
+       47/1    1.38411
+       48/1    1.34876
+       49/1    1.43490
+       50/1    1.37323
+       51/1    1.14844
+       52/1    1.46723    1.30783 +/- 0.15940
+       53/1    1.35099    1.32222 +/- 0.09314
+       54/1    1.28090    1.31189 +/- 0.06667
+       55/1    1.41787    1.33308 +/- 0.05582
+       56/1    1.48327    1.35811 +/- 0.05200
+       57/1    1.40471    1.36477 +/- 0.04445
+       58/1    1.53485    1.38603 +/- 0.04397
+       59/1    1.46596    1.39491 +/- 0.03979
+       60/1    1.34008    1.38943 +/- 0.03601
+       61/1    1.47032    1.39678 +/- 0.03339
+       62/1    1.42373    1.39903 +/- 0.03056
+       63/1    1.43910    1.40211 +/- 0.02828
+       64/1    1.34899    1.39832 +/- 0.02646
+       65/1    1.33966    1.39441 +/- 0.02494
+       66/1    1.46013    1.39851 +/- 0.02369
+       67/1    1.42562    1.40011 +/- 0.02231
+       68/1    1.37111    1.39850 +/- 0.02109
+       69/1    1.54209    1.40605 +/- 0.02134
+       70/1    1.31767    1.40163 +/- 0.02072
+       71/1    1.42965    1.40297 +/- 0.01975
+       72/1    1.33349    1.39981 +/- 0.01909
+       73/1    1.38284    1.39907 +/- 0.01826
+       74/1    1.41694    1.39982 +/- 0.01750
+       75/1    1.29203    1.39551 +/- 0.01733
+       76/1    1.42678    1.39671 +/- 0.01669
+       77/1    1.26477    1.39182 +/- 0.01679
+       78/1    1.37679    1.39129 +/- 0.01619
+       79/1    1.54172    1.39647 +/- 0.01646
+       80/1    1.46239    1.39867 +/- 0.01605
+       81/1    1.39401    1.39852 +/- 0.01553
+       82/1    1.30769    1.39568 +/- 0.01530
+       83/1    1.26098    1.39160 +/- 0.01538
+       84/1    1.25592    1.38761 +/- 0.01544
+       85/1    1.34348    1.38635 +/- 0.01505
+       86/1    1.32258    1.38458 +/- 0.01473
+       87/1    1.42801    1.38575 +/- 0.01438
+       88/1    1.41349    1.38648 +/- 0.01401
+       89/1    1.28561    1.38389 +/- 0.01389
+       90/1    1.57238    1.38861 +/- 0.01434
+       91/1    1.36028    1.38792 +/- 0.01400
+       92/1    1.41880    1.38865 +/- 0.01368
+       93/1    1.36429    1.38808 +/- 0.01337
+       94/1    1.40141    1.38839 +/- 0.01307
+       95/1    1.39796    1.38860 +/- 0.01278
+       96/1    1.49316    1.39087 +/- 0.01270
+       97/1    1.30100    1.38896 +/- 0.01257
+       98/1    1.43978    1.39002 +/- 0.01235
+       99/1    1.40590    1.39034 +/- 0.01210
+      100/1    1.43751    1.39129 +/- 0.01190
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.4476e+00 seconds
+   Time in transport only          = 4.4323e+00 seconds
+   Time in inactive batches        = 1.3989e+00 seconds
+   Time in active batches          = 3.0487e+00 seconds
+   Time synchronizing fission bank = 4.5936e-03 seconds
+     Sampling source sites         = 3.1478e-03 seconds
+     SEND/RECV source sites        = 9.8972e-04 seconds
+   Time accumulating tallies       = 8.0202e-04 seconds
+   Time writing statepoints        = 5.6254e-03 seconds
+ Total time for finalization       = 3.3361e-05 seconds
+ Total time elapsed                = 4.8725e+00 seconds
+ Calculation Rate (inactive)       = 14296.9 particles/second
+ Calculation Rate (active)         = 6560.15 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.40130 +/- 0.01218
+ k-effective (Track-length)  = 1.39129 +/- 0.01190
+ k-effective (Absorption)    = 1.38502 +/- 0.00662
+ Combined k-effective        = 1.38426 +/- 0.00712
+ Leakage Fraction            = 0.02480 +/- 0.00101
+
+ Creating state point openmc_simulation_n4.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.42579
+        2/1    1.33333
+        3/1    1.46565
+        4/1    1.42407
+        5/1    1.41684
+        6/1    1.45745
+        7/1    1.37703
+        8/1    1.36651
+        9/1    1.44567
+       10/1    1.27433
+       11/1    1.30683
+       12/1    1.33393
+       13/1    1.51077
+       14/1    1.32687
+       15/1    1.27106
+       16/1    1.48258
+       17/1    1.35018
+       18/1    1.35555
+       19/1    1.28788
+       20/1    1.32283
+       21/1    1.45190
+       22/1    1.42652
+       23/1    1.34325
+       24/1    1.42813
+       25/1    1.51119
+       26/1    1.43183
+       27/1    1.33851
+       28/1    1.28326
+       29/1    1.34648
+       30/1    1.36610
+       31/1    1.21726
+       32/1    1.35914
+       33/1    1.26879
+       34/1    1.15066
+       35/1    1.37959
+       36/1    1.48468
+       37/1    1.58061
+       38/1    1.44677
+       39/1    1.52388
+       40/1    1.53998
+       41/1    1.43789
+       42/1    1.40401
+       43/1    1.35309
+       44/1    1.31277
+       45/1    1.37437
+       46/1    1.30856
+       47/1    1.37019
+       48/1    1.32397
+       49/1    1.30216
+       50/1    1.35758
+       51/1    1.31477
+       52/1    1.40917    1.36197 +/- 0.04720
+       53/1    1.41862    1.38085 +/- 0.03315
+       54/1    1.52959    1.41804 +/- 0.04396
+       55/1    1.38304    1.41104 +/- 0.03476
+       56/1    1.46428    1.41991 +/- 0.02974
+       57/1    1.51748    1.43385 +/- 0.02874
+       58/1    1.34600    1.42287 +/- 0.02720
+       59/1    1.52958    1.43472 +/- 0.02676
+       60/1    1.43772    1.43502 +/- 0.02394
+       61/1    1.43921    1.43541 +/- 0.02166
+       62/1    1.46313    1.43772 +/- 0.01990
+       63/1    1.38526    1.43368 +/- 0.01875
+       64/1    1.45151    1.43495 +/- 0.01740
+       65/1    1.22261    1.42080 +/- 0.02151
+       66/1    1.50192    1.42587 +/- 0.02075
+       67/1    1.20397    1.41281 +/- 0.02346
+       68/1    1.40671    1.41248 +/- 0.02212
+       69/1    1.39564    1.41159 +/- 0.02094
+       70/1    1.25647    1.40383 +/- 0.02133
+       71/1    1.40217    1.40375 +/- 0.02029
+       72/1    1.37251    1.40233 +/- 0.01940
+       73/1    1.31377    1.39848 +/- 0.01893
+       74/1    1.31591    1.39504 +/- 0.01845
+       75/1    1.40576    1.39547 +/- 0.01770
+       76/1    1.31147    1.39224 +/- 0.01731
+       77/1    1.32177    1.38963 +/- 0.01686
+       78/1    1.42297    1.39082 +/- 0.01629
+       79/1    1.36359    1.38988 +/- 0.01575
+       80/1    1.35124    1.38859 +/- 0.01527
+       81/1    1.48463    1.39169 +/- 0.01509
+       82/1    1.24160    1.38700 +/- 0.01534
+       83/1    1.38402    1.38691 +/- 0.01487
+       84/1    1.20276    1.38150 +/- 0.01541
+       85/1    1.40147    1.38207 +/- 0.01497
+       86/1    1.26909    1.37893 +/- 0.01489
+       87/1    1.23431    1.37502 +/- 0.01500
+       88/1    1.24333    1.37155 +/- 0.01500
+       89/1    1.39224    1.37208 +/- 0.01462
+       90/1    1.46072    1.37430 +/- 0.01442
+       91/1    1.42531    1.37554 +/- 0.01412
+       92/1    1.41582    1.37650 +/- 0.01382
+       93/1    1.30440    1.37483 +/- 0.01359
+       94/1    1.43642    1.37623 +/- 0.01335
+       95/1    1.35580    1.37577 +/- 0.01306
+       96/1    1.40105    1.37632 +/- 0.01279
+       97/1    1.48057    1.37854 +/- 0.01271
+       98/1    1.45022    1.38003 +/- 0.01253
+       99/1    1.49130    1.38230 +/- 0.01248
+      100/1    1.51073    1.38487 +/- 0.01249
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.3832e+00 seconds
+   Time in transport only          = 4.3692e+00 seconds
+   Time in inactive batches        = 1.3977e+00 seconds
+   Time in active batches          = 2.9854e+00 seconds
+   Time synchronizing fission bank = 3.8100e-03 seconds
+     Sampling source sites         = 2.7722e-03 seconds
+     SEND/RECV source sites        = 7.2740e-04 seconds
+   Time accumulating tallies       = 1.2798e-03 seconds
+   Time writing statepoints        = 4.6332e-03 seconds
+ Total time for finalization       = 3.5258e-05 seconds
+ Total time elapsed                = 4.8030e+00 seconds
+ Calculation Rate (inactive)       = 14308.8 particles/second
+ Calculation Rate (active)         = 6699.22 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.37713 +/- 0.01181
+ k-effective (Track-length)  = 1.38487 +/- 0.01249
+ k-effective (Absorption)    = 1.37822 +/- 0.00709
+ Combined k-effective        = 1.37953 +/- 0.00708
+ Leakage Fraction            = 0.02335 +/- 0.00113
+
+ Creating state point openmc_simulation_n5.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.37269
+        2/1    1.45470
+        3/1    1.51168
+        4/1    1.47178
+        5/1    1.34416
+        6/1    1.30523
+        7/1    1.40504
+        8/1    1.42662
+        9/1    1.32701
+       10/1    1.38207
+       11/1    1.35967
+       12/1    1.35593
+       13/1    1.57534
+       14/1    1.41934
+       15/1    1.37567
+       16/1    1.25755
+       17/1    1.39766
+       18/1    1.37773
+       19/1    1.31035
+       20/1    1.34702
+       21/1    1.39987
+       22/1    1.16789
+       23/1    1.40340
+       24/1    1.33133
+       25/1    1.38880
+       26/1    1.41029
+       27/1    1.48762
+       28/1    1.23658
+       29/1    1.37733
+       30/1    1.22394
+       31/1    1.54325
+       32/1    1.31903
+       33/1    1.26897
+       34/1    1.38339
+       35/1    1.39080
+       36/1    1.62424
+       37/1    1.29702
+       38/1    1.38208
+       39/1    1.41394
+       40/1    1.54993
+       41/1    1.22706
+       42/1    1.35581
+       43/1    1.39556
+       44/1    1.25154
+       45/1    1.16766
+       46/1    1.55914
+       47/1    1.21737
+       48/1    1.36262
+       49/1    1.29934
+       50/1    1.40860
+       51/1    1.25669
+       52/1    1.40145    1.32907 +/- 0.07238
+       53/1    1.51169    1.38994 +/- 0.07384
+       54/1    1.36582    1.38391 +/- 0.05256
+       55/1    1.32085    1.37130 +/- 0.04262
+       56/1    1.36781    1.37072 +/- 0.03480
+       57/1    1.39198    1.37375 +/- 0.02957
+       58/1    1.39862    1.37686 +/- 0.02580
+       59/1    1.39914    1.37934 +/- 0.02289
+       60/1    1.32467    1.37387 +/- 0.02119
+       61/1    1.26632    1.36409 +/- 0.02151
+       62/1    1.41336    1.36820 +/- 0.02006
+       63/1    1.31239    1.36391 +/- 0.01895
+       64/1    1.37408    1.36463 +/- 0.01756
+       65/1    1.18555    1.35269 +/- 0.02024
+       66/1    1.32114    1.35072 +/- 0.01904
+       67/1    1.31524    1.34863 +/- 0.01800
+       68/1    1.27890    1.34476 +/- 0.01741
+       69/1    1.24303    1.33941 +/- 0.01732
+       70/1    1.46441    1.34566 +/- 0.01758
+       71/1    1.26767    1.34194 +/- 0.01713
+       72/1    1.36237    1.34287 +/- 0.01636
+       73/1    1.43796    1.34701 +/- 0.01617
+       74/1    1.32655    1.34615 +/- 0.01550
+       75/1    1.29878    1.34426 +/- 0.01499
+       76/1    1.37812    1.34556 +/- 0.01446
+       77/1    1.39520    1.34740 +/- 0.01403
+       78/1    1.22114    1.34289 +/- 0.01426
+       79/1    1.38647    1.34439 +/- 0.01384
+       80/1    1.31258    1.34333 +/- 0.01341
+       81/1    1.40708    1.34539 +/- 0.01313
+       82/1    1.46055    1.34899 +/- 0.01321
+       83/1    1.49238    1.35333 +/- 0.01353
+       84/1    1.34996    1.35323 +/- 0.01312
+       85/1    1.33558    1.35273 +/- 0.01275
+       86/1    1.38232    1.35355 +/- 0.01242
+       87/1    1.23840    1.35044 +/- 0.01247
+       88/1    1.35982    1.35069 +/- 0.01214
+       89/1    1.42145    1.35250 +/- 0.01197
+       90/1    1.33569    1.35208 +/- 0.01167
+       91/1    1.33095    1.35156 +/- 0.01139
+       92/1    1.29642    1.35025 +/- 0.01120
+       93/1    1.52483    1.35431 +/- 0.01166
+       94/1    1.29770    1.35302 +/- 0.01147
+       95/1    1.30498    1.35196 +/- 0.01126
+       96/1    1.44629    1.35401 +/- 0.01120
+       97/1    1.24264    1.35164 +/- 0.01121
+       98/1    1.43252    1.35332 +/- 0.01111
+       99/1    1.33499    1.35295 +/- 0.01088
+      100/1    1.33879    1.35267 +/- 0.01067
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.4268e+00 seconds
+   Time in transport only          = 4.3986e+00 seconds
+   Time in inactive batches        = 1.3892e+00 seconds
+   Time in active batches          = 3.0376e+00 seconds
+   Time synchronizing fission bank = 4.4847e-03 seconds
+     Sampling source sites         = 3.0798e-03 seconds
+     SEND/RECV source sites        = 9.9431e-04 seconds
+   Time accumulating tallies       = 1.4068e-02 seconds
+   Time writing statepoints        = 5.2167e-03 seconds
+ Total time for finalization       = 3.5105e-05 seconds
+ Total time elapsed                = 4.8483e+00 seconds
+ Calculation Rate (inactive)       = 14396.7 particles/second
+ Calculation Rate (active)         = 6584.14 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.35593 +/- 0.01089
+ k-effective (Track-length)  = 1.35267 +/- 0.01067
+ k-effective (Absorption)    = 1.35569 +/- 0.00714
+ Combined k-effective        = 1.35466 +/- 0.00708
+ Leakage Fraction            = 0.02335 +/- 0.00103
+
+ Creating state point openmc_simulation_n6.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.43831
+        2/1    1.47465
+        3/1    1.43485
+        4/1    1.52731
+        5/1    1.35406
+        6/1    1.51179
+        7/1    1.34603
+        8/1    1.33048
+        9/1    1.35997
+       10/1    1.46362
+       11/1    1.23748
+       12/1    1.24050
+       13/1    1.24294
+       14/1    1.26383
+       15/1    1.33679
+       16/1    1.49719
+       17/1    1.44953
+       18/1    1.35021
+       19/1    1.55501
+       20/1    1.53142
+       21/1    1.37327
+       22/1    1.40560
+       23/1    1.33249
+       24/1    1.37251
+       25/1    1.43082
+       26/1    1.22543
+       27/1    1.27677
+       28/1    1.31502
+       29/1    1.23695
+       30/1    1.34376
+       31/1    1.30943
+       32/1    1.31390
+       33/1    1.26559
+       34/1    1.47692
+       35/1    1.36338
+       36/1    1.31500
+       37/1    1.37934
+       38/1    1.49604
+       39/1    1.22717
+       40/1    1.50394
+       41/1    1.35271
+       42/1    1.37138
+       43/1    1.39219
+       44/1    1.29972
+       45/1    1.30679
+       46/1    1.39947
+       47/1    1.27377
+       48/1    1.25250
+       49/1    1.32825
+       50/1    1.36010
+       51/1    1.50504
+       52/1    1.32003    1.41253 +/- 0.09251
+       53/1    1.46158    1.42888 +/- 0.05586
+       54/1    1.43325    1.42997 +/- 0.03951
+       55/1    1.34356    1.41269 +/- 0.03515
+       56/1    1.25474    1.38637 +/- 0.03894
+       57/1    1.41420    1.39034 +/- 0.03315
+       58/1    1.39163    1.39050 +/- 0.02871
+       59/1    1.46826    1.39914 +/- 0.02675
+       60/1    1.38396    1.39762 +/- 0.02398
+       61/1    1.48160    1.40526 +/- 0.02299
+       62/1    1.36619    1.40200 +/- 0.02124
+       63/1    1.23246    1.38896 +/- 0.02349
+       64/1    1.32196    1.38418 +/- 0.02227
+       65/1    1.45739    1.38906 +/- 0.02130
+       66/1    1.35336    1.38683 +/- 0.02005
+       67/1    1.42283    1.38894 +/- 0.01895
+       68/1    1.48331    1.39419 +/- 0.01862
+       69/1    1.27981    1.38817 +/- 0.01861
+       70/1    1.44853    1.39118 +/- 0.01791
+       71/1    1.21841    1.38296 +/- 0.01892
+       72/1    1.41097    1.38423 +/- 0.01809
+       73/1    1.36784    1.38352 +/- 0.01730
+       74/1    1.46018    1.38671 +/- 0.01687
+       75/1    1.25675    1.38151 +/- 0.01699
+       76/1    1.38363    1.38160 +/- 0.01633
+       77/1    1.36498    1.38098 +/- 0.01572
+       78/1    1.34244    1.37960 +/- 0.01521
+       79/1    1.24717    1.37504 +/- 0.01537
+       80/1    1.41039    1.37622 +/- 0.01490
+       81/1    1.31242    1.37416 +/- 0.01455
+       82/1    1.32730    1.37269 +/- 0.01417
+       83/1    1.39047    1.37323 +/- 0.01374
+       84/1    1.41495    1.37446 +/- 0.01339
+       85/1    1.21989    1.37004 +/- 0.01373
+       86/1    1.33590    1.36909 +/- 0.01338
+       87/1    1.41763    1.37041 +/- 0.01308
+       88/1    1.37079    1.37042 +/- 0.01273
+       89/1    1.30239    1.36867 +/- 0.01252
+       90/1    1.36978    1.36870 +/- 0.01220
+       91/1    1.31908    1.36749 +/- 0.01196
+       92/1    1.25760    1.36487 +/- 0.01196
+       93/1    1.36528    1.36488 +/- 0.01168
+       94/1    1.37859    1.36519 +/- 0.01142
+       95/1    1.36637    1.36522 +/- 0.01116
+       96/1    1.26103    1.36296 +/- 0.01115
+       97/1    1.30403    1.36170 +/- 0.01098
+       98/1    1.19773    1.35829 +/- 0.01128
+       99/1    1.44347    1.36002 +/- 0.01118
+      100/1    1.38381    1.36050 +/- 0.01097
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.4002e+00 seconds
+   Time in transport only          = 4.3849e+00 seconds
+   Time in inactive batches        = 1.4020e+00 seconds
+   Time in active batches          = 2.9982e+00 seconds
+   Time synchronizing fission bank = 3.8929e-03 seconds
+     Sampling source sites         = 2.8214e-03 seconds
+     SEND/RECV source sites        = 7.1383e-04 seconds
+   Time accumulating tallies       = 9.1381e-04 seconds
+   Time writing statepoints        = 5.8271e-03 seconds
+ Total time for finalization       = 3.4709e-05 seconds
+ Total time elapsed                = 4.8203e+00 seconds
+ Calculation Rate (inactive)       = 14265.6 particles/second
+ Calculation Rate (active)         = 6670.64 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.35883 +/- 0.01036
+ k-effective (Track-length)  = 1.36050 +/- 0.01097
+ k-effective (Absorption)    = 1.35168 +/- 0.00688
+ Combined k-effective        = 1.35339 +/- 0.00662
+ Leakage Fraction            = 0.02370 +/- 0.00112
+
+ Creating state point openmc_simulation_n7.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.52405
+        2/1    1.38516
+        3/1    1.33031
+        4/1    1.43403
+        5/1    1.32159
+        6/1    1.47859
+        7/1    1.44707
+        8/1    1.42836
+        9/1    1.18961
+       10/1    1.38166
+       11/1    1.50777
+       12/1    1.25207
+       13/1    1.37668
+       14/1    1.39246
+       15/1    1.27346
+       16/1    1.19779
+       17/1    1.26385
+       18/1    1.38253
+       19/1    1.40244
+       20/1    1.23563
+       21/1    1.44425
+       22/1    1.18190
+       23/1    1.31549
+       24/1    1.32515
+       25/1    1.52779
+       26/1    1.19146
+       27/1    1.31377
+       28/1    1.29581
+       29/1    1.35104
+       30/1    1.35449
+       31/1    1.19566
+       32/1    1.17179
+       33/1    1.38439
+       34/1    1.36274
+       35/1    1.29348
+       36/1    1.34531
+       37/1    1.39944
+       38/1    1.24290
+       39/1    1.35194
+       40/1    1.40281
+       41/1    1.31500
+       42/1    1.25901
+       43/1    1.16828
+       44/1    1.14745
+       45/1    1.23240
+       46/1    1.47465
+       47/1    1.35639
+       48/1    1.19299
+       49/1    1.29360
+       50/1    1.28311
+       51/1    1.32737
+       52/1    1.26216    1.29476 +/- 0.03260
+       53/1    1.61311    1.40088 +/- 0.10777
+       54/1    1.25504    1.36442 +/- 0.08448
+       55/1    1.30031    1.35160 +/- 0.06668
+       56/1    1.33995    1.34965 +/- 0.05448
+       57/1    1.26078    1.33696 +/- 0.04776
+       58/1    1.39721    1.34449 +/- 0.04204
+       59/1    1.41664    1.35251 +/- 0.03794
+       60/1    1.22135    1.33939 +/- 0.03638
+       61/1    1.44830    1.34929 +/- 0.03436
+       62/1    1.28026    1.34354 +/- 0.03189
+       63/1    1.45023    1.35175 +/- 0.03046
+       64/1    1.20066    1.34095 +/- 0.03020
+       65/1    1.39514    1.34457 +/- 0.02834
+       66/1    1.38284    1.34696 +/- 0.02662
+       67/1    1.50767    1.35641 +/- 0.02673
+       68/1    1.29708    1.35312 +/- 0.02542
+       69/1    1.50207    1.36096 +/- 0.02529
+       70/1    1.56977    1.37140 +/- 0.02616
+       71/1    1.31096    1.36852 +/- 0.02505
+       72/1    1.51377    1.37512 +/- 0.02478
+       73/1    1.36366    1.37462 +/- 0.02369
+       74/1    1.50233    1.37994 +/- 0.02329
+       75/1    1.41693    1.38142 +/- 0.02239
+       76/1    1.22064    1.37524 +/- 0.02238
+       77/1    1.16453    1.36744 +/- 0.02291
+       78/1    1.24981    1.36323 +/- 0.02247
+       79/1    1.45358    1.36635 +/- 0.02191
+       80/1    1.39797    1.36740 +/- 0.02119
+       81/1    1.37995    1.36781 +/- 0.02050
+       82/1    1.29616    1.36557 +/- 0.01997
+       83/1    1.48139    1.36908 +/- 0.01967
+       84/1    1.50294    1.37302 +/- 0.01949
+       85/1    1.32558    1.37166 +/- 0.01897
+       86/1    1.22094    1.36747 +/- 0.01891
+       87/1    1.31840    1.36615 +/- 0.01844
+       88/1    1.21362    1.36213 +/- 0.01839
+       89/1    1.25523    1.35939 +/- 0.01812
+       90/1    1.40490    1.36053 +/- 0.01770
+       91/1    1.32688    1.35971 +/- 0.01728
+       92/1    1.35082    1.35950 +/- 0.01686
+       93/1    1.39771    1.36039 +/- 0.01649
+       94/1    1.34548    1.36005 +/- 0.01612
+       95/1    1.32584    1.35929 +/- 0.01577
+       96/1    1.31377    1.35830 +/- 0.01546
+       97/1    1.24105    1.35580 +/- 0.01533
+       98/1    1.28397    1.35431 +/- 0.01508
+       99/1    1.42231    1.35569 +/- 0.01483
+      100/1    1.25749    1.35373 +/- 0.01467
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.4644e+00 seconds
+   Time in transport only          = 4.4499e+00 seconds
+   Time in inactive batches        = 1.4243e+00 seconds
+   Time in active batches          = 3.0401e+00 seconds
+   Time synchronizing fission bank = 4.2058e-03 seconds
+     Sampling source sites         = 3.2182e-03 seconds
+     SEND/RECV source sites        = 6.8997e-04 seconds
+   Time accumulating tallies       = 1.4314e-03 seconds
+   Time writing statepoints        = 4.6264e-03 seconds
+ Total time for finalization       = 3.5009e-05 seconds
+ Total time elapsed                = 4.8801e+00 seconds
+ Calculation Rate (inactive)       = 14042.3 particles/second
+ Calculation Rate (active)         = 6578.68 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.35076 +/- 0.01375
+ k-effective (Track-length)  = 1.35373 +/- 0.01467
+ k-effective (Absorption)    = 1.34117 +/- 0.00671
+ Combined k-effective        = 1.33991 +/- 0.00682
+ Leakage Fraction            = 0.02100 +/- 0.00117
+
+ Creating state point openmc_simulation_n8.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.47217
+        2/1    1.25192
+        3/1    1.38438
+        4/1    1.46132
+        5/1    1.38532
+        6/1    1.29132
+        7/1    1.29602
+        8/1    1.31438
+        9/1    1.25431
+       10/1    1.40281
+       11/1    1.31401
+       12/1    1.17535
+       13/1    1.19473
+       14/1    1.23623
+       15/1    1.41273
+       16/1    1.28244
+       17/1    1.18254
+       18/1    1.31233
+       19/1    1.37181
+       20/1    1.27422
+       21/1    1.32031
+       22/1    1.39172
+       23/1    1.46470
+       24/1    1.37960
+       25/1    1.44167
+       26/1    1.50168
+       27/1    1.43369
+       28/1    1.42737
+       29/1    1.27265
+       30/1    1.24665
+       31/1    1.46713
+       32/1    1.29649
+       33/1    1.33464
+       34/1    1.27088
+       35/1    1.30304
+       36/1    1.29492
+       37/1    1.19110
+       38/1    1.41651
+       39/1    1.52075
+       40/1    1.32498
+       41/1    1.42487
+       42/1    1.38547
+       43/1    1.41705
+       44/1    1.27933
+       45/1    1.32045
+       46/1    1.21099
+       47/1    1.37461
+       48/1    1.33328
+       49/1    1.18450
+       50/1    1.41167
+       51/1    1.21131
+       52/1    1.26121    1.23626 +/- 0.02495
+       53/1    1.31817    1.26356 +/- 0.03087
+       54/1    1.33334    1.28101 +/- 0.02794
+       55/1    1.34680    1.29417 +/- 0.02533
+       56/1    1.31945    1.29838 +/- 0.02111
+       57/1    1.24808    1.29120 +/- 0.01923
+       58/1    1.37871    1.30214 +/- 0.01993
+       59/1    1.31553    1.30362 +/- 0.01764
+       60/1    1.25356    1.29862 +/- 0.01655
+       61/1    1.36786    1.30491 +/- 0.01624
+       62/1    1.33174    1.30715 +/- 0.01499
+       63/1    1.40307    1.31453 +/- 0.01564
+       64/1    1.33739    1.31616 +/- 0.01457
+       65/1    1.36882    1.31967 +/- 0.01401
+       66/1    1.34010    1.32095 +/- 0.01317
+       67/1    1.30065    1.31975 +/- 0.01243
+       68/1    1.38352    1.32330 +/- 0.01224
+       69/1    1.30902    1.32254 +/- 0.01160
+       70/1    1.23625    1.31823 +/- 0.01182
+       71/1    1.34265    1.31939 +/- 0.01131
+       72/1    1.28417    1.31779 +/- 0.01090
+       73/1    1.46391    1.32414 +/- 0.01220
+       74/1    1.26853    1.32183 +/- 0.01191
+       75/1    1.33180    1.32223 +/- 0.01143
+       76/1    1.32184    1.32221 +/- 0.01098
+       77/1    1.25827    1.31984 +/- 0.01083
+       78/1    1.36548    1.32147 +/- 0.01056
+       79/1    1.27450    1.31985 +/- 0.01032
+       80/1    1.40336    1.32264 +/- 0.01035
+       81/1    1.27780    1.32119 +/- 0.01011
+       82/1    1.37948    1.32301 +/- 0.00996
+       83/1    1.23078    1.32022 +/- 0.01005
+       84/1    1.33035    1.32052 +/- 0.00975
+       85/1    1.38950    1.32249 +/- 0.00967
+       86/1    1.33508    1.32284 +/- 0.00941
+       87/1    1.32948    1.32302 +/- 0.00915
+       88/1    1.20698    1.31996 +/- 0.00942
+       89/1    1.24443    1.31803 +/- 0.00937
+       90/1    1.28368    1.31717 +/- 0.00918
+       91/1    1.26869    1.31598 +/- 0.00903
+       92/1    1.32956    1.31631 +/- 0.00882
+       93/1    1.35243    1.31715 +/- 0.00865
+       94/1    1.16060    1.31359 +/- 0.00917
+       95/1    1.39239    1.31534 +/- 0.00913
+       96/1    1.23263    1.31354 +/- 0.00911
+       97/1    1.44569    1.31635 +/- 0.00935
+       98/1    1.32135    1.31646 +/- 0.00915
+       99/1    1.34589    1.31706 +/- 0.00898
+      100/1    1.46099    1.31994 +/- 0.00926
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.3890e+00 seconds
+   Time in transport only          = 4.3746e+00 seconds
+   Time in inactive batches        = 1.3955e+00 seconds
+   Time in active batches          = 2.9935e+00 seconds
+   Time synchronizing fission bank = 3.8170e-03 seconds
+     Sampling source sites         = 2.8540e-03 seconds
+     SEND/RECV source sites        = 6.7653e-04 seconds
+   Time accumulating tallies       = 1.3848e-03 seconds
+   Time writing statepoints        = 5.2273e-03 seconds
+ Total time for finalization       = 3.4695e-05 seconds
+ Total time elapsed                = 4.8045e+00 seconds
+ Calculation Rate (inactive)       = 14331.3 particles/second
+ Calculation Rate (active)         = 6681.18 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.31633 +/- 0.00941
+ k-effective (Track-length)  = 1.31994 +/- 0.00926
+ k-effective (Absorption)    = 1.32687 +/- 0.00628
+ Combined k-effective        = 1.32456 +/- 0.00567
+ Leakage Fraction            = 0.02465 +/- 0.00112
+
+ Creating state point openmc_simulation_n9.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.31692
+        2/1    1.45782
+        3/1    1.40449
+        4/1    1.38403
+        5/1    1.34983
+        6/1    1.35844
+        7/1    1.29450
+        8/1    1.38376
+        9/1    1.21136
+       10/1    1.28338
+       11/1    1.29397
+       12/1    1.11940
+       13/1    1.25643
+       14/1    1.29561
+       15/1    1.33512
+       16/1    1.27622
+       17/1    1.40733
+       18/1    1.29390
+       19/1    1.23496
+       20/1    1.35883
+       21/1    1.28185
+       22/1    1.23463
+       23/1    1.33488
+       24/1    1.28682
+       25/1    1.30554
+       26/1    1.25972
+       27/1    1.25967
+       28/1    1.22943
+       29/1    1.27850
+       30/1    1.21583
+       31/1    1.30748
+       32/1    1.38949
+       33/1    1.19509
+       34/1    1.18102
+       35/1    1.23968
+       36/1    1.29730
+       37/1    1.35238
+       38/1    1.25894
+       39/1    1.16707
+       40/1    1.34577
+       41/1    1.27241
+       42/1    1.32112
+       43/1    1.41173
+       44/1    1.25757
+       45/1    1.20829
+       46/1    1.25072
+       47/1    1.31897
+       48/1    1.15911
+       49/1    1.41732
+       50/1    1.40712
+       51/1    1.31218
+       52/1    1.28109    1.29664 +/- 0.01555
+       53/1    1.30168    1.29832 +/- 0.00913
+       54/1    1.29740    1.29809 +/- 0.00646
+       55/1    1.33076    1.30462 +/- 0.00823
+       56/1    1.41310    1.32270 +/- 0.01929
+       57/1    1.24081    1.31100 +/- 0.02006
+       58/1    1.25255    1.30370 +/- 0.01885
+       59/1    1.40886    1.31538 +/- 0.02032
+       60/1    1.33215    1.31706 +/- 0.01825
+       61/1    1.35426    1.32044 +/- 0.01685
+       62/1    1.33358    1.32153 +/- 0.01542
+       63/1    1.24184    1.31540 +/- 0.01545
+       64/1    1.37769    1.31985 +/- 0.01498
+       65/1    1.26044    1.31589 +/- 0.01450
+       66/1    1.33890    1.31733 +/- 0.01364
+       67/1    1.21890    1.31154 +/- 0.01406
+       68/1    1.21205    1.30601 +/- 0.01436
+       69/1    1.35615    1.30865 +/- 0.01384
+       70/1    1.26465    1.30645 +/- 0.01331
+       71/1    1.34018    1.30806 +/- 0.01276
+       72/1    1.38664    1.31163 +/- 0.01268
+       73/1    1.25260    1.30906 +/- 0.01239
+       74/1    1.22366    1.30551 +/- 0.01238
+       75/1    1.31304    1.30581 +/- 0.01188
+       76/1    1.26408    1.30420 +/- 0.01153
+       77/1    1.25453    1.30236 +/- 0.01124
+       78/1    1.23064    1.29980 +/- 0.01113
+       79/1    1.20794    1.29663 +/- 0.01120
+       80/1    1.20006    1.29341 +/- 0.01129
+       81/1    1.32035    1.29428 +/- 0.01095
+       82/1    1.29886    1.29443 +/- 0.01061
+       83/1    1.32926    1.29548 +/- 0.01033
+       84/1    1.24390    1.29396 +/- 0.01014
+       85/1    1.25270    1.29279 +/- 0.00992
+       86/1    1.33601    1.29399 +/- 0.00971
+       87/1    1.33750    1.29516 +/- 0.00952
+       88/1    1.17844    1.29209 +/- 0.00976
+       89/1    1.11361    1.28751 +/- 0.01055
+       90/1    1.33497    1.28870 +/- 0.01035
+       91/1    1.35167    1.29024 +/- 0.01021
+       92/1    1.35221    1.29171 +/- 0.01007
+       93/1    1.44871    1.29536 +/- 0.01049
+       94/1    1.22049    1.29366 +/- 0.01039
+       95/1    1.07025    1.28870 +/- 0.01131
+       96/1    1.29255    1.28878 +/- 0.01106
+       97/1    1.14153    1.28565 +/- 0.01127
+       98/1    1.24125    1.28472 +/- 0.01107
+       99/1    1.34547    1.28596 +/- 0.01091
+      100/1    1.33835    1.28701 +/- 0.01074
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.4611e+00 seconds
+   Time in transport only          = 4.4468e+00 seconds
+   Time in inactive batches        = 1.4313e+00 seconds
+   Time in active batches          = 3.0298e+00 seconds
+   Time synchronizing fission bank = 3.8926e-03 seconds
+     Sampling source sites         = 2.8599e-03 seconds
+     SEND/RECV source sites        = 7.6022e-04 seconds
+   Time accumulating tallies       = 1.4097e-03 seconds
+   Time writing statepoints        = 5.0350e-03 seconds
+ Total time for finalization       = 3.5313e-05 seconds
+ Total time elapsed                = 4.8771e+00 seconds
+ Calculation Rate (inactive)       = 13972.8 particles/second
+ Calculation Rate (active)         = 6601.13 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.28374 +/- 0.01141
+ k-effective (Track-length)  = 1.28701 +/- 0.01074
+ k-effective (Absorption)    = 1.28701 +/- 0.00689
+ Combined k-effective        = 1.28978 +/- 0.00605
+ Leakage Fraction            = 0.02385 +/- 0.00130
+
+ Creating state point openmc_simulation_n10.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.34908
+        2/1    1.40267
+        3/1    1.21422
+        4/1    1.23749
+        5/1    1.36740
+        6/1    1.31764
+        7/1    1.41913
+        8/1    1.37327
+        9/1    1.27177
+       10/1    1.19522
+       11/1    1.25828
+       12/1    1.42798
+       13/1    1.19019
+       14/1    1.29717
+       15/1    1.24284
+       16/1    1.19456
+       17/1    1.27513
+       18/1    1.26953
+       19/1    1.23617
+       20/1    1.23340
+       21/1    1.23401
+       22/1    1.23658
+       23/1    1.42788
+       24/1    1.24581
+       25/1    1.26750
+       26/1    1.24798
+       27/1    1.23356
+       28/1    1.24157
+       29/1    1.37885
+       30/1    1.27508
+       31/1    1.31277
+       32/1    1.29338
+       33/1    1.29261
+       34/1    1.25800
+       35/1    1.24102
+       36/1    1.25750
+       37/1    1.34636
+       38/1    1.30612
+       39/1    1.26239
+       40/1    1.23848
+       41/1    1.38161
+       42/1    1.31431
+       43/1    1.21717
+       44/1    1.28329
+       45/1    1.29402
+       46/1    1.15590
+       47/1    1.23270
+       48/1    1.13338
+       49/1    1.42427
+       50/1    1.27597
+       51/1    1.29973
+       52/1    1.17939    1.23956 +/- 0.06017
+       53/1    1.26260    1.24724 +/- 0.03558
+       54/1    1.33320    1.26873 +/- 0.03309
+       55/1    1.23750    1.26249 +/- 0.02638
+       56/1    1.29464    1.26785 +/- 0.02220
+       57/1    1.22541    1.26178 +/- 0.01971
+       58/1    1.23301    1.25819 +/- 0.01745
+       59/1    1.23824    1.25597 +/- 0.01555
+       60/1    1.28202    1.25858 +/- 0.01415
+       61/1    1.31649    1.26384 +/- 0.01384
+       62/1    1.28996    1.26602 +/- 0.01282
+       63/1    1.23946    1.26397 +/- 0.01197
+       64/1    1.32225    1.26814 +/- 0.01183
+       65/1    1.34801    1.27346 +/- 0.01224
+       66/1    1.36157    1.27897 +/- 0.01270
+       67/1    1.28863    1.27954 +/- 0.01195
+       68/1    1.46021    1.28957 +/- 0.01509
+       69/1    1.21692    1.28575 +/- 0.01477
+       70/1    1.25682    1.28430 +/- 0.01409
+       71/1    1.35657    1.28775 +/- 0.01384
+       72/1    1.33491    1.28989 +/- 0.01337
+       73/1    1.15154    1.28387 +/- 0.01412
+       74/1    1.37933    1.28785 +/- 0.01409
+       75/1    1.34343    1.29007 +/- 0.01370
+       76/1    1.23590    1.28799 +/- 0.01332
+       77/1    1.21773    1.28539 +/- 0.01308
+       78/1    1.30038    1.28592 +/- 0.01262
+       79/1    1.25196    1.28475 +/- 0.01223
+       80/1    1.39697    1.28849 +/- 0.01239
+       81/1    1.19630    1.28552 +/- 0.01235
+       82/1    1.23617    1.28398 +/- 0.01206
+       83/1    1.23746    1.28257 +/- 0.01177
+       84/1    1.23922    1.28129 +/- 0.01149
+       85/1    1.29290    1.28162 +/- 0.01116
+       86/1    1.25424    1.28086 +/- 0.01087
+       87/1    1.13318    1.27687 +/- 0.01130
+       88/1    1.16227    1.27386 +/- 0.01141
+       89/1    1.20435    1.27207 +/- 0.01125
+       90/1    1.29360    1.27261 +/- 0.01098
+       91/1    1.33981    1.27425 +/- 0.01084
+       92/1    1.21592    1.27286 +/- 0.01067
+       93/1    1.11601    1.26922 +/- 0.01103
+       94/1    1.28533    1.26958 +/- 0.01079
+       95/1    1.37268    1.27187 +/- 0.01079
+       96/1    1.24021    1.27118 +/- 0.01058
+       97/1    1.35239    1.27291 +/- 0.01049
+       98/1    1.25447    1.27253 +/- 0.01028
+       99/1    1.11001    1.26921 +/- 0.01060
+      100/1    1.15276    1.26688 +/- 0.01064
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.5522e+00 seconds
+   Time in transport only          = 4.5377e+00 seconds
+   Time in inactive batches        = 1.5175e+00 seconds
+   Time in active batches          = 3.0347e+00 seconds
+   Time synchronizing fission bank = 4.1957e-03 seconds
+     Sampling source sites         = 3.1653e-03 seconds
+     SEND/RECV source sites        = 6.4567e-04 seconds
+   Time accumulating tallies       = 8.7455e-04 seconds
+   Time writing statepoints        = 5.0006e-03 seconds
+ Total time for finalization       = 3.4226e-05 seconds
+ Total time elapsed                = 4.9682e+00 seconds
+ Calculation Rate (inactive)       = 13179.7 particles/second
+ Calculation Rate (active)         = 6590.46 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.27475 +/- 0.00970
+ k-effective (Track-length)  = 1.26688 +/- 0.01064
+ k-effective (Absorption)    = 1.25694 +/- 0.00749
+ Combined k-effective        = 1.26333 +/- 0.00784
+ Leakage Fraction            = 0.02355 +/- 0.00111
+
+ Creating state point openmc_simulation_n11.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.49060
+        2/1    1.35336
+        3/1    1.22322
+        4/1    1.28268
+        5/1    1.26189
+        6/1    1.24432
+        7/1    1.20454
+        8/1    1.05215
+        9/1    1.24814
+       10/1    1.26403
+       11/1    1.09961
+       12/1    1.34284
+       13/1    1.09492
+       14/1    1.21711
+       15/1    1.24271
+       16/1    1.27683
+       17/1    1.19282
+       18/1    1.21715
+       19/1    1.06430
+       20/1    1.33460
+       21/1    1.27427
+       22/1    1.31960
+       23/1    1.17962
+       24/1    1.22795
+       25/1    1.23250
+       26/1    1.28501
+       27/1    1.20239
+       28/1    1.35222
+       29/1    1.23999
+       30/1    1.20950
+       31/1    1.24846
+       32/1    1.15893
+       33/1    1.22925
+       34/1    1.28233
+       35/1    1.38927
+       36/1    1.22791
+       37/1    1.23789
+       38/1    1.14649
+       39/1    1.10930
+       40/1    1.12691
+       41/1    1.28462
+       42/1    1.28656
+       43/1    1.15551
+       44/1    1.13162
+       45/1    1.32824
+       46/1    1.29814
+       47/1    1.19710
+       48/1    1.18114
+       49/1    1.21127
+       50/1    1.17568
+       51/1    1.17649
+       52/1    1.24486    1.21067 +/- 0.03418
+       53/1    1.14230    1.18788 +/- 0.03015
+       54/1    1.14148    1.17628 +/- 0.02427
+       55/1    1.24586    1.19020 +/- 0.02339
+       56/1    1.18295    1.18899 +/- 0.01914
+       57/1    1.12677    1.18010 +/- 0.01845
+       58/1    1.21637    1.18463 +/- 0.01661
+       59/1    1.17934    1.18405 +/- 0.01466
+       60/1    1.13421    1.17906 +/- 0.01403
+       61/1    1.37519    1.19689 +/- 0.02188
+       62/1    1.23815    1.20033 +/- 0.02027
+       63/1    1.13781    1.19552 +/- 0.01926
+       64/1    1.32588    1.20483 +/- 0.02011
+       65/1    1.32829    1.21306 +/- 0.02045
+       66/1    1.13157    1.20797 +/- 0.01980
+       67/1    1.27722    1.21204 +/- 0.01904
+       68/1    1.16542    1.20945 +/- 0.01814
+       69/1    1.21023    1.20949 +/- 0.01715
+       70/1    1.15255    1.20665 +/- 0.01652
+       71/1    1.06809    1.20005 +/- 0.01704
+       72/1    1.20671    1.20035 +/- 0.01625
+       73/1    1.32636    1.20583 +/- 0.01647
+       74/1    1.21115    1.20605 +/- 0.01577
+       75/1    1.17232    1.20470 +/- 0.01519
+       76/1    1.11876    1.20140 +/- 0.01496
+       77/1    1.30177    1.20511 +/- 0.01487
+       78/1    1.26877    1.20739 +/- 0.01451
+       79/1    1.18447    1.20660 +/- 0.01402
+       80/1    1.18324    1.20582 +/- 0.01357
+       81/1    1.23099    1.20663 +/- 0.01315
+       82/1    1.15028    1.20487 +/- 0.01285
+       83/1    1.37759    1.21010 +/- 0.01351
+       84/1    1.32275    1.21342 +/- 0.01352
+       85/1    1.11728    1.21067 +/- 0.01341
+       86/1    1.24078    1.21151 +/- 0.01306
+       87/1    1.17560    1.21054 +/- 0.01274
+       88/1    1.22789    1.21099 +/- 0.01241
+       89/1    1.12640    1.20882 +/- 0.01228
+       90/1    1.14345    1.20719 +/- 0.01208
+       91/1    1.15244    1.20585 +/- 0.01186
+       92/1    1.22569    1.20633 +/- 0.01158
+       93/1    1.46893    1.21243 +/- 0.01285
+       94/1    1.19861    1.21212 +/- 0.01256
+       95/1    1.24047    1.21275 +/- 0.01229
+       96/1    1.36402    1.21604 +/- 0.01246
+       97/1    1.18307    1.21534 +/- 0.01222
+       98/1    1.19355    1.21488 +/- 0.01197
+       99/1    1.17893    1.21415 +/- 0.01174
+      100/1    1.17818    1.21343 +/- 0.01153
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.5521e+00 seconds
+   Time in transport only          = 4.5369e+00 seconds
+   Time in inactive batches        = 1.4935e+00 seconds
+   Time in active batches          = 3.0585e+00 seconds
+   Time synchronizing fission bank = 4.5803e-03 seconds
+     Sampling source sites         = 3.1112e-03 seconds
+     SEND/RECV source sites        = 9.7827e-04 seconds
+   Time accumulating tallies       = 8.5699e-04 seconds
+   Time writing statepoints        = 5.1807e-03 seconds
+ Total time for finalization       = 3.4607e-05 seconds
+ Total time elapsed                = 4.9770e+00 seconds
+ Calculation Rate (inactive)       = 13390.9 particles/second
+ Calculation Rate (active)         = 6539.06 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.21500 +/- 0.00981
+ k-effective (Track-length)  = 1.21343 +/- 0.01153
+ k-effective (Absorption)    = 1.22159 +/- 0.00600
+ Combined k-effective        = 1.22030 +/- 0.00562
+ Leakage Fraction            = 0.02285 +/- 0.00096
+
+ Creating state point openmc_simulation_n12.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.19912
+        2/1    1.30632
+        3/1    1.36671
+        4/1    1.22374
+        5/1    1.22141
+        6/1    1.20368
+        7/1    1.15434
+        8/1    1.17724
+        9/1    1.20168
+       10/1    1.16054
+       11/1    1.12200
+       12/1    1.28102
+       13/1    1.11126
+       14/1    1.13717
+       15/1    1.19891
+       16/1    1.16808
+       17/1    1.32739
+       18/1    1.27571
+       19/1    1.13209
+       20/1    1.16947
+       21/1    1.14692
+       22/1    1.19677
+       23/1    0.94702
+       24/1    1.39961
+       25/1    1.17116
+       26/1    1.01429
+       27/1    1.11463
+       28/1    1.27917
+       29/1    1.19499
+       30/1    1.17577
+       31/1    1.20842
+       32/1    1.18825
+       33/1    1.22287
+       34/1    1.27620
+       35/1    1.09833
+       36/1    1.19126
+       37/1    1.11844
+       38/1    1.24965
+       39/1    1.24810
+       40/1    1.11969
+       41/1    1.44568
+       42/1    1.35369
+       43/1    1.33011
+       44/1    1.21958
+       45/1    1.18459
+       46/1    1.18623
+       47/1    1.30991
+       48/1    1.23216
+       49/1    1.13438
+       50/1    1.08835
+       51/1    1.08025
+       52/1    1.12101    1.10063 +/- 0.02038
+       53/1    1.28161    1.16096 +/- 0.06146
+       54/1    1.16983    1.16318 +/- 0.04352
+       55/1    1.09809    1.15016 +/- 0.03614
+       56/1    1.14306    1.14898 +/- 0.02953
+       57/1    1.11430    1.14402 +/- 0.02544
+       58/1    1.10554    1.13921 +/- 0.02255
+       59/1    1.33084    1.16050 +/- 0.02914
+       60/1    1.10021    1.15447 +/- 0.02675
+       61/1    1.24771    1.16295 +/- 0.02564
+       62/1    1.20141    1.16615 +/- 0.02362
+       63/1    1.31087    1.17729 +/- 0.02441
+       64/1    1.32176    1.18761 +/- 0.02485
+       65/1    1.24486    1.19142 +/- 0.02344
+       66/1    1.22511    1.19353 +/- 0.02203
+       67/1    1.33502    1.20185 +/- 0.02231
+       68/1    1.17574    1.20040 +/- 0.02108
+       69/1    1.16536    1.19856 +/- 0.02002
+       70/1    1.29133    1.20320 +/- 0.01956
+       71/1    1.26949    1.20635 +/- 0.01887
+       72/1    1.18307    1.20529 +/- 0.01802
+       73/1    1.11053    1.20117 +/- 0.01770
+       74/1    1.20346    1.20127 +/- 0.01695
+       75/1    1.13909    1.19878 +/- 0.01645
+       76/1    1.28754    1.20220 +/- 0.01617
+       77/1    1.14232    1.19998 +/- 0.01571
+       78/1    1.19765    1.19990 +/- 0.01514
+       79/1    1.11626    1.19701 +/- 0.01489
+       80/1    1.21041    1.19746 +/- 0.01440
+       81/1    1.21487    1.19802 +/- 0.01393
+       82/1    1.28591    1.20077 +/- 0.01377
+       83/1    1.24886    1.20222 +/- 0.01342
+       84/1    1.27996    1.20451 +/- 0.01322
+       85/1    1.17424    1.20365 +/- 0.01287
+       86/1    1.13042    1.20161 +/- 0.01267
+       87/1    1.16195    1.20054 +/- 0.01237
+       88/1    1.22666    1.20123 +/- 0.01206
+       89/1    1.26467    1.20285 +/- 0.01186
+       90/1    1.08331    1.19986 +/- 0.01194
+       91/1    1.17773    1.19932 +/- 0.01166
+       92/1    1.27276    1.20107 +/- 0.01151
+       93/1    1.12867    1.19939 +/- 0.01136
+       94/1    1.21171    1.19967 +/- 0.01111
+       95/1    1.14482    1.19845 +/- 0.01092
+       96/1    1.18072    1.19807 +/- 0.01069
+       97/1    1.14611    1.19696 +/- 0.01052
+       98/1    1.01108    1.19309 +/- 0.01100
+       99/1    1.26394    1.19453 +/- 0.01087
+      100/1    1.21573    1.19496 +/- 0.01066
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.4898e+00 seconds
+   Time in transport only          = 4.4748e+00 seconds
+   Time in inactive batches        = 1.4308e+00 seconds
+   Time in active batches          = 3.0589e+00 seconds
+   Time synchronizing fission bank = 4.5189e-03 seconds
+     Sampling source sites         = 3.1353e-03 seconds
+     SEND/RECV source sites        = 9.6029e-04 seconds
+   Time accumulating tallies       = 1.0624e-03 seconds
+   Time writing statepoints        = 5.0718e-03 seconds
+ Total time for finalization       = 3.2207e-05 seconds
+ Total time elapsed                = 4.9066e+00 seconds
+ Calculation Rate (inactive)       = 13977.9 particles/second
+ Calculation Rate (active)         = 6538.23 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.19374 +/- 0.00988
+ k-effective (Track-length)  = 1.19496 +/- 0.01066
+ k-effective (Absorption)    = 1.20144 +/- 0.00672
+ Combined k-effective        = 1.19967 +/- 0.00659
+ Leakage Fraction            = 0.02520 +/- 0.00125
+
+ Creating state point openmc_simulation_n13.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.21073
+        2/1    1.34784
+        3/1    1.09456
+        4/1    1.05118
+        5/1    1.25225
+        6/1    1.10368
+        7/1    1.19853
+        8/1    1.10016
+        9/1    1.15958
+       10/1    1.07792
+       11/1    1.24056
+       12/1    1.11560
+       13/1    1.15924
+       14/1    1.11755
+       15/1    1.14014
+       16/1    0.96956
+       17/1    1.10691
+       18/1    1.19202
+       19/1    1.20508
+       20/1    1.14271
+       21/1    1.11582
+       22/1    1.15334
+       23/1    1.06278
+       24/1    1.04825
+       25/1    1.09453
+       26/1    1.11121
+       27/1    1.15029
+       28/1    1.26069
+       29/1    1.06502
+       30/1    1.24266
+       31/1    1.10395
+       32/1    1.22341
+       33/1    1.15860
+       34/1    1.20341
+       35/1    1.12766
+       36/1    1.22743
+       37/1    1.21835
+       38/1    0.99799
+       39/1    1.20024
+       40/1    1.16147
+       41/1    1.27785
+       42/1    1.10038
+       43/1    1.13038
+       44/1    1.11824
+       45/1    1.03729
+       46/1    1.21918
+       47/1    1.10000
+       48/1    1.19462
+       49/1    1.17895
+       50/1    1.17509
+       51/1    1.15204
+       52/1    1.13020    1.14112 +/- 0.01092
+       53/1    1.12251    1.13492 +/- 0.00884
+       54/1    1.24253    1.16182 +/- 0.02762
+       55/1    1.28292    1.18604 +/- 0.03232
+       56/1    1.24305    1.19554 +/- 0.02804
+       57/1    1.07908    1.17890 +/- 0.02896
+       58/1    1.09818    1.16881 +/- 0.02703
+       59/1    1.17350    1.16933 +/- 0.02385
+       60/1    1.28738    1.18114 +/- 0.02438
+       61/1    1.27830    1.18997 +/- 0.02375
+       62/1    1.11386    1.18363 +/- 0.02259
+       63/1    1.15418    1.18136 +/- 0.02090
+       64/1    1.23465    1.18517 +/- 0.01972
+       65/1    1.00860    1.17340 +/- 0.02181
+       66/1    1.25360    1.17841 +/- 0.02101
+       67/1    1.13354    1.17577 +/- 0.01991
+       68/1    1.17816    1.17590 +/- 0.01877
+       69/1    1.19483    1.17690 +/- 0.01779
+       70/1    1.09528    1.17282 +/- 0.01736
+       71/1    0.97712    1.16350 +/- 0.01896
+       72/1    1.06196    1.15888 +/- 0.01866
+       73/1    1.10370    1.15648 +/- 0.01799
+       74/1    1.12281    1.15508 +/- 0.01728
+       75/1    1.10793    1.15320 +/- 0.01668
+       76/1    1.29792    1.15876 +/- 0.01697
+       77/1    1.20159    1.16035 +/- 0.01640
+       78/1    1.08911    1.15780 +/- 0.01601
+       79/1    0.97171    1.15139 +/- 0.01673
+       80/1    1.24190    1.15440 +/- 0.01644
+       81/1    1.16833    1.15485 +/- 0.01591
+       82/1    1.09656    1.15303 +/- 0.01551
+       83/1    1.16436    1.15337 +/- 0.01504
+       84/1    1.14138    1.15302 +/- 0.01459
+       85/1    1.13400    1.15248 +/- 0.01418
+       86/1    1.28512    1.15616 +/- 0.01426
+       87/1    1.14358    1.15582 +/- 0.01388
+       88/1    1.15733    1.15586 +/- 0.01351
+       89/1    1.07395    1.15376 +/- 0.01332
+       90/1    1.15140    1.15370 +/- 0.01298
+       91/1    1.05679    1.15134 +/- 0.01288
+       92/1    1.17084    1.15180 +/- 0.01258
+       93/1    1.05205    1.14948 +/- 0.01250
+       94/1    1.18170    1.15022 +/- 0.01224
+       95/1    1.19397    1.15119 +/- 0.01200
+       96/1    1.15882    1.15135 +/- 0.01174
+       97/1    1.25579    1.15358 +/- 0.01170
+       98/1    1.18294    1.15419 +/- 0.01147
+       99/1    1.09642    1.15301 +/- 0.01129
+      100/1    1.04973    1.15094 +/- 0.01126
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.5745e+00 seconds
+   Time in transport only          = 4.5587e+00 seconds
+   Time in inactive batches        = 1.4384e+00 seconds
+   Time in active batches          = 3.1361e+00 seconds
+   Time synchronizing fission bank = 4.3052e-03 seconds
+     Sampling source sites         = 3.3522e-03 seconds
+     SEND/RECV source sites        = 6.7106e-04 seconds
+   Time accumulating tallies       = 1.1858e-03 seconds
+   Time writing statepoints        = 5.9428e-03 seconds
+ Total time for finalization       = 3.8971e-05 seconds
+ Total time elapsed                = 4.9909e+00 seconds
+ Calculation Rate (inactive)       = 13904.5 particles/second
+ Calculation Rate (active)         = 6377.38 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.15212 +/- 0.01080
+ k-effective (Track-length)  = 1.15094 +/- 0.01126
+ k-effective (Absorption)    = 1.14593 +/- 0.00776
+ Combined k-effective        = 1.14738 +/- 0.00732
+ Leakage Fraction            = 0.02430 +/- 0.00134
+
+ Creating state point openmc_simulation_n14.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.23438
+        2/1    1.07026
+        3/1    1.21729
+        4/1    1.07773
+        5/1    1.23327
+        6/1    1.12579
+        7/1    1.10075
+        8/1    1.13296
+        9/1    1.05178
+       10/1    1.09342
+       11/1    1.07723
+       12/1    1.11639
+       13/1    1.01340
+       14/1    1.06497
+       15/1    0.99672
+       16/1    1.04200
+       17/1    1.02059
+       18/1    1.15483
+       19/1    1.09670
+       20/1    0.98959
+       21/1    1.07578
+       22/1    1.06596
+       23/1    1.03537
+       24/1    0.94678
+       25/1    1.10887
+       26/1    1.09658
+       27/1    1.07727
+       28/1    1.12681
+       29/1    1.03640
+       30/1    1.00109
+       31/1    1.06414
+       32/1    1.08184
+       33/1    1.11027
+       34/1    1.11080
+       35/1    1.14370
+       36/1    1.01486
+       37/1    1.01577
+       38/1    1.07731
+       39/1    1.10066
+       40/1    1.06777
+       41/1    1.06341
+       42/1    0.97467
+       43/1    1.06080
+       44/1    1.00349
+       45/1    1.14821
+       46/1    1.01835
+       47/1    1.06194
+       48/1    1.04783
+       49/1    1.07482
+       50/1    1.07332
+       51/1    1.09448
+       52/1    1.12517    1.10983 +/- 0.01535
+       53/1    1.08063    1.10009 +/- 0.01316
+       54/1    1.08015    1.09511 +/- 0.01056
+       55/1    1.14834    1.10575 +/- 0.01342
+       56/1    1.05804    1.09780 +/- 0.01354
+       57/1    1.15669    1.10621 +/- 0.01420
+       58/1    1.14207    1.11070 +/- 0.01309
+       59/1    1.05525    1.10454 +/- 0.01309
+       60/1    1.04672    1.09875 +/- 0.01306
+       61/1    1.07326    1.09644 +/- 0.01203
+       62/1    1.06314    1.09366 +/- 0.01133
+       63/1    1.03736    1.08933 +/- 0.01129
+       64/1    1.03509    1.08546 +/- 0.01114
+       65/1    1.15768    1.09027 +/- 0.01144
+       66/1    1.04056    1.08716 +/- 0.01114
+       67/1    1.12572    1.08943 +/- 0.01071
+       68/1    1.04249    1.08682 +/- 0.01043
+       69/1    0.94760    1.07950 +/- 0.01229
+       70/1    1.16809    1.08393 +/- 0.01247
+       71/1    1.10976    1.08516 +/- 0.01192
+       72/1    1.13699    1.08751 +/- 0.01161
+       73/1    1.14576    1.09005 +/- 0.01138
+       74/1    1.04714    1.08826 +/- 0.01104
+       75/1    1.15139    1.09078 +/- 0.01089
+       76/1    0.94160    1.08505 +/- 0.01193
+       77/1    1.08486    1.08504 +/- 0.01148
+       78/1    1.03276    1.08317 +/- 0.01122
+       79/1    1.21407    1.08768 +/- 0.01173
+       80/1    1.19131    1.09114 +/- 0.01185
+       81/1    0.98616    1.08775 +/- 0.01195
+       82/1    1.12554    1.08893 +/- 0.01163
+       83/1    1.05811    1.08800 +/- 0.01131
+       84/1    1.16045    1.09013 +/- 0.01118
+       85/1    1.10521    1.09056 +/- 0.01086
+       86/1    1.17070    1.09279 +/- 0.01079
+       87/1    1.18530    1.09529 +/- 0.01079
+       88/1    1.10204    1.09547 +/- 0.01050
+       89/1    0.99859    1.09298 +/- 0.01052
+       90/1    1.06515    1.09229 +/- 0.01028
+       91/1    1.06659    1.09166 +/- 0.01005
+       92/1    1.06705    1.09107 +/- 0.00982
+       93/1    1.04756    1.09006 +/- 0.00964
+       94/1    1.08631    1.08998 +/- 0.00942
+       95/1    1.18886    1.09217 +/- 0.00947
+       96/1    1.04249    1.09109 +/- 0.00932
+       97/1    1.04510    1.09011 +/- 0.00918
+       98/1    1.11013    1.09053 +/- 0.00899
+       99/1    1.15579    1.09186 +/- 0.00891
+      100/1    1.13638    1.09275 +/- 0.00877
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.6588e+00 seconds
+   Time in transport only          = 4.6442e+00 seconds
+   Time in inactive batches        = 1.4965e+00 seconds
+   Time in active batches          = 3.1623e+00 seconds
+   Time synchronizing fission bank = 4.5472e-03 seconds
+     Sampling source sites         = 3.3547e-03 seconds
+     SEND/RECV source sites        = 7.3522e-04 seconds
+   Time accumulating tallies       = 1.0758e-03 seconds
+   Time writing statepoints        = 4.7561e-03 seconds
+ Total time for finalization       = 3.7068e-05 seconds
+ Total time elapsed                = 5.0745e+00 seconds
+ Calculation Rate (inactive)       = 13364.6 particles/second
+ Calculation Rate (active)         = 6324.51 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.09083 +/- 0.00787
+ k-effective (Track-length)  = 1.09275 +/- 0.00877
+ k-effective (Absorption)    = 1.07019 +/- 0.00679
+ Combined k-effective        = 1.07869 +/- 0.00576
+ Leakage Fraction            = 0.02235 +/- 0.00106
+
+ Creating state point openmc_simulation_n15.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    0.96772
+        2/1    1.12836
+        3/1    1.11856
+        4/1    0.94700
+        5/1    1.04433
+        6/1    0.99119
+        7/1    1.00663
+        8/1    1.01829
+        9/1    1.04369
+       10/1    1.00152
+       11/1    1.01551
+       12/1    1.13588
+       13/1    0.99052
+       14/1    0.97394
+       15/1    1.05916
+       16/1    0.97040
+       17/1    1.07065
+       18/1    0.97311
+       19/1    0.99064
+       20/1    0.97185
+       21/1    1.15783
+       22/1    1.01141
+       23/1    1.15053
+       24/1    1.10205
+       25/1    1.01497
+       26/1    1.03604
+       27/1    1.15617
+       28/1    0.97429
+       29/1    1.03130
+       30/1    0.96579
+       31/1    0.92776
+       32/1    1.07722
+       33/1    0.90488
+       34/1    0.88201
+       35/1    0.93088
+       36/1    0.97819
+       37/1    0.99337
+       38/1    1.01453
+       39/1    0.88780
+       40/1    0.96321
+       41/1    1.14507
+       42/1    1.14972
+       43/1    1.05502
+       44/1    0.89085
+       45/1    1.07797
+       46/1    0.96351
+       47/1    1.00094
+       48/1    0.99871
+       49/1    1.08102
+       50/1    1.09318
+       51/1    0.93980
+       52/1    1.07535    1.00757 +/- 0.06778
+       53/1    0.99618    1.00377 +/- 0.03931
+       54/1    0.99465    1.00149 +/- 0.02789
+       55/1    1.02604    1.00640 +/- 0.02216
+       56/1    1.04666    1.01311 +/- 0.01929
+       57/1    0.90717    0.99798 +/- 0.02225
+       58/1    0.98839    0.99678 +/- 0.01930
+       59/1    0.98099    0.99502 +/- 0.01712
+       60/1    0.96356    0.99188 +/- 0.01563
+       61/1    0.92079    0.98542 +/- 0.01554
+       62/1    1.00027    0.98665 +/- 0.01424
+       63/1    0.97110    0.98546 +/- 0.01316
+       64/1    1.02986    0.98863 +/- 0.01259
+       65/1    0.97972    0.98803 +/- 0.01173
+       66/1    1.05629    0.99230 +/- 0.01177
+       67/1    0.99377    0.99239 +/- 0.01106
+       68/1    0.96465    0.99085 +/- 0.01054
+       69/1    1.06833    0.99492 +/- 0.01077
+       70/1    0.97724    0.99404 +/- 0.01026
+       71/1    1.07440    0.99787 +/- 0.01048
+       72/1    1.00907    0.99837 +/- 0.01001
+       73/1    0.99399    0.99818 +/- 0.00956
+       74/1    0.98359    0.99758 +/- 0.00918
+       75/1    0.92960    0.99486 +/- 0.00921
+       76/1    1.00931    0.99541 +/- 0.00887
+       77/1    1.01336    0.99608 +/- 0.00856
+       78/1    1.12504    1.00068 +/- 0.00945
+       79/1    0.99258    1.00040 +/- 0.00912
+       80/1    0.91365    0.99751 +/- 0.00927
+       81/1    1.05694    0.99943 +/- 0.00917
+       82/1    1.08057    1.00196 +/- 0.00923
+       83/1    1.01203    1.00227 +/- 0.00896
+       84/1    1.02492    1.00294 +/- 0.00871
+       85/1    1.04335    1.00409 +/- 0.00854
+       86/1    0.96130    1.00290 +/- 0.00838
+       87/1    0.91251    1.00046 +/- 0.00851
+       88/1    1.01805    1.00092 +/- 0.00830
+       89/1    0.90982    0.99859 +/- 0.00841
+       90/1    1.01942    0.99911 +/- 0.00822
+       91/1    1.02221    0.99967 +/- 0.00803
+       92/1    0.94457    0.99836 +/- 0.00795
+       93/1    0.89900    0.99605 +/- 0.00810
+       94/1    0.99563    0.99604 +/- 0.00791
+       95/1    1.03781    0.99697 +/- 0.00779
+       96/1    1.00460    0.99713 +/- 0.00762
+       97/1    1.03618    0.99796 +/- 0.00750
+       98/1    1.05459    0.99914 +/- 0.00744
+       99/1    1.15548    1.00233 +/- 0.00795
+      100/1    0.95639    1.00141 +/- 0.00785
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.7415e+00 seconds
+   Time in transport only          = 4.7270e+00 seconds
+   Time in inactive batches        = 1.4895e+00 seconds
+   Time in active batches          = 3.2520e+00 seconds
+   Time synchronizing fission bank = 3.9319e-03 seconds
+     Sampling source sites         = 2.8187e-03 seconds
+     SEND/RECV source sites        = 7.0425e-04 seconds
+   Time accumulating tallies       = 1.1673e-03 seconds
+   Time writing statepoints        = 5.3082e-03 seconds
+ Total time for finalization       = 3.6348e-05 seconds
+ Total time elapsed                = 5.1573e+00 seconds
+ Calculation Rate (inactive)       = 13427.4 particles/second
+ Calculation Rate (active)         = 6150.03 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 1.00526 +/- 0.00798
+ k-effective (Track-length)  = 1.00141 +/- 0.00785
+ k-effective (Absorption)    = 1.02468 +/- 0.00668
+ Combined k-effective        = 1.01566 +/- 0.00630
+ Leakage Fraction            = 0.02445 +/- 0.00100
+
+ Creating state point openmc_simulation_n16.h5...
+ Maximum neutron transport energy: 20000000 eV for Zr91
+ Initializing source particles...
+
+ ====================>     K EIGENVALUE SIMULATION     <====================
+
+  Bat./Gen.      k            Average k
+  =========   ========   ====================
+        1/1    1.04452
+        2/1    0.89878
+        3/1    0.98764
+        4/1    0.94041
+        5/1    1.00899
+        6/1    0.86010
+        7/1    0.91780
+        8/1    0.94181
+        9/1    0.99375
+       10/1    0.88836
+       11/1    0.80302
+       12/1    0.88080
+       13/1    1.00173
+       14/1    0.90567
+       15/1    1.04677
+       16/1    0.84822
+       17/1    0.83894
+       18/1    0.87618
+       19/1    0.88446
+       20/1    0.90260
+       21/1    0.87759
+       22/1    0.93828
+       23/1    0.91154
+       24/1    0.95227
+       25/1    1.06138
+       26/1    0.97459
+       27/1    0.85308
+       28/1    0.88099
+       29/1    0.93709
+       30/1    1.07429
+       31/1    0.87755
+       32/1    0.91221
+       33/1    0.88773
+       34/1    0.95976
+       35/1    0.99709
+       36/1    0.96154
+       37/1    0.94173
+       38/1    0.93417
+       39/1    0.95096
+       40/1    1.06499
+       41/1    1.02282
+       42/1    0.97696
+       43/1    0.91701
+       44/1    0.99625
+       45/1    0.91217
+       46/1    0.86607
+       47/1    0.91264
+       48/1    0.88951
+       49/1    0.98121
+       50/1    0.91915
+       51/1    0.98342
+       52/1    0.84874    0.91608 +/- 0.06734
+       53/1    0.89340    0.90852 +/- 0.03961
+       54/1    0.89786    0.90586 +/- 0.02813
+       55/1    0.97782    0.92025 +/- 0.02612
+       56/1    0.99052    0.93196 +/- 0.02433
+       57/1    0.99632    0.94115 +/- 0.02252
+       58/1    1.02415    0.95153 +/- 0.02209
+       59/1    0.78957    0.93353 +/- 0.02652
+       60/1    0.92882    0.93306 +/- 0.02373
+       61/1    0.88392    0.92859 +/- 0.02192
+       62/1    0.92910    0.92864 +/- 0.02001
+       63/1    0.85799    0.92320 +/- 0.01919
+       64/1    0.83276    0.91674 +/- 0.01891
+       65/1    0.93372    0.91787 +/- 0.01764
+       66/1    0.82656    0.91217 +/- 0.01746
+       67/1    0.94863    0.91431 +/- 0.01654
+       68/1    0.98401    0.91818 +/- 0.01607
+       69/1    0.92762    0.91868 +/- 0.01521
+       70/1    0.93332    0.91941 +/- 0.01444
+       71/1    0.97121    0.92188 +/- 0.01396
+       72/1    0.87341    0.91968 +/- 0.01349
+       73/1    0.88835    0.91831 +/- 0.01296
+       74/1    1.01852    0.92249 +/- 0.01309
+       75/1    0.91738    0.92228 +/- 0.01256
+       76/1    0.94615    0.92320 +/- 0.01210
+       77/1    1.00245    0.92614 +/- 0.01201
+       78/1    0.87759    0.92440 +/- 0.01170
+       79/1    0.84913    0.92181 +/- 0.01159
+       80/1    0.86721    0.91999 +/- 0.01134
+       81/1    0.99030    0.92226 +/- 0.01120
+       82/1    1.01518    0.92516 +/- 0.01123
+       83/1    0.84609    0.92276 +/- 0.01114
+       84/1    0.95249    0.92364 +/- 0.01084
+       85/1    0.91100    0.92328 +/- 0.01054
+       86/1    0.94567    0.92390 +/- 0.01026
+       87/1    0.98874    0.92565 +/- 0.01013
+       88/1    0.99008    0.92735 +/- 0.01000
+       89/1    0.83358    0.92494 +/- 0.01004
+       90/1    0.91221    0.92462 +/- 0.00979
+       91/1    0.87063    0.92331 +/- 0.00964
+       92/1    0.81683    0.92077 +/- 0.00974
+       93/1    0.87035    0.91960 +/- 0.00958
+       94/1    0.91144    0.91941 +/- 0.00936
+       95/1    0.78559    0.91644 +/- 0.00962
+       96/1    1.03709    0.91906 +/- 0.00977
+       97/1    0.87398    0.91810 +/- 0.00961
+       98/1    0.91825    0.91811 +/- 0.00941
+       99/1    0.82437    0.91619 +/- 0.00941
+      100/1    0.94922    0.91685 +/- 0.00924
+ Creating state point statepoint.100.h5...
+
+ =======================>     TIMING STATISTICS     <=======================
+
+ Total time for initialization     = 0.0000e+00 seconds
+   Reading cross sections          = 0.0000e+00 seconds
+ Total time in simulation          = 4.8208e+00 seconds
+   Time in transport only          = 4.8062e+00 seconds
+   Time in inactive batches        = 1.4975e+00 seconds
+   Time in active batches          = 3.3233e+00 seconds
+   Time synchronizing fission bank = 3.9421e-03 seconds
+     Sampling source sites         = 2.9139e-03 seconds
+     SEND/RECV source sites        = 6.9096e-04 seconds
+   Time accumulating tallies       = 1.3350e-03 seconds
+   Time writing statepoints        = 5.2328e-03 seconds
+ Total time for finalization       = 4.4131e-05 seconds
+ Total time elapsed                = 5.2364e+00 seconds
+ Calculation Rate (inactive)       = 13355.8 particles/second
+ Calculation Rate (active)         = 6018.13 particles/second
+
+ ============================>     RESULTS     <============================
+
+ k-effective (Collision)     = 0.91891 +/- 0.00963
+ k-effective (Track-length)  = 0.91685 +/- 0.00924
+ k-effective (Absorption)    = 0.93295 +/- 0.00658
+ Combined k-effective        = 0.92803 +/- 0.00595
+ Leakage Fraction            = 0.02440 +/- 0.00111
+
+ Creating state point openmc_simulation_n17.h5...
+[watts] Calling OpenMC...
+Execution time: 3.7 minutes
++-----------------------------------+------------------------------------------+----------+----------------------------+
+| PARAMETER                         | VALUE                                    | ADDED BY | TIMESTAMP                  |
++-----------------------------------+------------------------------------------+----------+----------------------------+
+| plotting                          | No                                       | hannbn   | 2025-04-03 07:14:03.670519 |
+| cross_sections_xml_location       | /home/hannbn/projects/MARVEL_MRP/Github_ | hannbn   | 2025-04-03 07:14:03.670529 |
+|                                   | repos/openmc_data/endfb-                 |          |                            |
+|                                   | viii.0-hdf5/cross_sections.xml           |          |                            |
+| simplified_chain_thermal_xml      | /home/hannbn/projects/MARVEL_MRP/Github_ | hannbn   | 2025-04-03 07:14:03.670532 |
+|                                   | repos/openmc_data/simplified_thermal_cha |          |                            |
+|                                   | in11.xml                                 |          |                            |
+| power_MW_th                       | 20                                       | hannbn   | 2025-04-03 07:14:03.670534 |
+| thermal_efficiency                | 0.31                                     | hannbn   | 2025-04-03 07:14:03.670536 |
+| common_temperature                | 600                                      | hannbn   | 2025-04-03 07:14:03.670538 |
+| enrichment                        | 0.1975                                   | hannbn   | 2025-04-03 07:14:03.670540 |
+| H_Zr_ratio                        | 1.6                                      | hannbn   | 2025-04-03 07:14:03.670542 |
+| U_met_wo                          | 0.3                                      | hannbn   | 2025-04-03 07:14:03.670543 |
+| fuel_pin_radii                    | [0.28575, 0.3175, 1.5113, 1.5367,        | hannbn   | 2025-04-03 07:14:03.670545 |
+|                                   | 1.5875]                                  |          |                            |
+| fuel_pin_materials                | ['Zr', None, 'TRIGA_fuel', None,         | hannbn   | 2025-04-03 07:14:03.670547 |
+|                                   | 'SS304']                                 |          |                            |
+| fuel                              | TRIGA_fuel                               | hannbn   | 2025-04-03 07:14:03.670549 |
+| moderator_pin_radii               | [1.5367, 1.5875]                         | hannbn   | 2025-04-03 07:14:03.670552 |
+| moderator_pin_materials           | ['ZrH', 'SS304']                         | hannbn   | 2025-04-03 07:14:03.670553 |
+| pin_gap_distance                  | 0.1                                      | hannbn   | 2025-04-03 07:14:03.670555 |
+| assembly_rings                    | 12                                       | hannbn   | 2025-04-03 07:14:03.670556 |
+| lattice_radius                    | 39.3                                     | hannbn   | 2025-04-03 07:14:03.670559 |
+| lattice_height                    | 78.6                                     | hannbn   | 2025-04-03 07:14:03.670560 |
+| extra_reflector                   | 14                                       | hannbn   | 2025-04-03 07:14:03.670562 |
+| hex_area                          | 4012.585019999999                        | hannbn   | 2025-04-03 07:14:03.670564 |
+| core_radius                       | 53.3                                     | hannbn   | 2025-04-03 07:14:03.670566 |
+| reflector                         | BeO                                      | hannbn   | 2025-04-03 07:14:03.670571 |
+| coolant                           | NaK                                      | hannbn   | 2025-04-03 07:14:03.670573 |
+| deviation angle between drums     | 0.2243994752564138                       | hannbn   | 2025-04-03 07:14:03.670576 |
+| drum_Absorber_thickness           | 1                                        | hannbn   | 2025-04-03 07:14:03.670577 |
+| control_drum_absorber             | B4C_nat                                  | hannbn   | 2025-04-03 07:14:03.670579 |
+| control_drum_reflector            | Be                                       | hannbn   | 2025-04-03 07:14:03.670580 |
+| drum_radius_to_lattice_radius     | 0.22784810068                            | hannbn   | 2025-04-03 07:14:03.670582 |
+| Drum_Radius                       | 8.954430356724                           | hannbn   | 2025-04-03 07:14:03.670584 |
+| drum_height_to_lattice_height     | 1.24                                     | hannbn   | 2025-04-03 07:14:03.670585 |
+| drum_height                       | 97.464                                   | hannbn   | 2025-04-03 07:14:03.670587 |
+| angle_between_drums_pairs         | 60                                       | hannbn   | 2025-04-03 07:14:03.670588 |
+| drum_gap_distance                 | 0.09949367063026666                      | hannbn   | 2025-04-03 07:14:03.670590 |
+| drum_tube_radius                  | 9.053924027354267                        | hannbn   | 2025-04-03 07:14:03.670592 |
+| distance between control drums    | 43.08872239590826                        | hannbn   | 2025-04-03 07:14:03.670594 |
+| all_drums_volume                  | 294463.2163474222                        | hannbn   | 2025-04-03 07:14:03.670598 |
+| drum_absorp_all_mass              | 52.16134220445513                        | hannbn   | 2025-04-03 07:14:03.670599 |
+| drum_refl_all_mass                | 826.7680985051459                        | hannbn   | 2025-04-03 07:14:03.670601 |
+| tot_drum_area_all                 | 3021.2510911456766                       | hannbn   | 2025-04-03 07:14:03.670602 |
+| burnup_steps_MWd_per_Kg           | [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0,     | hannbn   | 2025-04-03 07:14:03.670605 |
+|                                   | 15.0, 20.0, 30.0, 40.0, 50.0, 60.0,      |          |                            |
+|                                   | 80.0, 100.0, 120.0, 140.0]               |          |                            |
+| reflector_mass                    | 555.2920404042476                        | hannbn   | 2025-04-03 07:14:03.670607 |
+| rings                             | [['MODERATOR', 'FUEL', 'FUEL', 'FUEL',   | hannbn   | 2025-04-03 07:14:03.670609 |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL'],    |          |                            |
+|                                   | ['FUEL', 'FUEL', 'MODERATOR', 'FUEL',    |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL'], ['MODERATOR',      |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL'], ['FUEL',        |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL'],            |          |                            |
+|                                   | ['MODERATOR', 'FUEL', 'FUEL', 'FUEL',    |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL',          |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL', 'FUEL',  |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL'],         |          |                            |
+|                                   | ['FUEL', 'FUEL', 'MODERATOR', 'FUEL',    |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'MODERATOR',        |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'MODERATOR',        |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL'],            |          |                            |
+|                                   | ['MODERATOR', 'FUEL', 'FUEL', 'FUEL',    |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'MODERATOR', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'MODERATOR',     |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL',          |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'FUEL'], ['FUEL', 'FUEL',        |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL'], ['MODERATOR',      |          |                            |
+|                                   | 'FUEL', 'FUEL', 'MODERATOR', 'FUEL',     |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL', 'FUEL',     |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'FUEL'], ['FUEL',   |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'MODERATOR',        |          |                            |
+|                                   | 'FUEL', 'MODERATOR', 'FUEL',             |          |                            |
+|                                   | 'MODERATOR', 'FUEL', 'MODERATOR',        |          |                            |
+|                                   | 'FUEL', 'MODERATOR'], ['FUEL', 'FUEL',   |          |                            |
+|                                   | 'FUEL', 'FUEL', 'FUEL', 'FUEL'],         |          |                            |
+|                                   | ['MODERATOR']]                           |          |                            |
+| heat_flux                         | 0.85033996830035                         | hannbn   | 2025-04-03 07:14:03.670617 |
+| heat_flux_criteria                | 0.9                                      | hannbn   | 2025-04-03 07:14:03.670620 |
+| fuel_pin_count                    | 300                                      | hannbn   | 2025-04-03 07:14:03.670626 |
+| num_people_required_per_refueling | 5                                        | hannbn   | 2025-04-03 07:14:03.670627 |
+| levelization_period_years         | 60                                       | hannbn   | 2025-04-03 07:14:03.670628 |
+| refueling_period_days             | 15                                       | hannbn   | 2025-04-03 07:14:03.670630 |
+| FTE_Cost                          | 170000                                   | hannbn   | 2025-04-03 07:14:03.670631 |
+| fuel_lifetime_days                | 2078.1733254588266                       | hannbn   | 2025-04-03 07:17:44.322620 |
+| mass_U235                         | 67711.40093224184                        | hannbn   | 2025-04-03 07:17:44.322637 |
+| mass_U238                         | 278650.8199775625                        | hannbn   | 2025-04-03 07:17:44.322640 |
+| people_by_days_refueling          | 12.5                                     | hannbn   | 2025-04-03 07:17:44.371559 |
++-----------------------------------+------------------------------------------+----------+----------------------------+
