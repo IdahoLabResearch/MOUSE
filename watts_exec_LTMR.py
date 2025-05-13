@@ -25,6 +25,7 @@ from reactor_engineering_evaluation.tools import *
 from reactor_engineering_evaluation.operation import *
 from reactor_engineering_evaluation.fuel_calcs import *
 from reactor_engineering_evaluation.vessels_calcs import *
+from reactor_engineering_evaluation.BOP import *
 
 # Import cost estimation functions
 # from cost.cost_scaling import cost_estimate  # Import cost estimation function
@@ -196,6 +197,11 @@ params['mass_U238'] = 278650.8  # grams
 
 params['natural_U_mass_consumption_Kg'], params['fuel_tail_waste_mass_Kg'], params['SWU_kg'] =\
         fuel_calculations(params)
+
+# **************************************************************************************************************************
+#                                           Sec. 7 : Balance of Plant
+# ************************************************************************************************************************** 
+params['Primary HX Mass'] , params['Intermediate HX Mass'] =  calculate_heat_exchanger_mass(params) # Kg
 
 # **************************************************************************************************************************
 #                                           Sec. 8 : Shielding

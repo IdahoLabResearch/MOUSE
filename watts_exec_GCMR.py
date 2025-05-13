@@ -25,6 +25,7 @@ from reactor_engineering_evaluation.tools import *
 from reactor_engineering_evaluation.operation import *
 from reactor_engineering_evaluation.fuel_calcs import *
 from reactor_engineering_evaluation.vessels_calcs import *
+from reactor_engineering_evaluation.BOP import *
 
 # Import cost estimation functions
 # from cost.cost_scaling import cost_estimate  # Import cost estimation function
@@ -208,7 +209,7 @@ params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 2
 
 try:
     openmc_plugin = watts.PluginOpenMC(build_openmc_model_GCMR, show_stderr=True)  # running the LTMR Model
-    monitor_heat_flux(params, openmc_plugin)
+    # monitor_heat_flux(params, openmc_plugin)
 
     # def run_func():
     #     print("done")
@@ -220,14 +221,22 @@ except Exception as e:
     # Handle any errors that occur during the simulation
     print(f"An error occurred while running the OpenMC simulation: {e}")
 
+# ## TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
+params['fuel_lifetime_days'] =1305 # days
+params['mass_U235'] = 61975 # grams
+params['mass_U238'] = 263372.87  # grams
 
 # **************************************************************************************************************************
 #                                           Sec. 7 : Fuel Calcs
 # ************************************************************************************************************************** 
 
-# params['natural_U_mass_consumption_Kg'], params['fuel_tail_waste_mass_Kg'], params['SWU_kg'] =\
-#         fuel_calculations(params)
+params['natural_U_mass_consumption_Kg'], params['fuel_tail_waste_mass_Kg'], params['SWU_kg'] =\
+        fuel_calculations(params)
 
+# **************************************************************************************************************************
+#                                           Sec. 7 : Balance of Plant
+# ************************************************************************************************************************** 
+params['Primary HX Mass'] , params['Intermediate HX Mass'] =  calculate_heat_exchanger_mass(params) # Kg
 
 # **************************************************************************************************************************
 #                                           Sec. 8 : Shielding
@@ -366,12 +375,6 @@ print('Execution time:', np.round(elapsed_time, 1), 'minutes')
     
 #     else:
 #         print(f"\033[91mHIGH HEAT FLUX: {params['heat_flux']} MW/m^2.\033[0m")
-
-
-# ## TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-# # params['fuel_lifetime_days'] = 2078 # days
-# # params['mass_U235'] = 67711.4 # grams
-# # params['mass_U238'] = 278650.8  # grams
 
 
 
