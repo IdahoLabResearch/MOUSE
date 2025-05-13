@@ -28,6 +28,7 @@ from reactor_engineering_evaluation.vessels_calcs import *
 from reactor_engineering_evaluation.BOP import *
 
 # Import cost estimation functions
+from cost.baseline_costs import *
 # from cost.cost_scaling import cost_estimate  # Import cost estimation function
 
 # Suppress warnings
@@ -315,6 +316,10 @@ params['FTEs_for_security_staff'] = 5
 
 params['people_by_days_refueling_per_year'], params['people_by_days_startup_per_year'],\
         params['capacity_factor'] = reactor_operation(params)
+
+# **************************************************************************************************************************
+#                                           Sec. 10 : Cost
+# **************************************************************************************************************************
 
 # **************************************************************************************************************************
 #                                           Sec. 11 : Post Processing
