@@ -337,23 +337,33 @@ params['Turbine Building Basement Volume'] = 132 # m^3
 params['Turbine Building Exterior Wall'] = 192.64 # m^3
 
 # control building
-params['Control Building Slab Roof Volume'] = 8.1
-params['Control Building Basement Volume'] = 27
-params['Control Building Exterior Walls Volume'] = 19.44
+params['Control Building Slab Roof Volume'] = 8.1 # m^3
+params['Control Building Basement Volume'] = 27 # m^3
+params['Control Building Exterior Walls Volume'] = 19.44 # m^3
 
-# Refueling building
-params['Refueling Building Slab Roof Volume'] = 312
-params['Refueling Building Basement Volume'] = 312
-params['Refueling Building Exterior Walls Volume'] = 340
+# Refueling building 
+params['Refueling Building Slab Roof Volume'] = 312 # m^3
+params['Refueling Building Basement Volume'] = 312 # m^3
+params['Refueling Building Exterior Walls Volume'] = 340 # m^3
 
 # spent fuel building
-params['Spent Fuel Building Slab Roof Volume'] = 384
+params['Spent Fuel Building Slab Roof Volume'] = 384 # m^3
 params['Spent Fuel Building Basement Volume'] = 384
 params['Spent Fuel Building Exterior Walls Volume'] = 448
 
 params['Emergency Building Slab Roof Volume'] =  128
 params['Emergency Building Basement Volume'] = 128
 params['Emergency Building Exterior Walls Volume'] = 180
+
+
+params['Storage Building Slab Roof Volume'] =  180
+params['Storage Building Basement Volume'] =  180
+params['Storage Building Exterior Walls Volume'] =  246.4
+
+params['Radwaste Building Slab Roof Volume'] =  280
+params['Radwaste Building Basement Volume'] =  280
+params['Radwaste Building Exterior Walls Volume'] =  358
+
 
 # structures cost
 # params['building_area_feet_squared'] = 7255 # feet squared
@@ -362,7 +372,7 @@ params['Emergency Building Exterior Walls Volume'] = 180
 #                                           Sec. 12 : Cost
 # **************************************************************************************************************************
 Cost_estimate = bottom_up_cost_estimate('cost/Cost_Database.xlsx', params) 
-print(Cost_estimate.head(43).to_string(index=False))
+print(Cost_estimate.head(60).to_string(index=False))
 # **************************************************************************************************************************
 #                                           Sec. 13 : Post Processing
 # **************************************************************************************************************************

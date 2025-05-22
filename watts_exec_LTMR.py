@@ -166,7 +166,7 @@ params['thermal_efficiency'] = 0.31
 params['Power MWe'] = params['Power MWt'] * params['thermal_efficiency']
 
 # The actual heat flux (MW/m^2)
-params['heat_flux'] = calculate_heat_flux(params['fuel_pin_radii'][-1], params['active_height'], params['rings'], params['power_MW_th'])
+params['heat_flux'] = calculate_heat_flux(params['fuel_pin_radii'][-1], params['active_height'], params['rings'], params['Power MWt'])
 # Target Heat Flux : Approximate calculated value for a typical sodium-cooled fast reactor (SFR)
 params['heat_flux_criteria'] = 0.9
 
@@ -331,7 +331,13 @@ params['Emergency Building Slab Roof Volume'] =  128
 params['Emergency Building Basement Volume'] = 128
 params['Emergency Building Exterior Walls Volume'] = 180
 
+params['Storage Building Slab Roof Volume'] =  200
+params['Storage Building Basement Volume'] =  200
+params['Storage Building Exterior Walls Volume'] =  268.8
 
+params['Radwaste Building Slab Roof Volume'] =  200
+params['Radwaste Building Basement Volume'] =  200
+params['Radwaste Building Exterior Walls Volume'] =  268.8
 
 # Financing params
 params['interest_rate'] = 0.06 # 

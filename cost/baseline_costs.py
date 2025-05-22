@@ -69,7 +69,10 @@ def scale_cost(initial_database, params):
                     213.21, 213.22, 213.23,\
                         214.111, 214.112, 214.113,\
                             214.121, 214.122, 214.123,\
-                                214.711, 214.712, 214.713, 214.72 ]
+                                214.711, 214.712, 214.713, 214.72,\
+                                    215.11, 215.12, 215.13,\
+                                        215.41, 215.42, 215.43 ]
+
 
     # Iterate through each row in the DataFrame
     for index, row in initial_database.iterrows():
