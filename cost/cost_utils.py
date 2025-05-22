@@ -36,120 +36,7 @@ def energy_cost_levelized( plant_lifetime_years, cap_cost, ann_cost, discount_ra
 
 
 
-# A method to update the high level costs when the low level costs change
-def update_high_level_costs(db, power):
-    
 
-    cost_account = 'Estimated Cost (2024 $)'  
-        
-     #update total costs for accounts 10
-     # power is in kW
-     
-    db.loc[db.Account == 212,  cost_account] =\
-        db.loc[db['Account'].isin(['212A', '212B' ,'212C']),  cost_account].sum() 
-    db.loc[db.Account == 214,  cost_account] =\
-        db.loc[db['Account'].isin([214.7]),  cost_account].sum()  
-        
-    db.loc[db.Account == 21,  cost_account] =\
-        db.loc[db['Account'].isin([212, 214]),  cost_account].sum() 
-     
-    
-    db.loc[db.Account == 221.21,  cost_account] =\
-        db.loc[db['Account'].isin(['221.21A','221.21B', '221.21C', '221.21D' ]),  cost_account].sum()     
-    
-    db.loc[db.Account == 221.1,  cost_account] =\
-        db.loc[db['Account'].isin([221.11, 221.12, 221.13]),  cost_account].sum() 
-    db.loc[db.Account == 221.2,  cost_account] =\
-        db.loc[db['Account'].isin([221.21]),  cost_account].sum()  
-    
-    db.loc[db.Account == 221.32,  cost_account] =\
-        db.loc[db['Account'].isin(['221.32A','221.32B' ]),  cost_account].sum()
-        
-    db.loc[db.Account == 221.3,  cost_account] =\
-        db.loc[db['Account'].isin([221.31, 221.32]),  cost_account].sum() 
-    
-    db.loc[db.Account == 221,  cost_account] =\
-        db.loc[db['Account'].isin([221.1, 221.2, 221.3]),  cost_account].sum()  
-    
-
-        
-    db.loc[db.Account == 222,  cost_account] =\
-        db.loc[db['Account'].isin([222.1, 222.2, 222.3]),  cost_account].sum() 
-     
-            
-    db.loc[db.Account == 223,  cost_account] =\
-        db.loc[db['Account'].isin([223.2]),  cost_account].sum()   
-    
-
-    db.loc[db.Account == 22,  cost_account] =\
-        db.loc[db['Account'].isin([221, 222, 223, 227]),  cost_account].sum()
-      
-    
-    
-             
-    db.loc[db.Account == 232,  cost_account] =\
-        db.loc[db['Account'].isin([232.1]),  cost_account].sum()
-
-    db.loc[db.Account == 23,  cost_account] =\
-        db.loc[db['Account'].isin([232]),  cost_account].sum() 
-    
-    db.loc[db.Account == 254,  cost_account] =\
-        db.loc[db['Account'].isin(['254A', '254B']),  cost_account].sum()  
-        
-    db.loc[db.Account == 25,  cost_account] =\
-        db.loc[db['Account'].isin([251, 252, 253, 254]),  cost_account].sum()  
-
-    # account 10  
-    db.loc[db.Account == 10,  cost_account] =\
-        db.loc[db['Account'].isin([11, 13, 15]),  cost_account].sum()
-        
-    # account 20  
-    db.loc[db.Account == 20,  cost_account] =\
-        db.loc[db['Account'].isin([21, 22, 23, 24, 25, 26]),  cost_account].sum()    
-        
-    
-    # account 30 
-    db.loc[db.Account == 30,  cost_account] =\
-        db.loc[db['Account'].isin([31, 32, 33, 34, 35, 36]),  cost_account].sum()       
-                      
-        
-    # account 60
-    db.loc[db.Account == 60,  cost_account] =\
-        db.loc[db['Account'].isin([62]),  cost_account].sum()  
-    
-    # account 70
-    
-    db.loc[db.Account == 71,  cost_account] =\
-        db.loc[db['Account'].isin([711, 712, 713]),  cost_account].sum() 
-        
-    db.loc[db.Account == 70,  cost_account] =\
-        db.loc[db['Account'].isin([71, 75, 78]),  cost_account].sum()   
-        
-        
-        
-    # account 80
-    db.loc[db.Account == 80,  cost_account] =\
-        db.loc[db['Account'].isin([81, 82, 83]),  cost_account].sum()        
-
-    # # # update final results
-    db.loc[db.Account == 'Overnight Capital Cost (OCC)',  cost_account] =\
-        db.loc[db['Account'].isin([10, 20, 30]),  cost_account].sum()
-        
-    db.loc[db.Account == 'OCC ($/kW)',  cost_account] = db.loc[db.Account == 'Overnight Capital Cost (OCC)',  cost_account].values[0]/power 
-    
-    db.loc[db.Account == 'Total Capital Investment (TCI)',  cost_account] = db.loc[db.Account == 'Overnight Capital Cost (OCC)',\
-        cost_account].values[0] +\
-        db.loc[db.Account == 60,  cost_account].values[0]
-     
-    db.loc[db.Account == 'TCI ($/kW)',  cost_account] = db.loc[db.Account == 'Total Capital Investment (TCI)',\
-        cost_account].values[0]/power 
-       
-    db.loc[db.Account == 'Annualized Cost ($/ year)',  cost_account] = db.loc[db.Account == 70,  cost_account].values[0] +\
-        db.loc[db.Account == 80,  cost_account].values[0]
-    
-    
-    	
-    return db
 
 
 
@@ -217,3 +104,12 @@ def prettify(database1, caption):
     
 #     adjusted_cost  = raw_cost* cost_factor # 2023 dollars
 #     return (parameter_name, adjusted_cost)
+def custom_round(number):
+    if number >= 1:
+        rounded_number = round(number, 1)
+    else:
+        # Find the first non-zero digit after the decimal point
+        str_number = f"{number:.10f}"  # Convert to string with high precision
+        non_zero_index = next(i for i, ch in enumerate(str_number[2:], start=2) if ch != '0')
+        rounded_number = round(number, non_zero_index - 1)
+    return rounded_number

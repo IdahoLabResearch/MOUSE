@@ -9,3 +9,6 @@ To Do List
 - Tradeoff between higher enrichment and bigger core
 - Design checks:  power density, source term. Heat Flux, Criticality, reactivity coeff, shutdown margins
 - The source term study: https://www.osti.gov/biblio/1962047
+- HeatPipe Model : https://github.com/idaholab/virtual_test_bed/blob/devel/microreactors/mrad/Serpent_Model/serpent_input.i
+- The excavation Volume and plant layout details
+- Slab Roof Volume, Basement Volume, Exterior Walls Volume need to be detailed (for all the buildings)

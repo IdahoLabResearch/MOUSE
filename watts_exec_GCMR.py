@@ -29,8 +29,8 @@ from reactor_engineering_evaluation.BOP import *
 
 # Import cost estimation functions
 from cost.baseline_costs import *
-# from cost.cost_scaling import cost_estimate  # Import cost estimation function
-
+from cost.cost_scaling import * # Import cost estimation function
+from cost.cost_utils import *
 # Suppress warnings
 warnings.filterwarnings("ignore")  # Ignore all warnings
 
@@ -182,8 +182,9 @@ params['tot_drum_area_all'] = params['all_drums_volume'] / params['drum_height']
 # ************************************************************************************************************************** 
 
 # # The reactor power (thermal) MW
-params['power_MW_th'] = 15 # MWt
-
+params['Power MWt'] = 15 # MWt
+params['thermal_efficiency'] = 0.4
+params['Power MWe'] = params['Power MWt'] * params['thermal_efficiency']
 # TEMPRARY: NEED TO CHANGE!!!
 
 # # The actual heat flux (MW/m^2)
@@ -196,10 +197,7 @@ params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 2
                                      30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0]
 
 
-# TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-# params['fuel_lifetime_days'] = 1508 # days
-# params['mass_U235'] = 67711.4 # grams
-# params['mass_U238'] = 278650.8  # grams
+
 # **************************************************************************************************************************
 #                                           Sec. 7 : Running OpenMC
 # ************************************************************************************************************************** 
@@ -293,10 +291,6 @@ params['out_of_vessel_shielding_mass'] = params['out_vessel_shield_effective_den
     
 
 
-
-
-
-
 # **************************************************************************************************************************
 #                                           Sec. 10 : Operation
 # **************************************************************************************************************************
@@ -318,18 +312,66 @@ params['people_by_days_refueling_per_year'], params['people_by_days_startup_per_
         params['capacity_factor'] = reactor_operation(params)
 
 # **************************************************************************************************************************
-#                                           Sec. 10 : Cost
+#                                           Sec. 11 : Economic Parameters
 # **************************************************************************************************************************
+# preconstruction cost params
+
+# A conservative estimate for the land area 
+# Ref: McDowell, B., and D. Goodman. "Advanced Nuclear Reactor Plant Parameter Envelope and
+#Guidance." National Reactor Innovation Center (NRIC), NRIC-21-ENG-0001 (2021). 
+
+params['Land Area'] = 18 # acres
+params['escalation_year'] = 2023
+# excavation volume needs to be detailed
+params['Excavation Volume'] = 463.93388 # m3 
+# Financing params
+params['interest_rate'] = 0.06 # 
+
+params['Reactor Building Slab Roof Volume'] = 219.18168 # m^3
+params['Reactor Building Basement Volume'] = 219.18168 # m^3
+params['Reactor Building Exterior Walls Volume'] = 438.04376 # m^3
+
+# Energy conversion building
+params['Turbine Building Slab Roof Volume'] = 132 # m^3
+params['Turbine Building Basement Volume'] = 132 # m^3
+params['Turbine Building Exterior Wall'] = 192.64 # m^3
+
+# control building
+params['Control Building Slab Roof Volume'] = 8.1
+params['Control Building Basement Volume'] = 27
+params['Control Building Exterior Walls Volume'] = 19.44
+
+# Refueling building
+params['Refueling Building Slab Roof Volume'] = 312
+params['Refueling Building Basement Volume'] = 312
+params['Refueling Building Exterior Walls Volume'] = 340
+
+# spent fuel building
+params['Spent Fuel Building Slab Roof Volume'] = 384
+params['Spent Fuel Building Basement Volume'] = 384
+params['Spent Fuel Building Exterior Walls Volume'] = 448
+
+params['Emergency Building Slab Roof Volume'] =  128
+params['Emergency Building Basement Volume'] = 128
+params['Emergency Building Exterior Walls Volume'] = 180
+
+# structures cost
+# params['building_area_feet_squared'] = 7255 # feet squared
 
 # **************************************************************************************************************************
-#                                           Sec. 11 : Post Processing
+#                                           Sec. 12 : Cost
+# **************************************************************************************************************************
+Cost_estimate = bottom_up_cost_estimate('cost/Cost_Database.xlsx', params) 
+print(Cost_estimate.head(43).to_string(index=False))
+# **************************************************************************************************************************
+#                                           Sec. 13 : Post Processing
 # **************************************************************************************************************************
 
-params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
+# params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
 
-#Calculate the code execution time
-elapsed_time = (time.time() - time_start) / 60
-print('Execution time:', np.round(elapsed_time, 1), 'minutes')
+# #Calculate the code execution time
+# elapsed_time = (time.time() - time_start) / 60
+# print('Execution time:', np.round(elapsed_time, 2), 'minutes')
 
 
 
@@ -350,7 +392,7 @@ print('Execution time:', np.round(elapsed_time, 1), 'minutes')
 
 
 # params['reactor type'] = "LTMR"
-# params['thermal_efficiency'] = 0.31
+
 # params['hex_area'] = 2.598 * params['lattice_radius'] * params['lattice_radius']
 # params['reflector_mass'] = calculate_reflector_mass(params['hex_area'],\
 #     params['core_radius'], params['tot_drum_area_all'], params['drum_height'])

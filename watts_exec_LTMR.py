@@ -28,6 +28,7 @@ from reactor_engineering_evaluation.vessels_calcs import *
 from reactor_engineering_evaluation.BOP import *
 
 # Import cost estimation functions
+from cost.baseline_costs import *
 # from cost.cost_scaling import cost_estimate  # Import cost estimation function
 
 # Suppress warnings
@@ -160,7 +161,10 @@ params['tot_drum_area_all'] = params['all_drums_volume'] / params['drum_height']
 # ************************************************************************************************************************** 
 
 # The reactor power (thermal) MW
-params['power_MW_th'] = 20 # MWt
+params['Power MWt'] = 20 # MWt
+params['thermal_efficiency'] = 0.31
+params['Power MWe'] = params['Power MWt'] * params['thermal_efficiency']
+
 # The actual heat flux (MW/m^2)
 params['heat_flux'] = calculate_heat_flux(params['fuel_pin_radii'][-1], params['active_height'], params['rings'], params['power_MW_th'])
 # Target Heat Flux : Approximate calculated value for a typical sodium-cooled fast reactor (SFR)
@@ -284,25 +288,68 @@ params['FTEs_for_security_staff'] = 5
 params['people_by_days_refueling_per_year'], params['people_by_days_startup_per_year'],\
         params['capacity_factor'] = reactor_operation(params)
 
+
 # **************************************************************************************************************************
-#                                           Sec. 11 : Preconstruction
+#                                           Sec. 11 : Economic Parameters
 # **************************************************************************************************************************
 # preconstruction cost params
-#McDowell, B., and D. Goodman. "Advanced Nuclear Reactor Plant Parameter Envelope and
+
+# A conservative estimate for the land area 
+# Ref: McDowell, B., and D. Goodman. "Advanced Nuclear Reactor Plant Parameter Envelope and
 #Guidance." National Reactor Innovation Center (NRIC), NRIC-21-ENG-0001 (2021). 
-params['land_area_acres'] = 18 # acres
+
+params['Land Area'] = 18 # acres
+params['escalation_year'] = 2024
+# excavation volume needs to be detailed
+params['Excavation Volume'] = 412.605 # m^3
+
+# reactor building
+params['Reactor Building Slab Roof Volume'] = 87.12 # m^3
+params['Reactor Building Basement Volume'] = 87.12 # m^3
+params['Reactor Building Exterior Walls Volume'] = 228.8 # m^3
+
+# Energy conversion building
+params['Turbine Building Slab Roof Volume'] = 132 # m^3
+params['Turbine Building Basement Volume'] = 132 # m^3
+params['Turbine Building Exterior Wall'] = 192.64 # m^3
+# control building
+params['Control Building Slab Roof Volume'] = 8.1
+params['Control Building Basement Volume'] = 27
+params['Control Building Exterior Walls Volume'] = 19.44
+
+# Refueling building
+params['Refueling Building Slab Roof Volume'] = 312
+params['Refueling Building Basement Volume'] = 312
+params['Refueling Building Exterior Walls Volume'] = 340
+
+# spent fuel building
+params['Spent Fuel Building Slab Roof Volume'] = 240
+params['Spent Fuel Building Basement Volume'] = 240
+params['Spent Fuel Building Exterior Walls Volume'] = 313.6
+
+params['Emergency Building Slab Roof Volume'] =  128
+params['Emergency Building Basement Volume'] = 128
+params['Emergency Building Exterior Walls Volume'] = 180
+
+
 
 # Financing params
 params['interest_rate'] = 0.06 # 
 
 # structures cost
-params['building_area_feet_squared'] = 7255 # feet squared
+# params['building_area_feet_squared'] = 7255 # feet squared
+
 
 # **************************************************************************************************************************
-#                                           Sec. 12 : Post Processing
+#                                           Sec. 12 : Cost
+# **************************************************************************************************************************
+Cost_estimate = bottom_up_cost_estimate('cost/Cost_Database.xlsx', params) 
+print(Cost_estimate.head(20).to_string(index=False))
+# **************************************************************************************************************************
+#                                           Sec. 13 : Post Processing
 # **************************************************************************************************************************
 
-params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
+# params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
 
 #Calculate the code execution time
 elapsed_time = (time.time() - time_start) / 60
