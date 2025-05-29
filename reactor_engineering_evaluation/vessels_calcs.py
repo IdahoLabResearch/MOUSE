@@ -46,9 +46,10 @@ def vessels_specs(params):
     
     total_vessel_height = intake_bottom_depth + vessel_height
     vessels_full_radius = intake_vessel_radius + params['intake_vessel_thickness']
+    total_vessels_mass = vessel_mass_kg +  guard_vessel_mass_kg +  cooling_vessel_mass +  intake_vessel_mass
     
     return vessels_full_radius, vessel_height, total_vessel_height,\
-        vessel_mass_kg, guard_vessel_mass_kg, cooling_vessel_mass, intake_vessel_mass
+        vessel_mass_kg, guard_vessel_mass_kg, cooling_vessel_mass, intake_vessel_mass, total_vessels_mass
 
 
 

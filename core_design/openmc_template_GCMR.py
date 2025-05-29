@@ -16,13 +16,12 @@ def build_openmc_model_GCMR(params):
     # **************************************************************************************************************************
     materials_database = collect_materials_data(params)
     fuel = materials_database[params['fuel']]
-    # poison = materials_database[params['poison']]
-    reflector = materials_database[params['reflector']]
+    reflector = materials_database[params['Reflector']]
     moderator = materials_database[params['moderator']]
     moderator_booster = materials_database[params['moderator_booster']]
 
-    control_drum_absorber = materials_database[params['control_drum_absorber']]
-    control_drum_reflector = materials_database[params['control_drum_reflector']]
+    control_drum_absorber = materials_database[params['Control Drum Absorber']]
+    control_drum_reflector = materials_database[params['Control Drum Reflector']]
     coolant =  materials_database[params['coolant']]
 
     # **************************************************************************************************************************
@@ -57,105 +56,42 @@ def build_openmc_model_GCMR(params):
 
 
 
-    # ## Cylinderical Lattice containing the TRISO particles
+    # ## The Fuel Universe (TRISO particles with background material in between and moderator material around the TRISO)
 
     active_core_maxz, active_core_minz, fuel_universe, compact_triso_particles_number  = create_TRISO_particles_lattice_universe(params, triso_universe, materials_database)
     # In[7]:
-
-    if params['plotting'] == "yes":
-        # plotting 
-
-        create_universe_plot(fuel_universe, 
-                pin_plot_width = 2.2 * params['lattice radius'],
-                num_pixels = 2000, 
-                font_size = 16,
-                title = "fuel_universe", 
-                fig_size = 8, 
-                output_file_name = "fuel_universe.png")                             
-
+                            
 
     # # ## coolat channels & Booster Pins & Burnable Poison
-    #small and big coolant channels
-    small_coolant_universe = create_universe_from_core_top_and_bottom_planes(params['small coolant channel radius'],\
+    #small coolant channels
+    small_coolant_universe = create_universe_from_core_top_and_bottom_planes(params['coolant channel radius'],\
     active_core_maxz, active_core_minz, coolant , materials_database[params['matrix material']])
     
-    # big_coolant_universe = create_universe_from_core_top_and_bottom_planes(params['big coolant channel radius'],\
-    # active_core_maxz, active_core_minz, materials_database[params['coolant']] , materials_database[params['matrix material']])
-
     booster_universe = create_universe_from_core_top_and_bottom_planes(params['booster radius'],\
     active_core_maxz, active_core_minz, materials_database[params['moderator_booster']] , materials_database[params['moderator']]) 
 
-    # poison_universe = create_universe_from_core_top_and_bottom_planes(params['poison radius'],\
-    # active_core_maxz, active_core_minz, materials_database[params['poison']] , materials_database[params['moderator']]) 
-    
-    if params['plotting'] == "yes":
-    # plotting 
-
-        create_universe_plot( small_coolant_universe, 
-                pin_plot_width = 2.2 * params['small coolant channel radius'],
-                num_pixels = 2000, 
-                font_size = 16,
-                title = "Small Coolant Channel", 
-                fig_size = 8, 
-                output_file_name = "Small Coolant Channel.png") 
-        # create_universe_plot( big_coolant_universe, 
-        #         pin_plot_width = 2.2 * params['big coolant channel radius'],
-        #         num_pixels = 2000, 
-        #         font_size = 16,
-        #         title = "Big Coolant Channel", 
-        #         fig_size = 8, 
-        #         output_file_name = "Big Coolant Channel.png")    
-        create_universe_plot(booster_universe, 
-                pin_plot_width = 2.2 * params['booster radius'],
-                num_pixels = 2000, 
-                font_size = 16,
-                title = "Moderator Booster Pin", 
-                fig_size = 8, 
-                output_file_name = "Moderator Booster Pin.png")   
-        # create_universe_plot(poison_universe, 
-        #         pin_plot_width = 2.2 * params['poison radius'],
-        #         num_pixels = 2000, 
-        #         font_size = 16,
-        #         title = "Burnable Poison", 
-        #         fig_size = 8, 
-        #         output_file_name = "Burnable Poison.png")                      
-
-
-
-
 
     # # # Construct hexagonal cells surrounded by coolant channels
-
+    # Define the boundary of the hexagonal prism with the given edge length
     hex_boundary = openmc.model.hexagonal_prism(edge_length= params['hex lattice_radius'])
-    cell_area = hexagon_area(params['hex lattice_radius']) # Area of hex lattice
-
+    # Create an instance of HexLattice
     fuel_lattice = openmc.HexLattice()
-
+    # Set the center of the hexagonal lattice
     fuel_lattice.center = (0., 0.)
-    fuel_lattice.pitch = (params['hex lattice_radius'],)
+    # Set the pitch (distance between the centers of adjacent hexagons) of the hexagonal lattice
+    fuel_lattice.pitch = (params['hex lattice_radius'],)###
+    
     fuel_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]) # inner_fill or moderator_universe
     fuel_lattice.universes =  [[small_coolant_universe]*6, [fuel_universe]]
-
     fuel_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=fuel_lattice, region=hex_boundary)])
-
-
 
     # Booster Lattice
     booster_lattice = openmc.HexLattice()
     booster_lattice.center = (0., 0.)
-    booster_lattice.pitch = (params['hex lattice_radius'],)
+    booster_lattice.pitch = (params['hex lattice_radius'],)###
     booster_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]) 
     booster_lattice.universes = [[small_coolant_universe]*6, [booster_universe]]
     booster_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=booster_lattice, region=hex_boundary)])
-
-    # # The poison Lattice
-    # poison_lattice = openmc.HexLattice()
-    # poison_lattice.center = (0., 0.)
-    # poison_lattice.pitch = (params['hex lattice_radius'],)
-    # poison_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])])
-    # poison_lattice.universes = [[small_coolant_universe]*6, [poison_universe]]
-    # poison_lattice_cell = openmc.Cell(fill=poison_lattice, region=hex_boundary)
-    # poison_lattice_hex = openmc.Universe(cells=[poison_lattice_cell])
 
     # Coolant Lattice
     coolant_lattice = openmc.HexLattice()
@@ -164,40 +100,7 @@ def build_openmc_model_GCMR(params):
     coolant_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]) 
     coolant_lattice.universes = [[small_coolant_universe]*6, [openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])])]]
     coolant_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=coolant_lattice, region=hex_boundary)])
-
-
-    if params['plotting'] == "yes":
-    # plotting 
-
-        create_universe_plot(fuel_lattice_hex, 
-                pin_plot_width = 2.2 * params['hex lattice_radius']  ,
-                num_pixels = 2000, 
-                font_size = 16,
-                title = "Fuel Hex Lattice", 
-                fig_size = 8, 
-                output_file_name = "Fuel Hex Lattice.png")
-        create_universe_plot(booster_lattice_hex, 
-                    pin_plot_width = 2.2 * params['hex lattice_radius'] ,
-                    num_pixels = 2000, 
-                    font_size = 16,
-                    title = "Booster Hex Lattice", 
-                    fig_size = 8, 
-                    output_file_name = "Booster Hex Lattice.png")  
-        # create_universe_plot(poison_lattice_hex, 
-        #             pin_plot_width = 2.2 * params['hex lattice_radius'] ,
-        #             num_pixels = 2000, 
-        #             font_size = 16,
-        #             title = "Poison Hex Lattice", 
-        #             fig_size = 8, 
-        #             output_file_name = "Poison Hex Lattice.png")  
-        create_universe_plot(coolant_lattice_hex, 
-                    pin_plot_width = 2.2 * params['hex lattice_radius'] ,
-                    num_pixels = 2000, 
-                    font_size = 16,
-                    title = "Coolant Hex Lattice", 
-                    fig_size = 8, 
-                    output_file_name = "Coolant Hex Lattice.png")                               
-
+                            
     # **************************************************************************************************************************
     #                                                Sec. 3 : ASSEMBLY & RINGS
     # **************************************************************************************************************************
@@ -213,11 +116,10 @@ def build_openmc_model_GCMR(params):
                 pin_plot_width = 2.2 *params['lattice_pitch'] * params['assembly_rings']  ,
                 num_pixels = 5000, 
                 font_size = 16,
-                title = "Fuel Hex Lattice", 
+                title = "Fuel Assembly", 
                 fig_size = 8, 
                 output_file_name = "Fuel Assembly.png")
 
-\
 
 
     # ## Corner and Edge Assemblies
@@ -255,7 +157,6 @@ def build_openmc_model_GCMR(params):
     edge_assembly_universe = [create_assembly(params['assembly_rings'], params['lattice_pitch'], openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]),\
      fuel_lattice_hex, booster_lattice_hex, outer_ring=er) for er in edge_rings]
 
-
     # **************************************************************************************************************************
     #                                           Sec. 4 : User-Defined Parameters (Control Drums)
     # ************************************************************************************************************************** 
@@ -267,17 +168,7 @@ def build_openmc_model_GCMR(params):
                           control_drum_absorber_material = control_drum_absorber,
                           control_drum_reflector_material = control_drum_reflector)
     
-    if params['plotting'] == "yes":
-        # plotting
-        for ii in range (len(drums)):
-                the_drum = drums[ii]
-                create_universe_plot(the_drum, 
-                        pin_plot_width = 2.2 * params['Drum_Radius'],
-                        num_pixels = 500, 
-                        font_size = 16,
-                        title = "Control Drum", 
-                        fig_size = 8, 
-                        output_file_name = f"control_drum{ii}.png")
+
 
     # **************************************************************************************************************************
     #                                           Sec. 5 : User-Defined Parameters (Core)
@@ -296,8 +187,12 @@ def build_openmc_model_GCMR(params):
         rings.insert(0, [assembly_universe]*ring_cells)
         assembly_number += ring_cells
 
-    rings.insert(0, flatten_list([[ca] + [ea]*( params['core_rings']-2) for (ca, ea) in zip(corner_assembly_universe, edge_assembly_universe)]))
-    rings.insert(0, flatten_list([[openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['reflector']])])] + [cd]*( params['core_rings']-1) for cd in drums]))
+    rings.insert(0, flatten_list([[ca] + [ea]*( params['core_rings']-2)\
+        for (ca, ea) in zip(corner_assembly_universe, edge_assembly_universe)]))
+    rings.insert(0, flatten_list([[openmc.Universe(cells =\
+        [openmc.Cell(fill= materials_database[params['reflector']])])] +\
+            [cd]*( params['core_rings']-1) for cd in drums]))
+    params['number of drums'] = (params['core_rings']-1) * len(drums)
     active_core.universes = rings
     outer_surface = openmc.ZCylinder(r=params['core_radius'], boundary_type='vacuum')
     active_core_cell = openmc.Cell(fill=active_core, region=-outer_surface & -active_core_maxz & +active_core_minz)
@@ -310,7 +205,7 @@ def build_openmc_model_GCMR(params):
             font_size = 16,
             title = "Core", 
             fig_size = 8, 
-            output_file_name = f"Core.png")
+            output_file_name = "Core.png")
 
     # **************************************************************************************************************************
     #                                                Sec. 6 : VOLUME INFO for Depletion

@@ -17,6 +17,7 @@ import openmc  # Import OpenMC for nuclear reactor physics simulations
 
 # Import templates and utility functions from the core design module
 from core_design.openmc_template_LTMR import *
+from core_design.drums import *
 # from core_design.utils import *
 from core_design.pins_arrangement import rings_1
 
@@ -29,7 +30,6 @@ from reactor_engineering_evaluation.BOP import *
 
 # Import cost estimation functions
 from cost.baseline_costs import *
-# from cost.cost_scaling import cost_estimate  # Import cost estimation function
 
 # Suppress warnings
 warnings.filterwarnings("ignore")  # Ignore all warnings
@@ -63,10 +63,10 @@ params['simplified_chain_thermal_xml'] =\
 # **************************************************************************************************************************
 #                                                Sec. 2 : User-Defined Parameters (Materials)
 # **************************************************************************************************************************  
-
+params['reactor type'] = "LTMR"
 # The user can change any of the following materials,
 # but the new material has to be included in the materials database at "core_design/openmc_materials_database"
-
+params['TRISO Fueled'] = "No"  # options are "Yes" and "No"
 # The fuel and its properties
 params['fuel'] = 'TRIGA_fuel'
 params['enrichment'] = 0.1975 # The enrichment is a fraction. It has to be between 0 and 1
@@ -75,9 +75,9 @@ params['U_met_wo'] = 0.3 # The ratio between the weight of Uranium and the total
 
 # Coolant, reflector and control drums
 params['coolant'] = 'NaK'
-params['reflector'] = 'BeO' # external reflector around the core
-params['control_drum_absorber'] = 'B4C_nat' # The absorber material in the control drums
-params['control_drum_reflector'] = 'Be'     # The reflector material in the control drums   
+params['Reflector'] = 'BeO' # external reflector around the core
+params['Control Drum Absorber'] = 'B4C_natural' # The absorber material in the control drums
+params['Control Drum Reflector'] = 'BeO'     # The reflector material in the control drums   
 
 # Temperature assumed for the OpenMC calculations
 params['common_temperature'] = 600 # Kelvins
@@ -99,6 +99,7 @@ params['fuel_pin_radii'] = [0.28575, 0.3175, 1.5113, 1.5367, 1.5875] # cm
 
 # The moderator pin is assumed to include 2 regions: a moderator and a cladding
 params['moderator_pin_materials'] = ['ZrH', 'SS304']
+params['Moderator'] = params['moderator_pin_materials'][0]
 params['moderator_pin_radii'] = [1.5367, 1.5875] # cm
 
 
@@ -120,6 +121,9 @@ params['active_height'] = 2 * params['lattice_radius']
 params['rings'] = rings_1
 # The total number of fuel pins in the lattice
 params['fuel_pin_count'] = sum(row.count("FUEL") for row in params['rings'])
+params['moderator_pin_count'] = sum(row.count("MODERATOR") for row in params['rings'])
+
+params['Moderator Mass'] = calculate_moderator_mass(params)
 
 #The thickness of the reflector around the lattice
 params['extra_reflector'] = 14 #cm
@@ -147,14 +151,9 @@ params["deviation angle between drums"] = 12.86 # degrees
 # The radius of the tube of the control drum
 params['drum_tube_radius'] = params['Drum_Radius'] + params['Drum_Radius'] / 90 # cm
 
-params['drum_height_to_lattice_height'] = 1.24
-params['drum_height'] = params['drum_height_to_lattice_height'] * params['active_height']
+params['drum_height'] = params['active_height']
 
-params['all_drums_volume'], params['drum_absorp_all_mass'], params['drum_refl_all_mass'] =\
-    calculate_drum_volume(params['Drum_Radius'], params['drum_height'],\
-        params['drum_Absorber_thickness'])
-        
-params['tot_drum_area_all'] = params['all_drums_volume'] / params['drum_height']
+
 
 # **************************************************************************************************************************
 #                                           Sec. 6 : User-Defined Parameters (Overall System)
@@ -186,6 +185,7 @@ params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 2
 try:
     openmc_plugin = watts.PluginOpenMC(build_openmc_model_LTMR, show_stderr=True)  # running the LTMR Model
     # monitor_heat_flux(params, openmc_plugin)
+
 except Exception as e:
     # Handle any errors that occur during the simulation
     print(f"An error occurred while running the OpenMC simulation: {e}")
@@ -194,42 +194,54 @@ except Exception as e:
 params['fuel_lifetime_days'] = 2078 # days
 params['mass_U235'] = 67711.4 # grams
 params['mass_U238'] = 278650.8  # grams
+params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
+
+params['all_drums_volume'], params['Control Drum Absorber Mass'], params['Control Drum Reflector Mass'], params['Control Drums Mass'] =\
+    calculate_drum_volume(params['Drum_Radius'], params['drum_height'],\
+        params['drum_Absorber_thickness'], params)
+        
+params['tot_drum_area_all'] = params['all_drums_volume'] / params['drum_height']
+
 
 # **************************************************************************************************************************
 #                                           Sec. 7 : Fuel Calcs
 # ************************************************************************************************************************** 
 
-params['natural_U_mass_consumption_Kg'], params['fuel_tail_waste_mass_Kg'], params['SWU_kg'] =\
+params['Natural Uranium Mass'], params['fuel_tail_waste_mass_Kg'], params['SWU'] =\
         fuel_calculations(params)
+
 
 # **************************************************************************************************************************
 #                                           Sec. 7 : Balance of Plant
 # ************************************************************************************************************************** 
-params['Primary HX Mass'] , params['Intermediate HX Mass'] =  calculate_heat_exchanger_mass(params) # Kg
-
+params['Primary HX Mass']  =  calculate_heat_exchanger_mass(params)[0] # Kg
+params['Secondary HX Mass'] = 0
+params['Primary Pump'] = 'Yes' # options are "Yes" and "No"
+params['Secondary Pump'] = 'No' # options are "Yes" and "No"
+params['Primary Pump Mechanical Power']  = calculate_pump_mechanical_power(params)[0]
+params['Pump Isentropic Efficiency'] = 0.8
 # **************************************************************************************************************************
 #                                           Sec. 8 : Shielding
 # ************************************************************************************************************************** 
 
 # #Shielding
-params['in_vessel_shield_thickness'] = 10 #cm
+params['in_vessel_shield_thickness'] = 10.16 #cm
 params['in_vessel_shielding_inner_radius'] = params['core_radius'] 
 params['in_vessel_shielding_outer_radius'] = params['core_radius'] + params['in_vessel_shield_thickness']
-params['in_vessel_material'] = 'boron_carbide' 
+params['In Vessel Shielding Material'] = 'B4C_natural' 
 
 
 params['out_of_vessel_shield_thickness'] = 39.37 #cm
-params['out_vessel_shield_material'] = 'water_extended_polymer'
+params['Out Of Vessel Shielding Material'] = 'WEP' # water extended polymer (WEP)
 # The out of vessel shield is not fully made of the out of vessel material (e.g. WEP) so we use an effective density factor
 params['out_vessel_shield_effective_density_factor'] = 0.5
-
 
 
 # **************************************************************************************************************************
 #                                           Sec. 9 : Vessels Calculations
 # ************************************************************************************************************************** 
 # # Vessels parameters
-params['vessel_radius'] = params['core_radius'] + params['in_vessel_shield_thickness']   + 20 # cm
+params['vessel_radius'] = params['core_radius'] + params['in_vessel_shield_thickness']  
 params['vessel_thickness'] = 2 # cm
 params['vessel_lower_plenum_height'] = 30 # cm
 params['vessel_upper_plenum_height'] = 60 # cm
@@ -242,32 +254,33 @@ params['guard_vessel_thickness'] = 0.5
 params['guard_vessel_material'] ='stainless_steel'
 
 params['gap_between_guard_vessel_and_cooling_vessel'] = 5 # cm
-params['cooling_vessel_thickness'] = 5 # cm
+params['cooling_vessel_thickness'] = 0.5 # cm
 params['cooling_vessel_material'] ='stainless_steel'
 
-params['gap_between_cooling_vessel_and_intake_vessel'] = 0.3 # cm
-params['intake_vessel_thickness'] = 0.3 # cm
+params['gap_between_cooling_vessel_and_intake_vessel'] = 3 # cm
+params['intake_vessel_thickness'] = 0.5 # cm
 params['intake_vessel_material'] ='stainless_steel'
 
-# Calculating the vessels dimensions and masses
+# Calculating the vessels dimensions and masses (in Kg)
 params['vessels_total_radius'], params['vessel_height'] , params['vessels_total_height'],\
-        params['vessel_mass_kg'], params['guard_vessel_mass_kg'] ,\
-            params['cooling_vessel_mass'], params['intake_vessel_mass_kg'] = vessels_specs(params)
+        params['Vessel Mass'], params['Guard Vessel Mass'] ,\
+            params['Cooling Vessel Mass'], params['Intake Vessel Mass'] , params['Total Vessels Mass']= vessels_specs(params)
 
+params['In Vessel Shielding Mass'] = cylinder_annulus_mass(params['in_vessel_shielding_outer_radius'],\
+    params['in_vessel_shielding_inner_radius'], params['vessel_height'], params['In Vessel Shielding Material'] )  
 
-params['in_vessel_shielding_mass'] = cylinder_annulus_mass(params['in_vessel_shielding_outer_radius'],\
-    params['in_vessel_shielding_inner_radius'], params['vessel_height'], params['in_vessel_material'] )  
+params['Out Of Vessel Shielding Mass'] = params['out_vessel_shield_effective_density_factor'] * cylinder_annulus_mass(params['out_of_vessel_shield_thickness']+ params['vessels_total_radius'],\
+        params['out_of_vessel_shield_thickness'], params['vessels_total_height'], params['Out Of Vessel Shielding Material']) 
 
-params['out_of_vessel_shielding_mass'] = params['out_vessel_shield_effective_density_factor'] * cylinder_annulus_mass(params['out_of_vessel_shield_thickness']+ params['vessels_total_radius'],\
-        params['out_of_vessel_shield_thickness'], params['vessels_total_height'], params['out_vessel_shield_material']) 
-    
-
-
-
+params ['Vessel and Guard Vessel Masses'] = params['Vessel Mass'] +  params['Guard Vessel Mass']
 
 
 
 
+params['hex_area'] = 2.598 * params['lattice_radius'] * params['lattice_radius']
+
+params['Reflector Mass'] = calculate_reflector_mass_LTMR(params['hex_area'],\
+    params['core_radius'], params['tot_drum_area_all'], params['drum_height'])
 # **************************************************************************************************************************
 #                                           Sec. 10 : Operation
 # **************************************************************************************************************************
@@ -299,7 +312,7 @@ params['people_by_days_refueling_per_year'], params['people_by_days_startup_per_
 #Guidance." National Reactor Innovation Center (NRIC), NRIC-21-ENG-0001 (2021). 
 
 params['Land Area'] = 18 # acres
-params['escalation_year'] = 2024
+params['escalation_year'] = 2023
 # excavation volume needs to be detailed
 params['Excavation Volume'] = 412.605 # m^3
 
@@ -342,15 +355,12 @@ params['Radwaste Building Exterior Walls Volume'] =  268.8
 # Financing params
 params['interest_rate'] = 0.06 # 
 
-# structures cost
-# params['building_area_feet_squared'] = 7255 # feet squared
-
-
-# **************************************************************************************************************************
+# *************************************************************************************************************************
 #                                           Sec. 12 : Cost
 # **************************************************************************************************************************
 Cost_estimate = bottom_up_cost_estimate('cost/Cost_Database.xlsx', params) 
-print(Cost_estimate.head(20).to_string(index=False))
+print(Cost_estimate.iloc[0:100].to_string(index=False))
+
 # **************************************************************************************************************************
 #                                           Sec. 13 : Post Processing
 # **************************************************************************************************************************
@@ -360,93 +370,3 @@ print(Cost_estimate.head(20).to_string(index=False))
 #Calculate the code execution time
 elapsed_time = (time.time() - time_start) / 60
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')
-
-
-
-
-
-
-
-
-
-
-
-# params['reactor type'] = "LTMR"
-# params['thermal_efficiency'] = 0.31
-
-# params['hex_area'] = 2.598 * params['lattice_radius'] * params['lattice_radius']
-
-# params['reflector_mass'] = calculate_reflector_mass(params['hex_area'],\
-#     params['core_radius'], params['tot_drum_area_all'], params['drum_height'])
-
-
-
-
-# # Function to run OpenMC plugin
-# def run_openmc(params):
-#     openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-    
-#     def run_func():
-#         openmc.run()
-#         lattice_geometry = openmc.Geometry.from_xml()
-#         settings = openmc.Settings.from_xml()
-#         depletion_results = openmc_depletion(params, lattice_geometry, settings)
-#         params['fuel_lifetime_days'] = depletion_results[0] # days
-#         params['mass_U235'] = depletion_results[1] # grams
-#         params['mass_U238'] = depletion_results[2] # grams
-
-#     if params['heat_flux'] <= params['heat_flux_criteria']:
-#         print(f"\033[92mHEAT FLUX is: {params['heat_flux']} MW/m^2.\033[0m")
-#         openmc_result = openmc_plugin(params, function=run_func)
-        
-        
-#         elapsed_time = (time.time() - time_start) / 60
-#         print('Execution time:', np.round(elapsed_time, 1), 'minutes')
-    
-#     else:
-#         print(f"\033[91mHIGH HEAT FLUX: {params['heat_flux']} MW/m^2.\033[0m")
-
-
-
-
-
-
-# def design_and_cost_evaluations(params):
-#     run_openmc(params)
-
-
-#     # in vessel shielding mass (kilograms)
-
- # detailed_cost = cost_estimate(pd.read_excel('GNCOA.xlsx'), params)
-#     # return detailed_cost
-    
-# design_and_cost_evaluations(params)    
-
-
-
-
-
-
-
-
-
-
-
-# # Main execution flow
-
-#     # coa_table = design_and_cost_evaluations(params)[0]
-#     # cap_cost, ann_cost, ann_cost_levelized, lcoe1 = design_and_cost_evaluations(params)[1:]
-    
-#     # print(cap_cost, ann_cost, ann_cost_levelized, lcoe1)
-#     # html_string = styler._repr_html_()
-#     # print(html_string)
-#     # print(tabulate(coa_table.fillna(''), headers='keys',  showindex=False)) #, headers='keys', tablefmt='pretty'))
-
-
-
-#     #     # Save to an Excel file
-#     # with pd.ExcelWriter('styled_dataframe.xlsx', engine='openpyxl') as writer:
-#     #     styler.to_excel(writer, sheet_name='Sheet1',index=False)
-    
-
-

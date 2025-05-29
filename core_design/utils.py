@@ -4,6 +4,7 @@ import openmc.deplete
 import watts
 
 
+
 def create_cells(regions:dict, materials:list)->dict:
     return {key:openmc.Cell(name=key, fill=mat, region=value) for (key,value), mat in zip(regions.items(), materials)}
 
@@ -38,31 +39,27 @@ def calculate_heat_flux(cladding_radius, lattice_height, rings, power_MW_th):
     return power_MW_th/heat_transfer_surface # MW/m^2
 
 
-def calculate_drum_volume(DRUM_RADIUS, drum_height, absorber_thickness):
-    drum_volume = 3.14*DRUM_RADIUS * DRUM_RADIUS *drum_height
-    
-    drum_absorp_vol = (3.14*( DRUM_RADIUS * DRUM_RADIUS - (DRUM_RADIUS-absorber_thickness)*(DRUM_RADIUS-absorber_thickness) )*drum_height)/3
-    drum_refl_vol = drum_volume - drum_absorp_vol 
-    
-    number_of_drums = 2* (360/60)
-    all_drums_volume = drum_volume * number_of_drums
-    
-    drum_absorp_vol_all = drum_absorp_vol  * number_of_drums  
-    drum_refl_vol_all = drum_refl_vol  * number_of_drums  
-    
-    drum_absorp_all_mass = drum_absorp_vol_all * 2.52/1000 # B4C (in Kg)
-    drum_refl_all_mass = drum_refl_vol_all  * 3.02/1000 # BeO (in Kg)
-    
-    return all_drums_volume, drum_absorp_all_mass, drum_refl_all_mass
+
+def hex_area(ftf):
+    apothem = ftf/2
+    side = apothem / (np.sqrt(3)/2)
+    perimeter = 6*side
+    area = apothem * perimeter /2
+    return area
 
 
-def calculate_reflector_mass(hex_area, core_radius, area_of_all_drums, drum_height):
+def calculate_reflector_mass_LTMR(hex_area, core_radius, area_of_all_drums, drum_height):
     # I assume for now that the drums are always fully inside the reflector
     
     area_reflector = 3.14 * core_radius * core_radius - hex_area  - area_of_all_drums # cm2
     vol_reflector = area_reflector * drum_height # cm^3
     mass_reflector = vol_reflector * 3.02/1000 # mass in Kg
     return mass_reflector
+
+def calculate_number_of_core_rings(core_rings_over_one_edge):
+    return 2 * core_rings_over_one_edge * (core_rings_over_one_edge -1) +\
+        2 * sum(range(1, core_rings_over_one_edge -1)) +\
+            2*core_rings_over_one_edge-1
 
 
 def create_fuel_pin_regions(params):
@@ -254,6 +251,7 @@ def create_control_drums_positions( params, number_of_drums):
     for s in range(number_of_drums):
         positions.append(s*sector-deviation)
         positions.append(s*sector+deviation)
+
     return positions 
 
 
@@ -298,7 +296,7 @@ def create_universe_plot(pin_universe, pin_plot_width, num_pixels, font_size,\
     pin_plot = pin_universe.plot(width = ( pin_plot_width, pin_plot_width),
                                  pixels=(num_pixels, num_pixels), color_by='material')
     pin_plot.set_xlabel('x [cm]', fontsize= font_size)
-    pin_plot.set_ylabel('y [xm]', fontsize= font_size)
+    pin_plot.set_ylabel('y [cm]', fontsize= font_size)
     pin_plot.set_title(title, fontsize= font_size)
 
     pin_plot.tick_params(axis='x', labelsize= font_size)
@@ -327,7 +325,7 @@ def openmc_depletion(params, lattice_geometry, settings):
     
     # Deplete using a first-order predictor algorithm.
     integrator = openmc.deplete.PredictorIntegrator(operator, burnup,
-                                                    1000000 * params['power_MW_th'], timestep_units='MWd/kg')
+                                                    1000000 * params['Power MWt'] , timestep_units='MWd/kg')
     print("Start Depletion")
     integrator.integrate()
     print("End Depletion")
@@ -351,11 +349,25 @@ def run_depletion_analysis(params):
     openmc.run()
     print("OpenMC finished Running")
     lattice_geometry = openmc.Geometry.from_xml()
+
+    drum_count = 0
+    # Iterate through all cells in the geometry
+    for cell in lattice_geometry.get_all_cells().values():
+   
+        #Check if the cell is a drum (you need to define how to identify a drum)
+        # For example, if drums are identified by a specific material or cell id:
+        if "drum" in cell.name.lower():  # Assuming drum cells have "drum" in their name
+            drum_count += 1
+
+    # Get the number of drums in the geometry
+    num_drums = drum_count
+    params['number of drums'] = num_drums 
+
     settings = openmc.Settings.from_xml()
-    depletion_results = openmc_depletion(params, lattice_geometry, settings)
-    params['fuel_lifetime_days'] = depletion_results[0]  # days
-    params['mass_U235'] = depletion_results[1]  # grams
-    params['mass_U238'] = depletion_results[2]  # grams
+    # depletion_results = openmc_depletion(params, lattice_geometry, settings)
+    # params['fuel_lifetime_days'] = depletion_results[0]  # days
+    # params['mass_U235'] = depletion_results[1]  # grams
+    # params['mass_U238'] = depletion_results[2]  # grams
 
 def monitor_heat_flux(params, openmc_plugin ):
     if params['heat_flux'] <= params['heat_flux_criteria']:
@@ -386,10 +398,7 @@ def create_TRISO_particles_lattice_universe(params, triso_universe, materials_da
 
     compact_triso_particles = [openmc.model.TRISO(params['fuel_pin_radii'][-1], fill=triso_universe, center=c) for c in packed_shells]
     compact_triso_particles_number = len(compact_triso_particles)
-    # triso_volume = sphere_volume(params['fuel_pin_radii'][-1] )
-    # total_triso_volume = triso_volume * compact_triso_particles_number
-    # actual_pf = total_triso_volume/compact_volume
-    # print("Actual PF" ,actual_pf)
+
 
 
     compact_cell = openmc.Cell(region=compact_region)
@@ -417,44 +426,51 @@ def create_universe_from_core_top_and_bottom_planes(radius, active_core_maxz, ac
 
 
 def create_assembly(num_rings, lattice_pitch, inner_fill, fuel_pin , moderator_pin, outer_ring=None, simplified_output=True):
-  assembly = openmc.HexLattice()
+    # Create a hexagonal lattice for the assembly
+    assembly = openmc.HexLattice()
+    # Set the center of the hexagonal lattice
+    assembly.center = (0., 0.)
+    # Set the pitch (distance between pin centers) of the lattice
+    assembly.pitch = (lattice_pitch,)
+    # Define the outer universe of the lattice: the inner fill material
+    assembly.outer = inner_fill
+    # Set the orientation of the hexagonal lattice
+    assembly.orientation = 'x'
 
-  assembly.center = (0., 0.)
-  assembly.pitch = (lattice_pitch,)
-  assembly.outer = inner_fill
-  assembly.orientation = 'x'
+    # Initialize the rings with the first ring containing the fuel pin
+    rings = [[fuel_pin]]
+    # Initialize the count of fuel cells
+    fuel_cells = 1
+    # Loop to create the rings of fuel pins around the center
+    for n in range(1, num_rings-1):
+        ring_cells = 6*n
+        rings.insert(0, [fuel_pin]*ring_cells)
+        fuel_cells += ring_cells
 
-  rings = [[fuel_pin]]
-  fuel_cells = 1
+    if outer_ring:
+        rings.insert(0, outer_ring)
+    else:
+        # Create and insert an outer ring of moderator pins
+        rings.insert(0, [moderator_pin]*6*(num_rings-1))
 
-  for n in range(1, num_rings-1):
-      ring_cells = 6*n
-      rings.insert(0, [fuel_pin]*ring_cells)
-      fuel_cells += ring_cells
+    assembly.universes = rings
 
-  if outer_ring:
-    rings.insert(0, outer_ring)
-  else:
-    rings.insert(0, [moderator_pin]*6*(num_rings-1))
+    assembly_boundary = openmc.model.hexagonal_prism(edge_length=lattice_pitch*(num_rings-1), orientation='x')
 
-  assembly.universes = rings
+    assembly_cell = openmc.Cell(fill=assembly, region=assembly_boundary)
+    assembly_universe = openmc.Universe(cells=[assembly_cell])
 
-  assembly_boundary = openmc.model.hexagonal_prism(edge_length=lattice_pitch*(num_rings-1), orientation='x')
-
-  assembly_cell = openmc.Cell(fill=assembly, region=assembly_boundary)
-  assembly_universe = openmc.Universe(cells=[assembly_cell])
-
-  if simplified_output:
-    return assembly_universe
-  else:
-    return assembly_universe, fuel_cells
+    if simplified_output:
+        return assembly_universe
+    else:
+        return assembly_universe, fuel_cells
 
 def cyclic_rotation(input_array, k):
-  return input_array[-k:] + input_array[:-k]
+    return input_array[-k:] + input_array[:-k]
 
 
 
 def flatten_list(nested_list):
-  return [item for sublist in nested_list for item in sublist]
+    return [item for sublist in nested_list for item in sublist]
     
   

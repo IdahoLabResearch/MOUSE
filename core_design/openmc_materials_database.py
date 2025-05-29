@@ -191,46 +191,32 @@ def collect_materials_data(params):
   
     # """""""""""""""""""""
     # Sec. 1.7 : Carbides: Boron Carbide and Silicon Carbide
-    # """""""""""""""""""""
-
-    # Enriched B4C
-    try:
-        b4c = openmc.Material(name='B4C Poison') # This creates a new material named 'B4C Poison'.
-        b4c.set_density('g/cm3', 1.82)
-        
-        # This adds boron (B) to the material with an atomic ratio of 4.0. 
-        # The boron is enriched to 18.7% in the isotope B-10, specified by enrichment_target='B10' and the enrichment type is by weight percent (enrichment_type='wo').
-        b4c.add_element('B', 4.0, enrichment=100 * params['boron enrichment'], enrichment_target='B10', enrichment_type='wo')
-        b4c.add_element('C', 1.0) #  This adds carbon (C) to the material with an atomic ratio of 1.0.
-        materials.append(b4c)
-        materials_database.update({'b4c': b4c})
-    except Exception as e:
-        print(f"Skipping B4C due to missing parameters: {e}")    
+    # """""""""""""""""""""  
 
     # Natural B4C
-    B4C_nat = openmc.Material(name="B4C", temperature= params['common_temperature'])
-    B4C_nat.add_element("boron", 4)
-    B4C_nat.add_element("carbon", 1)
-    B4C_nat.set_density("g/cm3", 2.52)
+    B4C_natural = openmc.Material(name="B4C_natural", temperature= params['common_temperature'])
+    B4C_natural.add_element("boron", 4)
+    B4C_natural.add_element("carbon", 1)
+    B4C_natural.set_density("g/cm3", 2.52)
 
     SiC = openmc.Material(name='SiC') # Creates a new material named 'SiC'.
     SiC.set_density('g/cm3', 3.18)
     SiC.add_element('Si', 0.5) #  Adds silicon (Si) to the material with a fraction of 0.5.
     SiC.add_element('C', 0.5) # Adds carbon (C) to the material with a fraction of 0.5.
 
-    materials.extend([B4C_nat, SiC])
-    materials_database.update({'B4C_nat': B4C_nat, 'SiC': SiC})
+    materials.extend([B4C_natural, SiC])
+    materials_database.update({'B4C_natural': B4C_natural, 'SiC': SiC})
 
     # """""""""""""""""""""
     # Sec. 1.8 : Carbon Based Materials : Graphite (Buffer)  & pyrolytic carbon (PyC) 
     # """""""""""""""""""""
    
     # Graphite
-    graphite = openmc.Material(name='Graphite')
-    graphite.set_density('g/cm3', 1.7)
-    graphite.add_element('C', 1.0)
+    Graphite = openmc.Material(name='Graphite')
+    Graphite.set_density('g/cm3', 1.7)
+    Graphite.add_element('C', 1.0)
     #This adds thermal scattering data for graphite. The add_S(α,β) thermal scattering treatment for carbon in graphite form.
-    graphite.add_s_alpha_beta('c_Graphite')
+    Graphite.add_s_alpha_beta('c_Graphite')
 
     # Graphite of lower density (buffer)
     buffer = openmc.Material(name='Buffer') # This creates a new material named 'Buffer'.
@@ -246,8 +232,8 @@ def collect_materials_data(params):
     
     #This adds thermal scattering data for graphite. The add_S(α,β) thermal scattering treatment for carbon in graphite form.
     PyC.add_s_alpha_beta('c_Graphite') 
-    materials.extend([graphite,buffer, PyC ])
-    materials_database.update({'graphite' : graphite, 'buffer' : buffer, 'PyC': PyC})
+    materials.extend([Graphite, buffer, PyC ])
+    materials_database.update({'Graphite' : Graphite, 'buffer' : buffer, 'PyC': PyC})
 
     # I am not sure if this is necessary but keeping it for now
     # materials.export_to_xml()
@@ -263,4 +249,5 @@ def collect_materials_data(params):
     #         materials_database['B4C_nat']: 'black'}
     
     return materials_database
+
 

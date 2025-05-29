@@ -17,9 +17,9 @@ def build_openmc_model_LTMR(params):
     
     fuel = materials_database[params['fuel']]
     coolant = materials_database[params['coolant']]
-    reflector = materials_database[params['reflector']]
-    control_drum_absorber = materials_database[params['control_drum_absorber']]
-    control_drum_reflector = materials_database[params['control_drum_reflector']]
+    reflector = materials_database[params['Reflector']]
+    control_drum_absorber = materials_database[params['Control Drum Absorber']]
+    control_drum_reflector = materials_database[params['Control Drum Reflector']]
     
     # **************************************************************************************************************************
     #                                                Sec. 2 : GEOMETRY: Fuel Pins, Moderator Pins, Coolant
@@ -130,7 +130,7 @@ def build_openmc_model_LTMR(params):
 
     fissile_area = circle_area(params['fuel_pin_radii'][fuel_index] )\
         - circle_area(params['fuel_pin_radii'][fuel_index - 1])
-    fuel.volume = fissile_area * params['lattice_height'] * params['fuel_pin_count']
+    fuel.volume = fissile_area *params['active_height'] * params['fuel_pin_count']
    
     all_materials = fuel_materials +\
         moderator_materials + [coolant, reflector, control_drum_absorber, control_drum_reflector]

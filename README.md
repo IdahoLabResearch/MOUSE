@@ -12,3 +12,6 @@ To Do List
 - HeatPipe Model : https://github.com/idaholab/virtual_test_bed/blob/devel/microreactors/mrad/Serpent_Model/serpent_input.i
 - The excavation Volume and plant layout details
 - Slab Roof Volume, Basement Volume, Exterior Walls Volume need to be detailed (for all the buildings)
+- The Vessels and support costs
+- Parametrizing the number of control rods
+- Cost of the YH
