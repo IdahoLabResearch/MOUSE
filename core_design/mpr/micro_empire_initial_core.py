@@ -835,4 +835,3 @@ tally2.nuclides             = [ 'Be9',  'B10',  'B11',  'C12',  'C13',  'O16',  
 tallies_file.append(tally2)
 tallies_file.export_to_xml()
 openmc.plot_geometry()
-#openmc.run(threads=480)
