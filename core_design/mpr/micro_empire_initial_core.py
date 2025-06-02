@@ -28,21 +28,7 @@ theta        = pi/180.0
 #=================================================================================================
 #                                    materials.xml file
 #=================================================================================================
-# UO2 fuel definition 
-uo2_11 = openmc.Material(1, name='uo2_11')                
-uo2_11.set_density('atom/b-cm', 8.08250295E-02)
-uo2_11.temperature = 700
-uo2_11.add_nuclide(     'O16', 2.59371545E-03, 'ao')
-uo2_11.add_nuclide(     'O17', 1.05004397E-06, 'ao')
-uo2_11.add_nuclide(     'O18', 5.99797186E-06, 'ao')
-uo2_11.add_nuclide(    'U235', 2.59885326E-04, 'ao')
-uo2_11.add_nuclide(    'U238', 1.04049396E-03, 'ao')
-uo2_11.add_nuclide(    'Si28', 2.76954169E-03, 'ao')
-uo2_11.add_nuclide(    'Si29', 1.40694868E-04, 'ao')
-uo2_11.add_nuclide(    'Si30', 9.28556098E-05, 'ao')
-uo2_11.add_nuclide(     'C12', 7.31619752E-02, 'ao')
-uo2_11.add_nuclide(     'C13', 7.58819416E-04, 'ao')
-uo2_11.add_s_alpha_beta('c_Graphite')
+# The materials defined as mat_radialzone#axialzone#. Keep radial zones 1&2 and axial zone 2 only (in the center). For 2D, this modification remove the axial depletion zones. 
 
 uo2_12 = openmc.Material(2, name='uo2_12')
 uo2_12.set_density('atom/b-cm', 8.08250295E-02)
@@ -59,36 +45,6 @@ uo2_12.add_nuclide(     'C12', 7.31619752E-02, 'ao')
 uo2_12.add_nuclide(     'C13', 7.58819416E-04, 'ao')
 uo2_12.add_s_alpha_beta('c_Graphite')
 
-uo2_13 = openmc.Material(3, name='uo2_13')
-uo2_13.set_density('atom/b-cm', 8.08250295E-02)
-uo2_13.temperature = 700
-uo2_13.add_nuclide(     'O16', 2.59371545E-03, 'ao')
-uo2_13.add_nuclide(     'O17', 1.05004397E-06, 'ao')
-uo2_13.add_nuclide(     'O18', 5.99797186E-06, 'ao')
-uo2_13.add_nuclide(    'U235', 2.59885326E-04, 'ao')
-uo2_13.add_nuclide(    'U238', 1.04049396E-03, 'ao')
-uo2_13.add_nuclide(    'Si28', 2.76954169E-03, 'ao')
-uo2_13.add_nuclide(    'Si29', 1.40694868E-04, 'ao')
-uo2_13.add_nuclide(    'Si30', 9.28556098E-05, 'ao')
-uo2_13.add_nuclide(     'C12', 7.31619752E-02, 'ao')
-uo2_13.add_nuclide(     'C13', 7.58819416E-04, 'ao')
-uo2_13.add_s_alpha_beta('c_Graphite')
-
-uo2_21 = openmc.Material(4, name='uo2_21')
-uo2_21.set_density('atom/b-cm', 8.08250295E-02)
-uo2_21.temperature = 700
-uo2_21.add_nuclide(     'O16', 2.59371545E-03, 'ao')
-uo2_21.add_nuclide(     'O17', 1.05004397E-06, 'ao')
-uo2_21.add_nuclide(     'O18', 5.99797186E-06, 'ao')
-uo2_21.add_nuclide(    'U235', 2.59885326E-04, 'ao')
-uo2_21.add_nuclide(    'U238', 1.04049396E-03, 'ao')
-uo2_21.add_nuclide(    'Si28', 2.76954169E-03, 'ao')
-uo2_21.add_nuclide(    'Si29', 1.40694868E-04, 'ao')
-uo2_21.add_nuclide(    'Si30', 9.28556098E-05, 'ao')
-uo2_21.add_nuclide(     'C12', 7.31619752E-02, 'ao')
-uo2_21.add_nuclide(     'C13', 7.58819416E-04, 'ao')
-uo2_21.add_s_alpha_beta('c_Graphite')
-
 uo2_22 = openmc.Material(5, name='uo2_22')
 uo2_22.set_density('atom/b-cm', 8.08250295E-02)
 uo2_22.temperature = 700
@@ -104,28 +60,6 @@ uo2_22.add_nuclide(     'C12', 7.31619752E-02, 'ao')
 uo2_22.add_nuclide(     'C13', 7.58819416E-04, 'ao')
 uo2_22.add_s_alpha_beta('c_Graphite')
 
-uo2_23 = openmc.Material(6, name='uo2_23')
-uo2_23.set_density('atom/b-cm', 8.08250295E-02)
-uo2_23.temperature = 700
-uo2_23.add_nuclide(     'O16', 2.59371545E-03, 'ao')
-uo2_23.add_nuclide(     'O17', 1.05004397E-06, 'ao')
-uo2_23.add_nuclide(     'O18', 5.99797186E-06, 'ao')
-uo2_23.add_nuclide(    'U235', 2.59885326E-04, 'ao')
-uo2_23.add_nuclide(    'U238', 1.04049396E-03, 'ao')
-uo2_23.add_nuclide(    'Si28', 2.76954169E-03, 'ao')
-uo2_23.add_nuclide(    'Si29', 1.40694868E-04, 'ao')
-uo2_23.add_nuclide(    'Si30', 9.28556098E-05, 'ao')
-uo2_23.add_nuclide(     'C12', 7.31619752E-02, 'ao')
-uo2_23.add_nuclide(     'C13', 7.58819416E-04, 'ao')
-uo2_23.add_s_alpha_beta('c_Graphite')
-
-monolith_11 = openmc.Material(7, 'monolith_11')
-monolith_11.set_density('g/cm3', 1.63)
-monolith_11.temperature = 700
-monolith_11.add_nuclide('C12' , 0.9893, 'ao')
-monolith_11.add_nuclide('C13' , 0.0107, 'ao')
-monolith_11.add_s_alpha_beta('c_Graphite')
-
 monolith_12 = openmc.Material(8, 'monolith_12')
 monolith_12.set_density('g/cm3', 1.63)
 monolith_12.temperature = 700
@@ -133,45 +67,12 @@ monolith_12.add_nuclide('C12' , 0.9893, 'ao')
 monolith_12.add_nuclide('C13' , 0.0107, 'ao')
 monolith_12.add_s_alpha_beta('c_Graphite')
 
-monolith_13 = openmc.Material(9, 'monolith_13')
-monolith_13.set_density('g/cm3', 1.63)
-monolith_13.temperature = 700
-monolith_13.add_nuclide('C12' , 0.9893, 'ao')
-monolith_13.add_nuclide('C13' , 0.0107, 'ao')
-monolith_13.add_s_alpha_beta('c_Graphite')
-
-monolith_21 = openmc.Material(10, 'monolith_21')
-monolith_21.set_density('g/cm3', 1.63)
-monolith_21.temperature = 700
-monolith_21.add_nuclide('C12' , 0.9893, 'ao')
-monolith_21.add_nuclide('C13' , 0.0107, 'ao')
-monolith_21.add_s_alpha_beta('c_Graphite')
-
 monolith_22 = openmc.Material(11, 'monolith_22')
 monolith_22.set_density('g/cm3', 1.63)
 monolith_22.temperature = 700
 monolith_22.add_nuclide('C12' , 0.9893, 'ao')
 monolith_22.add_nuclide('C13' , 0.0107, 'ao')
 monolith_22.add_s_alpha_beta('c_Graphite')
-
-monolith_23 = openmc.Material(12, 'monolith_23')
-monolith_23.set_density('g/cm3', 1.63)
-monolith_23.temperature = 700
-monolith_23.add_nuclide('C12' , 0.9893, 'ao')
-monolith_23.add_nuclide('C13' , 0.0107, 'ao')
-monolith_23.add_s_alpha_beta('c_Graphite')
-
-beryllium_lr = openmc.Material(13, 'beryllium_lr')
-beryllium_lr.set_density('g/cm3',  1.85)
-beryllium_lr.temperature = 700
-beryllium_lr.add_nuclide('Be9' , 1.0, 'ao')
-beryllium_lr.add_s_alpha_beta('c_Be')
-
-beryllium_ur = openmc.Material(14, 'beryllium_ur')
-beryllium_ur.set_density('g/cm3',  1.85)
-beryllium_ur.temperature = 700
-beryllium_ur.add_nuclide('Be9' , 1.0, 'ao')
-beryllium_ur.add_s_alpha_beta('c_Be')
 
 monolith_rr = openmc.Material(15, 'monolith_rr')
 monolith_rr.set_density('g/cm3', 1.63)
@@ -235,9 +136,7 @@ beryllium.temperature = 700
 beryllium.add_nuclide('Be9' , 1.0, 'ao')
 beryllium.add_s_alpha_beta('c_Be')
 
-materials_file = openmc.Materials([uo2_11, uo2_12, uo2_13, monolith_11, monolith_12, monolith_13,
-                                   uo2_21, uo2_22, uo2_23, monolith_21, monolith_22, monolith_23,
-                                   beryllium_lr, beryllium_ur, monolith_rr, monolith_cr, htpipe, 
+materials_file = openmc.Materials([uo2_12, monolith_12, uo2_22, monolith_22, monolith_rr, monolith_cr, htpipe, 
                                    absorber, gap, beryllium])
 materials_file.export_to_xml()
 #=================================================================================================
