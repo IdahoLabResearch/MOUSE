@@ -214,7 +214,6 @@ core_out_2              = openmc.ZCylinder(surface_id=82, x0=0.0, y0=0.0, r=112.
 core_out_2.boundary_type= 'vacuum'
 # Remove top_0 and bottom_0 boundary conditions
 # Remove fuel compacts and heat pipes cells corresponding to top, bottom, upper and lower axial zones for two radial zones
-
 fuel_12                 = openmc.Cell(cell_id=103, name='fuel_12')
 fgrp_12                 = openmc.Cell(cell_id=104, name='fgrp_12')
 fvod_10                 = openmc.Cell(cell_id=108, name='fvod_10')
@@ -277,45 +276,23 @@ cr_10                   = openmc.Cell(cell_id=70, name='cr_10')
 cr_11                   = openmc.Cell(cell_id=71, name='cr_11')
 cr_12                   = openmc.Cell(cell_id=72, name='cr_12')
 
-fbot_10.region          = -bottom_1
-fuel_11.region          = -fuel_1 & +bottom_1 & -bottom_2
-fgrp_11.region          = +fuel_2 & +bottom_1 & -bottom_2
-fuel_12.region          = -fuel_1 & +bottom_2 & -top_2
-fgrp_12.region          = +fuel_2 & +bottom_2 & -top_2
-fuel_13.region          = -fuel_1 & +top_2    & -top_1
-fgrp_13.region          = +fuel_2 & +top_2    & -top_1
-ftop_14.region          = +top_1
-fvod_10.region          = +fuel_1 & -fuel_2 & +bottom_1 & -top_1
+# Remove fuel compacts and heat pipes regions corresponding to top, bottom, upper and lower axial zones for two radial zones
+# Remove top and bottom planes from regions definitions
+fuel_12.region          = -fuel_1 
+fgrp_12.region          = +fuel_2 
+fvod_10.region          = +fuel_1 & -fuel_2 
 
-fbot_20.region          = -bottom_1
-fuel_21.region          = -fuel_1 & +bottom_1 & -bottom_2
-fgrp_21.region          = +fuel_2 & +bottom_1 & -bottom_2
-fuel_22.region          = -fuel_1 & +bottom_2 & -top_2
-fgrp_22.region          = +fuel_2 & +bottom_2 & -top_2
-fuel_23.region          = -fuel_1 & +top_2    & -top_1
-fgrp_23.region          = +fuel_2 & +top_2    & -top_1
-ftop_24.region          = +top_1
-fvod_20.region          = +fuel_1 & -fuel_2 & +bottom_1 & -top_1
+fuel_22.region          = -fuel_1 
+fgrp_22.region          = +fuel_2 
+fvod_20.region          = +fuel_1 & -fuel_2 
 
-hpbt_10.region          = -bottom_1
-hpco_11.region          = -hp_1 & +bottom_1 & -bottom_2
-hpgr_11.region          = +hp_2 & +bottom_1 & -bottom_2
-hpco_12.region          = -hp_1 & +bottom_2 & -top_2
-hpgr_12.region          = +hp_2 & +bottom_2 & -top_2
-hpco_13.region          = -hp_1 & +top_2 
-hpgr_13.region          = +hp_2 & +top_2    & -top_1
-hptp_14.region          = +hp_2 & +top_1
-hpvd_10.region          = +hp_1 & -hp_2 & +bottom_1 & -top_0
+hpco_12.region          = -hp_1 
+hpgr_12.region          = +hp_2 
+hpvd_10.region          = +hp_1 & -hp_2 
 
-hpbt_20.region          = -bottom_1
-hpco_21.region          = -hp_1 & +bottom_1 & -bottom_2
-hpgr_21.region          = +hp_2 & +bottom_1 & -bottom_2
-hpco_22.region          = -hp_1 & +bottom_2 & -top_2
-hpgr_22.region          = +hp_2 & +bottom_2 & -top_2
-hpco_23.region          = -hp_1 & +top_2 
-hpgr_23.region          = +hp_2 & +top_2    & -top_1
-hptp_24.region          = +hp_2 & +top_1
-hpvd_20.region          = +hp_1 & -hp_2 & +bottom_1 & -top_0
+hpco_22.region          = -hp_1 
+hpgr_22.region          = +hp_2 
+hpvd_20.region          = +hp_1 & -hp_2 
 
 assembly_reg_1.region   = +r_left & -r_right & -r_upper_right & -r_upper_left & +r_lower_right & +r_lower_left & +bottom_0 & -top_0
 assembly_gap_11.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_0 & -bottom_1
