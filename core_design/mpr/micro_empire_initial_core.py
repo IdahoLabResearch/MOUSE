@@ -316,47 +316,23 @@ cr_gpp.region           =  +cr_out & -cr_gap
 cr_ass.region           =  +cr_gap 
 
 # Remove upper and lower reflectors regions definitions
-# Remove the hex core graphite monolith regions which is defined by the top and bottom planes. Since it is 2d, the hex core graphite monolith cell defined only with the material fill. 
+# Remove the hex core graphite monolith region which is defined by the top and bottom planes. Since it is 2d, the hex core graphite monolith cell defined only with the material fill. 
 
-
-fbot_10.fill            = beryllium_lr
-fuel_11.fill            = uo2_11
-fgrp_11.fill            = monolith_11
+# Remove fuel compacts and heat pipes material fillings corresponding to top, bottom, upper and lower axial zones for two radial zones
 fuel_12.fill            = uo2_12
 fgrp_12.fill            = monolith_12
-fuel_13.fill            = uo2_13
-fgrp_13.fill            = monolith_13
-ftop_14.fill            = beryllium_ur
 fvod_10.fill            = gap
 
-fbot_20.fill            = beryllium_lr
-fuel_21.fill            = uo2_21
-fgrp_21.fill            = monolith_21
 fuel_22.fill            = uo2_22
 fgrp_22.fill            = monolith_22
-fuel_23.fill            = uo2_23
-fgrp_23.fill            = monolith_23
-ftop_24.fill            = beryllium_ur
 fvod_20.fill            = gap
 
-hpbt_10.fill            = beryllium_lr
-hpco_11.fill            = htpipe
-hpgr_11.fill            = monolith_11
 hpco_12.fill            = htpipe
 hpgr_12.fill            = monolith_12
-hpco_13.fill            = htpipe
-hpgr_13.fill            = monolith_13
-hptp_14.fill            = beryllium_ur
 hpvd_10.fill            = gap
                           
-hpbt_20.fill            = beryllium_lr
-hpco_21.fill            = htpipe
-hpgr_21.fill            = monolith_21
 hpco_22.fill            = htpipe
 hpgr_22.fill            = monolith_22
-hpco_23.fill            = htpipe
-hpgr_23.fill            = monolith_23
-hptp_24.fill            = beryllium_ur
 hpvd_20.fill            = gap
 
 cr_drum.fill            = absorber
