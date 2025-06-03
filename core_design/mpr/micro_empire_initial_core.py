@@ -484,18 +484,19 @@ core_hex.outer          = uo
 core_reg.fill           = core_hex
 core_reg_out.fill       = gap
 
-cr_01.region            = +CR_000_180 & -CR_030_210 & +c_right_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_02.region            = +CR_030_210 & -CR_060_240 & +c_upper_right_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_03.region            = +CR_060_240 & +CR_090_270 & +c_upper_right_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_04.region            = -CR_090_270 & +CR_120_300 & +c_upper_left_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_05.region            = -CR_120_300 & +CR_150_330 & +c_upper_left_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_06.region            = -CR_150_330 & +CR_000_180 & -c_left_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_07.region            = +CR_030_210 & -CR_000_180 & -c_left_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_08.region            = +CR_060_240 & -CR_030_210 & -c_lower_left_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_09.region            = -CR_090_270 & -CR_060_240 & -c_lower_left_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_10.region            = +CR_090_270 & -CR_120_300 & -c_lower_right_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_11.region            = +CR_120_300 & -CR_150_330 & -c_lower_right_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
-cr_12.region            = +CR_150_330 & -CR_000_180 & +c_right_1 & -core_out_2 & +bottom_0 & -top_0 #& ~core_hex
+# Remove top and bottom planes from control drums regions definitions 
+cr_01.region            = +CR_000_180 & -CR_030_210 & +c_right_1 & -core_out_2 #& ~core_hex
+cr_02.region            = +CR_030_210 & -CR_060_240 & +c_upper_right_1 & -core_out_2  #& ~core_hex
+cr_03.region            = +CR_060_240 & +CR_090_270 & +c_upper_right_1 & -core_out_2  #& ~core_hex
+cr_04.region            = -CR_090_270 & +CR_120_300 & +c_upper_left_1 & -core_out_2  #& ~core_hex
+cr_05.region            = -CR_120_300 & +CR_150_330 & +c_upper_left_1 & -core_out_2  #& ~core_hex
+cr_06.region            = -CR_150_330 & +CR_000_180 & -c_left_1 & -core_out_2  #& ~core_hex
+cr_07.region            = +CR_030_210 & -CR_000_180 & -c_left_1 & -core_out_2  #& ~core_hex
+cr_08.region            = +CR_060_240 & -CR_030_210 & -c_lower_left_1 & -core_out_2  #& ~core_hex
+cr_09.region            = -CR_090_270 & -CR_060_240 & -c_lower_left_1 & -core_out_2  #& ~core_hex
+cr_10.region            = +CR_090_270 & -CR_120_300 & -c_lower_right_1 & -core_out_2  #& ~core_hex
+cr_11.region            = +CR_120_300 & -CR_150_330 & -c_lower_right_1 & -core_out_2  #& ~core_hex
+cr_12.region            = +CR_150_330 & -CR_000_180 & +c_right_1 & -core_out_2  #& ~core_hex
 
 cr_01.fill              = a1
 cr_02.fill              = a2
