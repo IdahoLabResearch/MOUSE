@@ -396,10 +396,11 @@ lattice_hex_2.universes   = [[f2]+[f2]+[f2]+[f2]+[f2]+[f2]+[f2]+[f2]+[f2]+[f2]+[
 lattice_hex_2.outer       = uo
 assembly_reg_2.fill       = lattice_hex_2
 
-
-c1.add_cells([assembly_reg_1,assembly_gap_11,assembly_gap_12,assembly_gap_13,])
-c2.add_cells([assembly_reg_2,assembly_gap_21,assembly_gap_22,assembly_gap_23,])
-c3.add_cells([grp_cc_bot, grp_cc_cnt_1, grp_cc_cnt_2, grp_cc_cnt_3, grp_cc_top,])
+# Remove assembly gap cells corresponding to upper and lower axial zones for two radial zones from the defined universes
+# Remove the central graphite cells corresponding to top, bottom, upper and lower axial zones from the defined universes 
+c1.add_cells([assembly_reg_1,assembly_gap_12,])
+c2.add_cells([assembly_reg_2,assembly_gap_22,])
+c3.add_cells([grp_cc_cnt_2,])
 c4.add_cells([cr_drum,cr_refl,cr_gpp,cr_ass,])
 
 cr_000.fill             = c4
