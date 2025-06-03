@@ -248,7 +248,7 @@ cr_270                  = openmc.Cell(cell_id=49, name='cr_270')
 cr_300                  = openmc.Cell(cell_id=50, name='cr_300')
 cr_330                  = openmc.Cell(cell_id=51, name='cr_330')
 
-# Remove assembly ga cells corresponding to upper and lower axial zones for two radial zones
+# Remove assembly gap cells corresponding to upper and lower axial zones for two radial zones (upper and lower reflectors)
 # Two assemblies cells defined for two radial zones (assembly_reg_1 and assembly_reg_2)
 assembly_reg_1          = openmc.Cell(cell_id=332, name='assembly_reg_1')
 assembly_gap_12         = openmc.Cell(cell_id=334, name='assembly_gap_12')
@@ -295,7 +295,7 @@ hpco_22.region          = -hp_1
 hpgr_22.region          = +hp_2 
 hpvd_20.region          = +hp_1 & -hp_2 
 
-# Remove assembly gap regions corresponding to upper and lower axial zones for two radial zones
+# Remove assembly gap regions corresponding to upper and lower axial zones for two radial zones (upper and lower reflectors)
 # Remove top and bottom planes from regions definitions
 assembly_reg_1.region   = +r_left & -r_right & -r_upper_right & -r_upper_left & +r_lower_right & +r_lower_left 
 assembly_gap_12.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left 
@@ -340,17 +340,13 @@ cr_refl.fill            = beryllium
 cr_gpp.fill             = gap
 cr_ass.fill             = beryllium
 
-grp_cc_bot.fill         = beryllium_lr
-grp_cc_cnt_1.fill       = monolith_cr
+# Remove the central graphite material fillings corresponding to top, bottom, upper and lower axial zones 
 grp_cc_cnt_2.fill       = monolith_cr
-grp_cc_cnt_3.fill       = monolith_cr
-grp_cc_top.fill         = beryllium_ur
-assembly_gap_11.fill    = beryllium_lr
+
+# Remove assembly gap material fillings corresponding to upper and lower axial zones for two radial zones (upper and lower reflectors)
 assembly_gap_12.fill    = monolith_12
-assembly_gap_13.fill    = beryllium_ur
-assembly_gap_21.fill    = beryllium_lr
 assembly_gap_22.fill    = monolith_22
-assembly_gap_23.fill    = beryllium_ur
+
 
 out_univ_1.fill         = beryllium_lr
 out_univ_2.fill         = monolith_rr
