@@ -255,11 +255,9 @@ assembly_reg_1          = openmc.Cell(cell_id=332, name='assembly_reg_1')
 assembly_gap_12         = openmc.Cell(cell_id=334, name='assembly_gap_12')
 assembly_reg_2          = openmc.Cell(cell_id=336, name='assembly_reg_2')
 assembly_gap_22         = openmc.Cell(cell_id=338, name='assembly_gap_22')
-grp_cc_bot              = openmc.Cell(cell_id=340, name='grp_cc_bot')
-grp_cc_cnt_1            = openmc.Cell(cell_id=341, name='grp_cc_cnt')
+
+# Remove the central graphite cells corresponding to top, bottom, upper and lower axial zones 
 grp_cc_cnt_2            = openmc.Cell(cell_id=342, name='grp_cc_cnt')
-grp_cc_cnt_3            = openmc.Cell(cell_id=343, name='grp_cc_cnt')
-grp_cc_top              = openmc.Cell(cell_id=344, name='grp_cc_top')
 core_reg                = openmc.Cell(cell_id=345, name='core_reg')
 core_reg_out            = openmc.Cell(cell_id=346, name='core_reg_out')
 out_univ_1              = openmc.Cell(cell_id=347, name='out_univ_1')
