@@ -213,45 +213,22 @@ core_out_2              = openmc.ZCylinder(surface_id=82, x0=0.0, y0=0.0, r=112.
 
 core_out_2.boundary_type= 'vacuum'
 # Remove top_0 and bottom_0 boundary conditions
+# Remove fuel compacts and heat pipes cells corresponding to top, bottom, upper and lower axial zones
 
-fbot_10                 = openmc.Cell(cell_id=100, name='fbot_10')
-fuel_11                 = openmc.Cell(cell_id=101, name='fuel_11')
-fgrp_11                 = openmc.Cell(cell_id=102, name='fgrp_11')
 fuel_12                 = openmc.Cell(cell_id=103, name='fuel_12')
 fgrp_12                 = openmc.Cell(cell_id=104, name='fgrp_12')
-fuel_13                 = openmc.Cell(cell_id=105, name='fuel_13')
-fgrp_13                 = openmc.Cell(cell_id=106, name='fgrp_13')
-ftop_14                 = openmc.Cell(cell_id=107, name='ftop_14')
 fvod_10                 = openmc.Cell(cell_id=108, name='fvod_10')
 
-fbot_20                 = openmc.Cell(cell_id=200, name='fbot_20')
-fuel_21                 = openmc.Cell(cell_id=201, name='fuel_21')
-fgrp_21                 = openmc.Cell(cell_id=202, name='fgrp_21')
 fuel_22                 = openmc.Cell(cell_id=203, name='fuel_22')
 fgrp_22                 = openmc.Cell(cell_id=204, name='fgrp_22')
-fuel_23                 = openmc.Cell(cell_id=205, name='fuel_23')
-fgrp_23                 = openmc.Cell(cell_id=206, name='fgrp_22')
-ftop_24                 = openmc.Cell(cell_id=207, name='ftop_24')
 fvod_20                 = openmc.Cell(cell_id=208, name='fvod_20')
 
-hpbt_10                 = openmc.Cell(cell_id=110, name='hpbt_10')
-hpco_11                 = openmc.Cell(cell_id=111, name='hpco_11')
-hpgr_11                 = openmc.Cell(cell_id=112, name='hpgr_11')
 hpco_12                 = openmc.Cell(cell_id=113, name='hpco_12')
 hpgr_12                 = openmc.Cell(cell_id=114, name='hpgr_12')
-hpco_13                 = openmc.Cell(cell_id=115, name='hpco_13')
-hpgr_13                 = openmc.Cell(cell_id=116, name='hpgr_13')
-hptp_14                 = openmc.Cell(cell_id=117, name='hptp_14')
 hpvd_10                 = openmc.Cell(cell_id=118, name='hpvd_10')
 
-hpbt_20                 = openmc.Cell(cell_id=210, name='hpbt_20')
-hpco_21                 = openmc.Cell(cell_id=211, name='hpco_21')
-hpgr_21                 = openmc.Cell(cell_id=212, name='hpgr_21')
 hpco_22                 = openmc.Cell(cell_id=213, name='hpco_22')
 hpgr_22                 = openmc.Cell(cell_id=214, name='hpgr_22')
-hpco_23                 = openmc.Cell(cell_id=215, name='hpco_23')
-hpgr_23                 = openmc.Cell(cell_id=216, name='hpgr_23')
-hptp_24                 = openmc.Cell(cell_id=217, name='hptp_24')
 hpvd_20                 = openmc.Cell(cell_id=218, name='hpvd_20')
 
 cr_drum                 = openmc.Cell(cell_id=21, name='cr_drum')
