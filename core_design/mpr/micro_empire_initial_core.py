@@ -199,12 +199,7 @@ cr_in                   = openmc.ZCylinder(surface_id=43, x0=0.0, y0=0.0, r=14.0
 cr_out                  = openmc.ZCylinder(surface_id=44, x0=0.0, y0=0.0, r=15.00,  name='cr_out')
 cr_gap                  = openmc.ZCylinder(surface_id=45, x0=0.0, y0=0.0, r=15.05,  name='cr_gap')
 
-bottom_0                = openmc.ZPlane(surface_id=51,  z0=0.00, name='bottom_0')
-bottom_1                = openmc.ZPlane(surface_id=52, z0=20.00, name='bottom_1')
-bottom_2                = openmc.ZPlane(surface_id=53, z0=50.00, name='bottom_2')
-top_2                   = openmc.ZPlane(surface_id=54, z0=150.00, name='top_1')
-top_1                   = openmc.ZPlane(surface_id=55, z0=180.00, name='top_2')
-top_0                   = openmc.ZPlane(surface_id=56, z0=200.00, name='top_0')
+# Remove the top_0, top_1, top_2 and bottom_0, bottom_1, bottom_2. 
 
 CR_000_180              = openmc.YPlane(surface_id=70, y0= 0.0, name='CR_000')
 CR_030_210              = openmc.Plane(surface_id=71,   a=-tan(30 * theta),  b=1.0, d= 0, name='CR_030')
