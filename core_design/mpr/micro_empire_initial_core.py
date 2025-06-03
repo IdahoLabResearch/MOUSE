@@ -347,10 +347,8 @@ grp_cc_cnt_2.fill       = monolith_cr
 assembly_gap_12.fill    = monolith_12
 assembly_gap_22.fill    = monolith_22
 
-
-out_univ_1.fill         = beryllium_lr
+# Remove upper and lower reflector material fillings 
 out_univ_2.fill         = monolith_rr
-out_univ_3.fill         = beryllium_ur
 
 f1                      = openmc.Universe()
 f2                      = openmc.Universe()
