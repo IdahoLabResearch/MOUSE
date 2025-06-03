@@ -260,9 +260,9 @@ assembly_gap_22         = openmc.Cell(cell_id=338, name='assembly_gap_22')
 grp_cc_cnt_2            = openmc.Cell(cell_id=342, name='grp_cc_cnt')
 core_reg                = openmc.Cell(cell_id=345, name='core_reg')
 core_reg_out            = openmc.Cell(cell_id=346, name='core_reg_out')
-out_univ_1              = openmc.Cell(cell_id=347, name='out_univ_1')
+
+# Remove upper and lower reflector cells 
 out_univ_2              = openmc.Cell(cell_id=348, name='out_univ_2')
-out_univ_3              = openmc.Cell(cell_id=349, name='out_univ_3')
 
 cr_01                   = openmc.Cell(cell_id=61, name='cr_01')
 cr_02                   = openmc.Cell(cell_id=62, name='cr_02')
