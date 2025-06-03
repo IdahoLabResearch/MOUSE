@@ -606,27 +606,28 @@ plot_file.export_to_xml()
 #=================================================================================================
 #                                        tallies.xml file
 #=================================================================================================
+# Remove cross sections generation and reactions rate calculations from tally section 
 tallies_file                = openmc.Tallies()
-energy_groups               = openmc.mgxs.EnergyGroups(group_edges=[1.00E-05, 6.70E-02, 3.20E-01, 1.00E+00, 4.00E+00, 9.88E+00,
-                                                                    4.81E+01, 4.54E+02, 4.90E+04, 1.83E+05, 8.21E+05, 4.00E+07])
-mgxs_lib                    = openmc.mgxs.Library(geometry)
-mgxs_lib.energy_groups      = energy_groups
-mgxs_lib.legendre_order     = 3
-mgxs_lib.num_delayed_groups = 6
-mgxs_lib.mgxs_types         = ['transport','total','capture','absorption','fission','nu-fission', 
-                               'kappa-fission', 'scatter', 'nu-scatter', 'scatter matrix',
-                               'nu-scatter matrix', 'scatter probability matrix',
-                               'consistent scatter matrix', 'consistent nu-scatter matrix',  
-                               'inverse-velocity', 'chi', 'chi-prompt', 'prompt-nu-fission',
-                               'chi-delayed', 'delayed-nu-fission','beta', 'decay-rate', 
-                               'prompt-nu-fission matrix', 'delayed-nu-fission matrix',
-                               'diffusion-coefficient', 'nu-diffusion-coefficient']
-mgxs_lib.domain_type        = 'material'
-mgxs_lib.domains            = geometry.get_all_materials().values()
-mgxs_lib.by_nuclide         = True
-mgxs_lib.xs_type            = 'micro'
-mgxs_lib.build_library()
-mgxs_lib.add_to_tallies_file(tallies_file, merge=False)
+#energy_groups               = openmc.mgxs.EnergyGroups(group_edges=[1.00E-05, 6.70E-02, 3.20E-01, 1.00E+00, 4.00E+00, 9.88E+00,
+#                                                                    4.81E+01, 4.54E+02, 4.90E+04, 1.83E+05, 8.21E+05, 4.00E+07])
+#mgxs_lib                    = openmc.mgxs.Library(geometry)
+#mgxs_lib.energy_groups      = energy_groups
+#mgxs_lib.legendre_order     = 3
+#mgxs_lib.num_delayed_groups = 6
+#mgxs_lib.mgxs_types         = ['transport','total','capture','absorption','fission','nu-fission', 
+#                               'kappa-fission', 'scatter', 'nu-scatter', 'scatter matrix',
+#                               'nu-scatter matrix', 'scatter probability matrix',
+#                               'consistent scatter matrix', 'consistent nu-scatter matrix',  
+#                               'inverse-velocity', 'chi', 'chi-prompt', 'prompt-nu-fission',
+#                               'chi-delayed', 'delayed-nu-fission','beta', 'decay-rate', 
+#                               'prompt-nu-fission matrix', 'delayed-nu-fission matrix',
+#                               'diffusion-coefficient', 'nu-diffusion-coefficient']
+#mgxs_lib.domain_type        = 'material'
+#mgxs_lib.domains            = geometry.get_all_materials().values()
+#mgxs_lib.by_nuclide         = True
+#mgxs_lib.xs_type            = 'micro'
+#mgxs_lib.build_library()
+#mgxs_lib.add_to_tallies_file(tallies_file, merge=False)
 
 material_filter             = openmc.MaterialFilter([uo2_11, uo2_12, uo2_13, monolith_11, monolith_12, monolith_13,
                                                      uo2_21, uo2_22, uo2_23, monolith_21, monolith_22, monolith_23,
@@ -639,12 +640,13 @@ tally1.filters              = [energy_filter, material_filter]
 tally1.scores               = ['flux']
 tallies_file.append(tally1)
 
-tally2                      = openmc.Tally(name='reactrion_rates')
-tally2.filters              = [energy_filter, material_filter]
-tally2.scores               = ['(n,gamma)', '(n,a)', '(n,2a)', '(n,2n)', '(n,3n)','(n,4n)', '(n,np)', '(n,p)', '(n,d)', '(n,t)', '(n,3He)']
-tally2.nuclides             = [ 'Be9',  'B10',  'B11',  'C12',  'C13',  'O16',  'O17',  'O18', 'Si28',  'Si29', 'Si30', 'U235',
-                               'U238', 'Cr50', 'Cr52', 'Cr53', 'Cr54', 'Mn55', 'Fe54', 'Fe56', 'Fe57',  'Fe58', 'Ni58', 'Ni60',
-                               'Ni61', 'Ni62', 'Ni64', 'Mo92', 'Mo94', 'Mo95', 'Mo96', 'Mo97', 'Mo98', 'Mo100', 'Na23', 'He4']
-tallies_file.append(tally2)
+#tally2                      = openmc.Tally(name='reactrion_rates')
+#tally2.filters              = [energy_filter, material_filter]
+#tally2.scores               = ['(n,gamma)', '(n,a)', '(n,2a)', '(n,2n)', '(n,3n)','(n,4n)', '(n,np)', '(n,p)', '(n,d)', '(n,t)', '(n,3He)']
+#tally2.nuclides             = [ 'Be9',  'B10',  'B11',  'C12',  'C13',  'O16',  'O17',  'O18', 'Si28',  'Si29', 'Si30', 'U235',
+#                               'U238', 'Cr50', 'Cr52', 'Cr53', 'Cr54', 'Mn55', 'Fe54', 'Fe56', 'Fe57',  'Fe58', 'Ni58', 'Ni60',
+#                               'Ni61', 'Ni62', 'Ni64', 'Mo92', 'Mo94', 'Mo95', 'Mo96', 'Mo97', 'Mo98', 'Mo100', 'Na23', 'He4']
+#tallies_file.append(tally2)
 tallies_file.export_to_xml()
 openmc.plot_geometry()
+openmc.run()
