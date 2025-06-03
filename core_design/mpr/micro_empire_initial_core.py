@@ -248,7 +248,7 @@ cr_270                  = openmc.Cell(cell_id=49, name='cr_270')
 cr_300                  = openmc.Cell(cell_id=50, name='cr_300')
 cr_330                  = openmc.Cell(cell_id=51, name='cr_330')
 
-# Remove assembly gab cells corresponding to upper and lower axial zones for two radial zones
+# Remove assembly ga cells corresponding to upper and lower axial zones for two radial zones
 # Two assemblies cells defined for two radial zones (assembly_reg_1 and assembly_reg_2)
 assembly_reg_1          = openmc.Cell(cell_id=332, name='assembly_reg_1')
 assembly_gap_12         = openmc.Cell(cell_id=334, name='assembly_gap_12')
@@ -294,15 +294,13 @@ hpco_22.region          = -hp_1
 hpgr_22.region          = +hp_2 
 hpvd_20.region          = +hp_1 & -hp_2 
 
-assembly_reg_1.region   = +r_left & -r_right & -r_upper_right & -r_upper_left & +r_lower_right & +r_lower_left & +bottom_0 & -top_0
-assembly_gap_11.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_0 & -bottom_1
-assembly_gap_12.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_1 & -top_1
-assembly_gap_13.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +top_1 & -top_0
+# Remove assembly gap regions corresponding to upper and lower axial zones for two radial zones
+# Remove top and bottom planes from regions definitions
+assembly_reg_1.region   = +r_left & -r_right & -r_upper_right & -r_upper_left & +r_lower_right & +r_lower_left 
+assembly_gap_12.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left 
 
-assembly_reg_2.region   = +r_left & -r_right & -r_upper_right & -r_upper_left & +r_lower_right & +r_lower_left & +bottom_0 & -top_0
-assembly_gap_21.region   = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_0 & -bottom_1
-assembly_gap_22.region   = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_1 & -top_1
-assembly_gap_23.region   = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +top_1 & -top_0
+assembly_reg_2.region   = +r_left & -r_right & -r_upper_right & -r_upper_left & +r_lower_right & +r_lower_left 
+assembly_gap_22.region   = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left 
 
 grp_cc_bot.region       = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_0 & -bottom_1
 grp_cc_cnt_1.region     = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_1 & -bottom_2
