@@ -531,6 +531,7 @@ settings_file.export_to_xml()
 #=================================================================================================
 #                                     plots.xml File
 #=================================================================================================
+# Remove the axial planes plots 
 p1  = openmc.Plot(plot_id=1)
 p1.origin   = [0.0, 0.0, 10]
 p1.width    = [250.0, 250.0]
@@ -566,42 +567,7 @@ p5.pixels   = [3600, 3600]
 p5.basis    = 'xy'
 p5.color_by = 'material'
 
-p6  = openmc.Plot(plot_id=6)
-p6.origin   = [0.0, 0.0, 100.0]
-p6.width    = [250, 210.0]
-p6.pixels   = [3600, 3600]
-p6.basis    = 'yz'
-p6.color_by = 'material'
-
-p7  = openmc.Plot(plot_id=7)
-p7.origin   = [2.150, 0.0, 100.0]
-p7.width    = [250, 210.0]
-p7.pixels   = [3600, 3600]
-p7.basis    = 'yz'
-p7.color_by = 'material'
-
-p8  = openmc.Plot(plot_id=8)
-p8.origin   = [10.00, 0.0, 100.0]
-p8.width    = [250, 210.0]
-p8.pixels   = [3600, 3600]
-p8.basis    = 'yz'
-p8.color_by = 'material'
-
-p9  = openmc.Plot(plot_id=9)
-p9.origin   = [20.00, 0.0, 100.0]
-p9.width    = [250, 210.0]
-p9.pixels   = [3600, 3600]
-p9.basis    = 'yz'
-p9.color_by = 'material'
-
-p10  = openmc.Plot(plot_id=10)
-p10.origin   = [40.00, 0.0, 100.0]
-p10.width    = [250, 210.0]
-p10.pixels   = [3600, 3600]
-p10.basis    = 'yz'
-p10.color_by = 'material'
-
-plot_file = openmc.Plots([p1,p2,p3,p4,p5,p6,p7,p8,p9,p10])
+plot_file = openmc.Plots([p1,p2,p3,p4,p5])
 plot_file.export_to_xml()
 #=================================================================================================
 #                                        tallies.xml file
