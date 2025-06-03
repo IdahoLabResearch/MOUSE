@@ -213,7 +213,7 @@ core_out_2              = openmc.ZCylinder(surface_id=82, x0=0.0, y0=0.0, r=112.
 
 core_out_2.boundary_type= 'vacuum'
 # Remove top_0 and bottom_0 boundary conditions
-# Remove fuel compacts and heat pipes cells corresponding to top, bottom, upper and lower axial zones
+# Remove fuel compacts and heat pipes cells corresponding to top, bottom, upper and lower axial zones for two radial zones
 
 fuel_12                 = openmc.Cell(cell_id=103, name='fuel_12')
 fgrp_12                 = openmc.Cell(cell_id=104, name='fgrp_12')
@@ -249,14 +249,12 @@ cr_270                  = openmc.Cell(cell_id=49, name='cr_270')
 cr_300                  = openmc.Cell(cell_id=50, name='cr_300')
 cr_330                  = openmc.Cell(cell_id=51, name='cr_330')
 
+# Remove assembly gab cells corresponding to upper and lower axial zones for two radial zones
+# Two assemblies cells defined for two radial zones (assembly_reg_1 and assembly_reg_2)
 assembly_reg_1          = openmc.Cell(cell_id=332, name='assembly_reg_1')
-assembly_gap_11         = openmc.Cell(cell_id=333, name='assembly_gap_11')
 assembly_gap_12         = openmc.Cell(cell_id=334, name='assembly_gap_12')
-assembly_gap_13         = openmc.Cell(cell_id=335, name='assembly_gap_13')
 assembly_reg_2          = openmc.Cell(cell_id=336, name='assembly_reg_2')
-assembly_gap_21         = openmc.Cell(cell_id=337, name='assembly_gap_21')
 assembly_gap_22         = openmc.Cell(cell_id=338, name='assembly_gap_22')
-assembly_gap_23         = openmc.Cell(cell_id=339, name='assembly_gap_23')
 grp_cc_bot              = openmc.Cell(cell_id=340, name='grp_cc_bot')
 grp_cc_cnt_1            = openmc.Cell(cell_id=341, name='grp_cc_cnt')
 grp_cc_cnt_2            = openmc.Cell(cell_id=342, name='grp_cc_cnt')
