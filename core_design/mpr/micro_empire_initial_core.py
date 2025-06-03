@@ -212,8 +212,7 @@ core_out_2              = openmc.ZCylinder(surface_id=82, x0=0.0, y0=0.0, r=112.
 
 
 core_out_2.boundary_type= 'vacuum'
-top_0.boundary_type     = 'vacuum'
-bottom_0.boundary_type  = 'vacuum'
+# Remove top_0 and bottom_0 boundary conditions
 
 fbot_10                 = openmc.Cell(cell_id=100, name='fbot_10')
 fuel_11                 = openmc.Cell(cell_id=101, name='fuel_11')
