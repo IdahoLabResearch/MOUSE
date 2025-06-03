@@ -302,13 +302,11 @@ assembly_gap_12.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left |
 assembly_reg_2.region   = +r_left & -r_right & -r_upper_right & -r_upper_left & +r_lower_right & +r_lower_left 
 assembly_gap_22.region   = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left 
 
-grp_cc_bot.region       = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_0 & -bottom_1
-grp_cc_cnt_1.region     = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_1 & -bottom_2
-grp_cc_cnt_2.region     = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +bottom_2 & -top_2
-grp_cc_cnt_3.region     = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +top_2 & -top_1
-grp_cc_top.region       = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left & +top_1 & -top_0
-core_reg.region         = +c_left & -c_right & -c_upper_right & -c_upper_left & +c_lower_right & +c_lower_left & +bottom_0 & -top_0
-core_reg_out.region     = (-c_left | +c_right | +c_upper_right | +c_upper_left | -c_lower_right | -c_lower_left) & +c_left_1 & -c_right_1 & -c_upper_right_1 & -c_upper_left_1 & +c_lower_right_1 & +c_lower_left_1 & +bottom_0 & -top_0
+# Remove the central graphite regions corresponding to top, bottom, upper and lower axial zones 
+# Remove top and bottom planes from regions definitions
+grp_cc_cnt_2.region     = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left 
+core_reg.region         = +c_left & -c_right & -c_upper_right & -c_upper_left & +c_lower_right & +c_lower_left 
+core_reg_out.region     = (-c_left | +c_right | +c_upper_right | +c_upper_left | -c_lower_right | -c_lower_left) & +c_left_1 & -c_right_1 & -c_upper_right_1 & -c_upper_left_1 & +c_lower_right_1 & +c_lower_left_1 
 
 cr_drum.region          =  +cr_in & -cr_out & +cr_bot & -cr_top & +bottom_0 & -top_0
 cr_refl.region          =  (-cr_in | -cr_bot | +cr_top) & -cr_out &+bottom_0 & -top_0
