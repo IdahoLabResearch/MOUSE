@@ -308,10 +308,11 @@ grp_cc_cnt_2.region     = +g_left & -g_right & -g_upper_right & -g_upper_left & 
 core_reg.region         = +c_left & -c_right & -c_upper_right & -c_upper_left & +c_lower_right & +c_lower_left 
 core_reg_out.region     = (-c_left | +c_right | +c_upper_right | +c_upper_left | -c_lower_right | -c_lower_left) & +c_left_1 & -c_right_1 & -c_upper_right_1 & -c_upper_left_1 & +c_lower_right_1 & +c_lower_left_1 
 
-cr_drum.region          =  +cr_in & -cr_out & +cr_bot & -cr_top & +bottom_0 & -top_0
-cr_refl.region          =  (-cr_in | -cr_bot | +cr_top) & -cr_out &+bottom_0 & -top_0
-cr_gpp.region           =  +cr_out & -cr_gap & +bottom_0 & -top_0
-cr_ass.region           =  +cr_gap & +bottom_0 & -top_0 
+# Remove top and bottom planes from control drums regions definitions
+cr_drum.region          =  +cr_in & -cr_out & +cr_bot & -cr_top 
+cr_refl.region          =  (-cr_in | -cr_bot | +cr_top) & -cr_out 
+cr_gpp.region           =  +cr_out & -cr_gap 
+cr_ass.region           =  +cr_gap 
 
 out_univ_1.region       = -bottom_1
 out_univ_2.region       =  +bottom_1 & -top_1
