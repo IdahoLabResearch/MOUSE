@@ -361,12 +361,12 @@ c3                      = openmc.Universe()
 c4                      = openmc.Universe()
 root                    = openmc.Universe(universe_id=0, name='root universe')
 
-
-f1.add_cells([fbot_10, fuel_11, fgrp_11, fuel_12, fgrp_12, fuel_13, fgrp_13, ftop_14, fvod_10,])
-h1.add_cells([hpbt_10, hpco_11, hpgr_11, hpco_12, hpgr_12, hpco_13, hpgr_13, hptp_14, hpvd_10,])
-f2.add_cells([fbot_20, fuel_21, fgrp_21, fuel_22, fgrp_22, fuel_23, fgrp_23, ftop_24, fvod_20,])
-h2.add_cells([hpbt_20, hpco_21, hpgr_21, hpco_22, hpgr_22, hpco_23, hpgr_23, hptp_24, hpvd_20,])
-uo.add_cells([out_univ_1, out_univ_2, out_univ_3,])
+# Remove fuel compacts and heat pipes cells corresponding to top, bottom, upper and lower axial zones from the defined universes
+f1.add_cells([fuel_12, fgrp_12, fvod_10,])
+h1.add_cells([hpco_12, hpgr_12, hpvd_10,])
+f2.add_cells([fuel_22, fgrp_22, fvod_20,])
+h2.add_cells([hpco_22, hpgr_22, hpvd_20,])
+uo.add_cells([out_univ_2,])
 
 lattice_hex_1             = openmc.HexLattice(lattice_id=55)
 lattice_hex_1.center      = (0., 0.,)
