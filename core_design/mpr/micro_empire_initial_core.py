@@ -261,6 +261,7 @@ core_reg                = openmc.Cell(cell_id=345, name='core_reg')
 core_reg_out            = openmc.Cell(cell_id=346, name='core_reg_out')
 
 # Remove upper and lower reflector cells 
+# Keep the hex core graphie monolith cell definition
 out_univ_2              = openmc.Cell(cell_id=348, name='out_univ_2')
 
 cr_01                   = openmc.Cell(cell_id=61, name='cr_01')
@@ -314,9 +315,9 @@ cr_refl.region          =  (-cr_in | -cr_bot | +cr_top) & -cr_out
 cr_gpp.region           =  +cr_out & -cr_gap 
 cr_ass.region           =  +cr_gap 
 
-out_univ_1.region       = -bottom_1
-out_univ_2.region       =  +bottom_1 & -top_1
-out_univ_3.region       = +top_1
+# Remove upper and lower reflectors regions definitions
+# Remove the hex core graphite monolith regions which is defined by the top and bottom planes. Since it is 2d, the hex core graphite monolith cell defined only with the material fill. 
+
 
 fbot_10.fill            = beryllium_lr
 fuel_11.fill            = uo2_11
