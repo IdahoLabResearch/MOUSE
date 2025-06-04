@@ -368,7 +368,7 @@ params['Radwaste Building Exterior Walls Volume'] =  358
 #                                           Sec. 12 : Cost
 # **************************************************************************************************************************
 Cost_estimate = bottom_up_cost_estimate('cost/Cost_Database.xlsx', params) 
-print(Cost_estimate.head(100).to_string(index=False))
+print(Cost_estimate.to_string(index=False))
 
 # **************************************************************************************************************************
 #                                           Sec. 13 : Post Processing
