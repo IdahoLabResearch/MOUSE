@@ -134,14 +134,22 @@ def scale_cost(initial_database, params):
 
 
 
-def update_high_level_costs(df):
+def update_high_level_costs(df, option):
     # Find the column name that starts with 'Estimated Cost'
     estimated_cost_col = [col for col in df.columns if col.startswith('Estimated Cost')][0]
     
     # Define the levels to process
     levels = [4, 3, 2, 1, 0]
-    
-    for (level) in levels:
+
+    # Define the account digit conditions based on the option
+    if option == "base cost":
+        valid_first_digits = ['1', '2']
+    elif option == "other costs":
+        valid_first_digits = ['3', '4', '5']
+    else:
+        raise ValueError("Invalid option. Please choose 'base cost' or 'other costs'.")
+
+    for level in levels:
         # Iterate over the rows
         for i in range(len(df)):
             if pd.isna(df.iloc[i, df.columns.get_loc(estimated_cost_col)]):
@@ -151,16 +159,19 @@ def update_high_level_costs(df):
                         if df.iloc[j, df.columns.get_loc('Level')] <= level:
                             break
                         if df.iloc[j, df.columns.get_loc('Level')] == level + 1:
-                            total_cost += df.iloc[j, df.columns.get_loc(estimated_cost_col)] 
+                            account_num = str(df.iloc[j, df.columns.get_loc('Account')])
+                            if account_num[0] in valid_first_digits:
+                                total_cost += df.iloc[j, df.columns.get_loc(estimated_cost_col)] 
                     df.iloc[i, df.columns.get_loc(estimated_cost_col)] = total_cost
     df = df.drop(columns=['Level'])
     return df
 
-     
+def add_indirect_cost(df):
+         
 
 def bottom_up_cost_estimate(cost_database_filename, params):
     escalated_cost = escalate_cost_database(cost_database_filename, params['escalation_year'])
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
     scaled_cost = scale_cost(escalated_cost_cleaned, params)
-    updated_cost = update_high_level_costs(scaled_cost)
+    updated_cost = update_high_level_costs(scaled_cost, option = "base cost") # update base cost: pre-construction and direct costs
     return updated_cost
