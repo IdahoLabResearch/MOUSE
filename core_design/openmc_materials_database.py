@@ -135,12 +135,12 @@ def collect_materials_data(params):
     NaK.add_nuclide("K39", 7.27413e-01)
     NaK.add_nuclide("K41", 5.24956e-02)
 
-    helium = openmc.Material(name='Helium')
-    helium.set_density('g/cm3', 0.000166)
-    helium.add_element('He', 1.0)
+    Helium = openmc.Material(name='Helium')
+    Helium.set_density('g/cm3', 0.000166)
+    Helium.add_element('He', 1.0)
     
-    materials.extend([NaK, helium])
-    materials_database.update({ 'NaK': NaK, 'helium' :helium})
+    materials.extend([NaK, Helium])
+    materials_database.update({ 'NaK': NaK, 'Helium' :Helium})
 
     # """""""""""""""""""""
     # Sec. 1.4 : Beryllium and Beryllium Oxide

@@ -182,7 +182,6 @@ def find_children_accounts(df):
                 # Convert the list to a comma-separated string
                 children_str = ','.join(children) if children else None
                 children_accounts[i] = children_str
-                print("children now", children_str, "parent now", df.iloc[i]['Account'])
 
     # Assign the list to the DataFrame
     df['Children Accounts'] = children_accounts
@@ -215,7 +214,6 @@ def calculate_high_level_accounts_cost(df, target_level, option):
             if row["Level"] == target_level and pd.isna(row[cost_column]):
                 print(f"Updating Account {row['Account']}")
                 children_accounts = row["Children Accounts"]
-                print(children_accounts)
                 
                 if not pd.isna(children_accounts):
                     children_accounts_list = children_accounts.split(",")
@@ -303,8 +301,6 @@ def calculate_high_level_capital_costs(df):
     
     # Calculate the sum of costs for the specified accounts
     occ_cost = df[df['Account'].isin(accounts_to_sum)][cost_column].sum()
-    print(occ_cost)
-    print(df[df['Account'].isin(accounts_to_sum)][cost_column], 'OCC')
     # Update the existing account "OCC" with the new total cost
     df = df._append({'Account': 'OCC','Account Title' : 'Overnight Capital Cost' ,cost_column: occ_cost}, ignore_index=True)
     return df

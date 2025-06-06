@@ -17,12 +17,12 @@ def build_openmc_model_GCMR(params):
     materials_database = collect_materials_data(params)
     fuel = materials_database[params['fuel']]
     reflector = materials_database[params['Reflector']]
-    moderator = materials_database[params['moderator']]
+    moderator = materials_database[params['Moderator']]
     moderator_booster = materials_database[params['moderator_booster']]
 
     control_drum_absorber = materials_database[params['Control Drum Absorber']]
     control_drum_reflector = materials_database[params['Control Drum Reflector']]
-    coolant =  materials_database[params['coolant']]
+    coolant =  materials_database[params['Coolant']]
 
     # **************************************************************************************************************************
     #                                                Sec. 2 : GEOMETRY: TRISO particles
@@ -68,7 +68,7 @@ def build_openmc_model_GCMR(params):
     active_core_maxz, active_core_minz, coolant , materials_database[params['matrix material']])
     
     booster_universe = create_universe_from_core_top_and_bottom_planes(params['booster radius'],\
-    active_core_maxz, active_core_minz, materials_database[params['moderator_booster']] , materials_database[params['moderator']]) 
+    active_core_maxz, active_core_minz, materials_database[params['moderator_booster']] , materials_database[params['Moderator']]) 
 
 
     # # # Construct hexagonal cells surrounded by coolant channels
@@ -81,7 +81,7 @@ def build_openmc_model_GCMR(params):
     # Set the pitch (distance between the centers of adjacent hexagons) of the hexagonal lattice
     fuel_lattice.pitch = (params['hex lattice_radius'],)###
     
-    fuel_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]) # inner_fill or moderator_universe
+    fuel_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]) # inner_fill or moderator_universe
     fuel_lattice.universes =  [[small_coolant_universe]*6, [fuel_universe]]
     fuel_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=fuel_lattice, region=hex_boundary)])
 
@@ -89,7 +89,7 @@ def build_openmc_model_GCMR(params):
     booster_lattice = openmc.HexLattice()
     booster_lattice.center = (0., 0.)
     booster_lattice.pitch = (params['hex lattice_radius'],)###
-    booster_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]) 
+    booster_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]) 
     booster_lattice.universes = [[small_coolant_universe]*6, [booster_universe]]
     booster_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=booster_lattice, region=hex_boundary)])
 
@@ -97,8 +97,8 @@ def build_openmc_model_GCMR(params):
     coolant_lattice = openmc.HexLattice()
     coolant_lattice.center = (0., 0.)
     coolant_lattice.pitch = (params['hex lattice_radius'],)
-    coolant_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]) 
-    coolant_lattice.universes = [[small_coolant_universe]*6, [openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])])]]
+    coolant_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]) 
+    coolant_lattice.universes = [[small_coolant_universe]*6, [openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])])]]
     coolant_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=coolant_lattice, region=hex_boundary)])
                             
     # **************************************************************************************************************************
@@ -106,7 +106,7 @@ def build_openmc_model_GCMR(params):
     # **************************************************************************************************************************
 
     assembly_universe, assembly_fuel_cells = create_assembly(params['assembly_rings'] , params['lattice_pitch'],\
-     openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]),\
+     openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]),\
      fuel_lattice_hex, booster_lattice_hex, outer_ring=None, simplified_output=False)
     
     if params['plotting'] == "yes":
@@ -147,14 +147,14 @@ def build_openmc_model_GCMR(params):
     corner_ring_ref = [coolant_lattice_hex]*((params['assembly_rings']-1)*3+1) + [booster_lattice_hex]*((params['assembly_rings']-1)*3-1)
     corner_ring_1 = cyclic_rotation(corner_ring_ref, (params['assembly_rings']-1)*3)
     corner_rings = [corner_ring_1] + [cyclic_rotation(corner_ring_1, (params['assembly_rings']-1)*i) for i in range(1,6)]
-    corner_assembly_universe = [create_assembly(params['assembly_rings'], params['lattice_pitch'], openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]),\
+    corner_assembly_universe = [create_assembly(params['assembly_rings'], params['lattice_pitch'], openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]),\
      fuel_lattice_hex, booster_lattice_hex, outer_ring=cr, simplified_output=True) for cr in corner_rings]
 
     # # Edge assembly universe
     edge_ring_ref = [coolant_lattice_hex]*((params['assembly_rings']-1)*2+1) + [booster_lattice_hex]*((params['assembly_rings']-1)*4-1)
     edge_ring_1 = cyclic_rotation(edge_ring_ref, (params['assembly_rings']-1)*4)
     edge_rings = [edge_ring_1] + [cyclic_rotation(edge_ring_1, (params['assembly_rings']-1)*i) for i in range(1,6)]
-    edge_assembly_universe = [create_assembly(params['assembly_rings'], params['lattice_pitch'], openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['moderator']])]),\
+    edge_assembly_universe = [create_assembly(params['assembly_rings'], params['lattice_pitch'], openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]),\
      fuel_lattice_hex, booster_lattice_hex, outer_ring=er) for er in edge_rings]
 
     # **************************************************************************************************************************
@@ -178,7 +178,7 @@ def build_openmc_model_GCMR(params):
     active_core = openmc.HexLattice()
     active_core.center = (0., 0.)
     active_core.pitch = (params['assembly_ftf'],)
-    active_core.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['reflector']])])  # reflector Area
+    active_core.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Reflector']])])  # reflector Area
 
     rings = [[assembly_universe]]
     assembly_number = 1
@@ -190,7 +190,7 @@ def build_openmc_model_GCMR(params):
     rings.insert(0, flatten_list([[ca] + [ea]*( params['core_rings']-2)\
         for (ca, ea) in zip(corner_assembly_universe, edge_assembly_universe)]))
     rings.insert(0, flatten_list([[openmc.Universe(cells =\
-        [openmc.Cell(fill= materials_database[params['reflector']])])] +\
+        [openmc.Cell(fill= materials_database[params['Reflector']])])] +\
             [cd]*( params['core_rings']-1) for cd in drums]))
     params['number of drums'] = (params['core_rings']-1) * len(drums)
     active_core.universes = rings

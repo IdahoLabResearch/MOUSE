@@ -411,7 +411,7 @@ def create_TRISO_particles_lattice_universe(params, triso_universe, materials_da
     compact_cell.fill = triso_assembly
 
     outer_fuel_region = +compact_surf & -active_core_maxz & +active_core_minz
-    outer_fuel_cell = openmc.Cell(fill= materials_database[params['moderator']], region=outer_fuel_region)
+    outer_fuel_cell = openmc.Cell(fill= materials_database[params['Moderator']], region=outer_fuel_region)
 
     fuel_universe = openmc.Universe(cells=[compact_cell, outer_fuel_cell])
     return active_core_maxz, active_core_minz,  fuel_universe,  compact_triso_particles_number 

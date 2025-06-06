@@ -190,11 +190,11 @@ except Exception as e:
     # Handle any errors that occur during the simulation
     print(f"An error occurred while running the OpenMC simulation: {e}")
 
-# TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-params['fuel_lifetime_days'] = 2078 # days
-params['mass_U235'] = 67711.4 # grams
-params['mass_U238'] = 278650.8  # grams
-params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
+# # TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
+# params['fuel_lifetime_days'] = 2078 # days
+# params['mass_U235'] = 67711.4 # grams
+# params['mass_U238'] = 278650.8  # grams
+# params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
 
 params['all_drums_volume'], params['Control Drum Absorber Mass'], params['Control Drum Reflector Mass'], params['Control Drums Mass'] =\
     calculate_drum_volume(params['Drum_Radius'], params['drum_height'],\

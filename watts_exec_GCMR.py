@@ -10,6 +10,7 @@ Users can modify any of the parameters in the "params" dictionary below.
 import numpy as np
 import time
 import warnings
+import traceback
 
 # Import custom modules and functions
 import watts  # Import watts library for simulation workflows for one or multiple codes
@@ -99,7 +100,7 @@ params['fuel_pin_radii'] = [0.025, 0.035, 0.039, 0.0425, 0.047] # cm
 #A background material that is used anywhere within the lattice but outside a TRISO particle
 # The background material (params['matrix material']) is within the compact region where the TRISO particles are packed.
 # The moderator (params['moderator']) is outside this compact region but within the larger cylindrical fuel region.
-params['matrix material'] = 'graphite'
+params['matrix material'] = 'Graphite'
 # The dimensions of the cylinderical lattice containing TRISO particles
 params['lattice height'] = 4 # cm
 
@@ -201,20 +202,23 @@ params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 2
 
 try:
     openmc_plugin = watts.PluginOpenMC(build_openmc_model_GCMR, show_stderr=True)  # running the LTMR Model
-    # monitor_heat_flux(params, openmc_plugin)
+    monitor_heat_flux(params, openmc_plugin)
 
 
 except Exception as e:
-    # Handle any errors that occur during the simulation
-    print("\n")  # Blank line before
-    print(f"\033[91mAn error occurred while running the OpenMC simulation: {e}\033[0m")
-    print("\n")  # Blank line after
+    print("An error occurred:")
+    traceback.print_exc()
 
-# # ## TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-params['fuel_lifetime_days'] =1305 # days
-params['mass_U235'] = 61975 # grams
-params['mass_U238'] = 263372.87  # grams
-params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
+    # # Handle any errors that occur during the simulation
+    # print("\n")  # Blank line before
+    # print(f"\033[91mAn error occurred while running the OpenMC simulation: {e}\033[0m")
+    # print("\n")  # Blank line after
+
+# # # ## TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
+# params['fuel_lifetime_days'] =1305 # days
+# params['mass_U235'] = 61975 # grams
+# params['mass_U238'] = 263372.87  # grams
+# params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
 
 
 

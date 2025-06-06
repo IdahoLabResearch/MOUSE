@@ -119,7 +119,7 @@ def build_openmc_model_LTMR(params):
                                                  fuel_pin_universe,
                                                  moderator_pin_universe,
                                                  pin_pitch,
-                                                 reflector_material = materials_database[params['reflector']],
+                                                 reflector_material = materials_database[params['Reflector']],
                                                  outer_universe = coolant_universe)
 
     # **************************************************************************************************************************
