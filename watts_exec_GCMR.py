@@ -228,13 +228,13 @@ params['Natural Uranium Mass'], params['fuel_tail_waste_mass_Kg'], params['SWU']
 # **************************************************************************************************************************
 #                                           Sec. 7 : Balance of Plant
 # ************************************************************************************************************************** 
+params['Coolant Mass Flow Rate'] = mass_flow_rate( params['Power MWt'] , params['Coolant Temperature Difference'], params['Coolant'])
 params['Primary HX Mass']  =  calculate_heat_exchanger_mass(params)[0] # Kg
 params['Secondary HX Mass'] = 0
 params['Compressor Pressure Ratio'] = 4 
 params['Compressor Isentropic Efficiency'] = 0.8
 # Coolant Temperature Differnce between the inlet and the outlet (reactor size)
 params['Coolant Temperature Difference'] = 360 #K or C
-params['Coolant Mass Flow Rate'] = mass_flow_rate( params['Power MWt'] , params['Coolant Temperature Difference'], params['Coolant'])
 # **************************************************************************************************************************
 #                                           Sec. 8 : Shielding
 # ************************************************************************************************************************** 
@@ -327,11 +327,14 @@ params['Excavation Volume'] = 463.93388 # m3
 # Financing params
 params['interest_rate'] = 0.06 # 
 
+# Reactor building is dependent on ISO ocntainer dimensions
 params['Reactor Building Slab Roof Volume'] = 219.18168 # m^3
 params['Reactor Building Basement Volume'] = 219.18168 # m^3
 params['Reactor Building Exterior Walls Volume'] = 438.04376 # m^3
 
-# Energy conversion building
+
+
+# Energy conversion building dimensions are dependent on ISO container dimensions
 params['Turbine Building Slab Roof Volume'] = 132 # m^3
 params['Turbine Building Basement Volume'] = 132 # m^3
 params['Turbine Building Exterior Wall'] = 192.64 # m^3
