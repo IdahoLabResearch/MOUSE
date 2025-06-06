@@ -184,7 +184,7 @@ params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 2
 
 try:
     openmc_plugin = watts.PluginOpenMC(build_openmc_model_LTMR, show_stderr=True)  # running the LTMR Model
-    # monitor_heat_flux(params, openmc_plugin)
+    monitor_heat_flux(params, openmc_plugin)
 
 except Exception as e:
     # Handle any errors that occur during the simulation
@@ -359,6 +359,7 @@ params['interest_rate'] = 0.06 #
 #                                           Sec. 12 : Cost
 # **************************************************************************************************************************
 Cost_estimate = bottom_up_cost_estimate('cost/Cost_Database.xlsx', params) 
+Cost_estimate .to_excel("LTMR.xlsx", index=False)
 print(Cost_estimate.to_string(index=False))
 
 # **************************************************************************************************************************

@@ -73,8 +73,6 @@ def escalate_cost_database(file_name, escalation_year):
     df['inflation_multiplier'] = inflation_multipliers
 
 
-    # df['inflation_multiplier'] = df.apply(lambda row: calculate_inflation_multiplier(file_name, row['Dollar Year'], row['Type'], escalation_year), axis=1)
-
     # Add the inflation-adjusted columns
     df['Adjusted Fixed Cost ($)'] = df['Fixed Cost ($)'] * df['inflation_multiplier']
     df['Adjusted Unit Cost ($)'] = df['Unit Cost'] * df['inflation_multiplier']
@@ -163,74 +161,93 @@ def scale_cost(initial_database, params):
             scaled_cost.at[index, f'Estimated Cost (${escalation_year } $))'] = estimated_cost
     return scaled_cost  
 
+def find_children_accounts(df):
+    # Find the column name that starts with "Estimated Cost"
+    estimated_cost_column = [col for col in df.columns if col.startswith("Estimated Cost")][0]
 
-
-def update_high_level_costs(df1):
-    # Find the column that starts with 'Estimated Cost'
-    estimated_cost_column = [col for col in df1.columns if col.startswith('Estimated Cost')][0]
-
-    # Function to update costs for a given level based on the next level
-    def update_level_costs(current_level, next_level):
-        for index, row in df1.iterrows():
-            account_starts_with = str(row['Account'])[0]
-            condition = account_starts_with in ('1', '2')  
-            
-            if row['Level'] == current_level and pd.isna(row[estimated_cost_column]) and condition:
-                sum_cost = 0
-                for i in range(index + 1, len(df1)):
-                    if df1.iloc[i]['Level'] == next_level:
-                        sum_cost += df1.iloc[i][estimated_cost_column]
-                    elif df1.iloc[i]['Level'] < next_level:
+    # Initialize a list for children accounts
+    children_accounts = [None] * len(df)
+    
+    for target_level in range(4, -1, -1):
+        source_level = target_level + 1
+        # Iterate over the dataframe
+        for i in range(len(df)):
+            if df.iloc[i]['Level'] == target_level and pd.isna(df.iloc[i][estimated_cost_column]):
+                children = []
+                for j in range(i + 1, len(df)):
+                    if df.iloc[j]['Level'] == source_level:
+                        children.append(str(df.iloc[j]['Account']))  # Convert to string
+                    elif df.iloc[j]['Level'] < source_level:
                         break
-                df1.at[index, estimated_cost_column] = sum_cost
+                # Convert the list to a comma-separated string
+                children_str = ','.join(children) if children else None
+                children_accounts[i] = children_str
+                print("children now", children_str, "parent now", df.iloc[i]['Account'])
 
-    # Update levels starting from the highest to the lowest
-    for current_level in range(4, -1, -1):
-        update_level_costs(current_level, current_level + 1)
-    
-    return df1
-
-# def update_high_level_costs(df, option):
-#     # Find the column name that starts with 'Estimated Cost'
-#     estimated_cost_col = [col for col in df.columns if col.startswith('Estimated Cost')][0]
-    
-#     # Define the levels to process
-#     levels = [4, 3, 2, 1, 0]
-
-#     # Define the account digit conditions based on the option
-#     if option == "base cost":
-#         valid_first_digits = ['1', '2']
-#     elif option == "other costs":
-#         valid_first_digits = ['3', '4', '5']
-#     else:
-#         raise ValueError("Invalid option. Please choose 'base cost' or 'other costs'.")
-
-#     for level in levels:
-
-#         # Iterate over the rows
-#         for i in range(len(df)):
-#             if pd.isna(df.iloc[i, df.columns.get_loc(estimated_cost_col)]):
+    # Assign the list to the DataFrame
+    df['Children Accounts'] = children_accounts
+    return df
 
 
-#                     if df.iloc[i, df.columns.get_loc('Level')] == level:   
-#                         total_cost = 0
-#                         for j in range(i + 1, len(df)):
 
-#                                 if df.iloc[j, df.columns.get_loc('Level')] <= level:
-#                                     break
-#                                 if df.iloc[j, df.columns.get_loc('Level')] == level + 1:
-#                                     account_num = str(df.iloc[j, df.columns.get_loc('Account')])
-                                  
-#                                     if account_num[0] in valid_first_digits:
-#                                         total_cost += df.iloc[j, df.columns.get_loc(estimated_cost_col)] 
-#                         df.iloc[i, df.columns.get_loc(estimated_cost_col)] = total_cost
-    
-#     return df
+def get_estimated_cost_column(df):
+    for col in df.columns:
+        if col.startswith("Estimated Cost"):
+            return col
+    return None
+
+def calculate_high_level_accounts_cost(df, target_level, option):
+    cost_column = get_estimated_cost_column(df)
+    print(f"Updating costs of the level {target_level} accounts")
+
+    # Determine the prefix condition based on the option parameter
+    if option == "base":
+        valid_prefixes = ('1', '2')
+    elif option == "other":
+        valid_prefixes = ('3', '4', '5')
+    else:
+        raise ValueError("Invalid option. Choose 'base' or 'other'.")
+
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        # Check if the account starts with the valid prefixes
+        if str(row["Account"]).startswith(valid_prefixes):
+            if row["Level"] == target_level and pd.isna(row[cost_column]):
+                print(f"Updating Account {row['Account']}")
+                children_accounts = row["Children Accounts"]
+                print(children_accounts)
+                
+                if not pd.isna(children_accounts):
+                    children_accounts_list = children_accounts.split(",")
+
+                    # Initialize the sum
+                    total_sum = 0
+                    # Iterate through each account in the children_accounts_list
+                    for account in children_accounts_list:
+                        # Convert the account to a float
+                        account_value = float(account)
+                        # Add the corresponding value from the DataFrame to the total_sum
+                        total_sum += df[df["Account"] == account_value][cost_column].values[0]
+                    df.at[index, cost_column] = total_sum
+
+    return df
+
+
+
+def update_high_level_costs(scaled_cost, option):
+    # input is the scaled cost
+    df_with_children_accounts =  find_children_accounts(scaled_cost)
+    for level in range(4, -1, -1):
+        df_updated = calculate_high_level_accounts_cost(df_with_children_accounts, level, option)
+    return df_updated
+
+
+
 
 def calculate_accounts_31_32_cost( df):
     
     # Find the column name that starts with 'Estimated Cosoption == "other costs"t'
-    estimated_cost_col = [col for col in df.columns if col.startswith('Estimated Cost')][0]
+    estimated_cost_col = get_estimated_cost_column(df)
 
     # Filter the DataFrame for accounts 21, 22, and 23
     filtered_df = df[df['Account'].isin([21, 22, 23])]
@@ -247,44 +264,59 @@ def calculate_accounts_31_32_cost( df):
     df.loc[df['Account'] == 32, estimated_cost_col] = df.loc[df['Account'] == 21, estimated_cost_col].values[0] * (df.loc[df['Account'] == 31, estimated_cost_col].values[0] / df.loc[df['Account'] == 22, estimated_cost_col].values[0])
     return df
 
-def update_accounts_30_40(df):
-    # Ensure 'Account' is treated as a string for proper filtering
-    df['Account'] = df['Account'].astype(str)
+# def update_accounts_30_40(df):
+#     # Ensure 'Account' is treated as a string for proper filtering
+#     df['Account'] = df['Account'].astype(str)
     
-    # Identify the column that starts with 'Estimated Cost'
-    cost_column = [col for col in df.columns if col.startswith('Estimated Cost')][0]
+#     # Identify the column that starts with 'Estimated Cost'
+#     cost_column = get_estimated_cost_column(df)
 
-    # Calculate the sum for account 30
-    accounts_30s = [str(i) for i in range(31, 40)]
-    df_30s = df[df['Account'].isin(accounts_30s)]
-    sum_30s = df_30s[cost_column].sum()
+#     # Calculate the sum for account 30
+#     accounts_30s = [str(i) for i in range(31, 40)]
+#     df_30s = df[df['Account'].isin(accounts_30s)]
+#     sum_30s = df_30s[cost_column].sum()
 
-    # Calculate the sum for account 40
-    accounts_40s = [str(i) for i in range(41, 50)]
-    df_40s = df[df['Account'].isin(accounts_40s)]
-    sum_40s = df_40s[cost_column].sum()
+#     # Calculate the sum for account 40
+#     accounts_40s = [str(i) for i in range(41, 50)]
+#     df_40s = df[df['Account'].isin(accounts_40s)]
+#     sum_40s = df_40s[cost_column].sum()
 
-    # Update or add the rows for accounts 30 and 40
-    if '30' in df['Account'].values:
-        df.loc[df['Account'] == '30', cost_column] = sum_30s
-    else:
-        df = df.append({'Account': '30', cost_column: sum_30s}, ignore_index=True)
+#     # Update or add the rows for accounts 30 and 40
+#     if '30' in df['Account'].values:
+#         df.loc[df['Account'] == '30', cost_column] = sum_30s
+#     else:
+#         df = df.append({'Account': '30', cost_column: sum_30s}, ignore_index=True)
         
-    if '40' in df['Account'].values:
-        df.loc[df['Account'] == '40', cost_column] = sum_40s
-    else:
-        df = df.append({'Account': '40', cost_column: sum_40s}, ignore_index=True)
+#     if '40' in df['Account'].values:
+#         df.loc[df['Account'] == '40', cost_column] = sum_40s
+#     else:
+#         df = df.append({'Account': '40', cost_column: sum_40s}, ignore_index=True)
 
-    return df
+#     return df
    
+def calculate_high_level_capital_costs(df):
+     # List of accounts to sum
+    accounts_to_sum = [10, 20, 30, 40]
+
+    # Find the column that starts with "Estimated Cost"
+    cost_column = get_estimated_cost_column(df)
+    
+    # Calculate the sum of costs for the specified accounts
+    occ_cost = df[df['Account'].isin(accounts_to_sum)][cost_column].sum()
+    print(occ_cost)
+    print(df[df['Account'].isin(accounts_to_sum)][cost_column], 'OCC')
+    # Update the existing account "OCC" with the new total cost
+    df = df._append({'Account': 'OCC','Account Title' : 'Overnight Capital Cost' ,cost_column: occ_cost}, ignore_index=True)
+    return df
 
 
 def bottom_up_cost_estimate(cost_database_filename, params):
     escalated_cost = escalate_cost_database(cost_database_filename, params['escalation_year'])
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
     scaled_cost = scale_cost(escalated_cost_cleaned, params)
-    updated_cost = update_high_level_costs(scaled_cost) #, option = "base cost") # update base cost: pre-construction and direct costs
+    updated_cost = update_high_level_costs(scaled_cost, 'base' )
     updated_cost_with_indirect_cost = calculate_accounts_31_32_cost(updated_cost)
-    updated_accounts_10_40 = update_accounts_30_40(updated_cost_with_indirect_cost)
-    return updated_accounts_10_40
+    updated_accounts_10_40 = update_high_level_costs(updated_cost_with_indirect_cost, 'other' )
+    high_Level_catpial_cost = calculate_high_level_capital_costs(updated_accounts_10_40)
+    return high_Level_catpial_cost
 

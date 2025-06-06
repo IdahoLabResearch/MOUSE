@@ -364,10 +364,10 @@ def run_depletion_analysis(params):
     params['number of drums'] = num_drums 
 
     settings = openmc.Settings.from_xml()
-    # depletion_results = openmc_depletion(params, lattice_geometry, settings)
-    # params['fuel_lifetime_days'] = depletion_results[0]  # days
-    # params['mass_U235'] = depletion_results[1]  # grams
-    # params['mass_U238'] = depletion_results[2]  # grams
+    depletion_results = openmc_depletion(params, lattice_geometry, settings)
+    params['fuel_lifetime_days'] = depletion_results[0]  # days
+    params['mass_U235'] = depletion_results[1]  # grams
+    params['mass_U238'] = depletion_results[2]  # grams
 
 def monitor_heat_flux(params, openmc_plugin ):
     if params['heat_flux'] <= params['heat_flux_criteria']:
