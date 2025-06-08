@@ -204,8 +204,10 @@ def calculate_high_level_accounts_cost(df, target_level, option):
         valid_prefixes = ('1', '2')
     elif option == "other":
         valid_prefixes = ('3', '4', '5')
+    elif option == "finance": 
+        valid_prefixes = ('6')  
     else:
-        raise ValueError("Invalid option. Choose 'base' or 'other'.")
+        raise ValueError("Invalid option. Choose 'base' or 'other' or 'finance'.")
 
     # Iterate over each row in the DataFrame
     for index, row in df.iterrows():
@@ -262,47 +264,53 @@ def calculate_accounts_31_32_cost( df):
     df.loc[df['Account'] == 32, estimated_cost_col] = df.loc[df['Account'] == 21, estimated_cost_col].values[0] * (df.loc[df['Account'] == 31, estimated_cost_col].values[0] / df.loc[df['Account'] == 22, estimated_cost_col].values[0])
     return df
 
-# def update_accounts_30_40(df):
-#     # Ensure 'Account' is treated as a string for proper filtering
-#     df['Account'] = df['Account'].astype(str)
-    
-#     # Identify the column that starts with 'Estimated Cost'
-#     cost_column = get_estimated_cost_column(df)
 
-#     # Calculate the sum for account 30
-#     accounts_30s = [str(i) for i in range(31, 40)]
-#     df_30s = df[df['Account'].isin(accounts_30s)]
-#     sum_30s = df_30s[cost_column].sum()
+def calculate_interest_cost(params, OCC):
+    interest_rate = params['Interest Rate']
+    construction_duration = params['Construction Duration']
+    debt_to_equity_ratio = params['Debt To Equity Ratio'] 
+    # Interest rate from this equation (from Levi)
+    B =(1+ np.exp((np.log(1+ interest_rate)) * construction_duration/12))
+    C  =((np.log(1+ interest_rate)*(construction_duration/12)/3.14)**2+1)
+    Interest_expenses = debt_to_equity_ratio*OCC*((0.5*B/C)-1)
+    return Interest_expenses
 
-#     # Calculate the sum for account 40
-#     accounts_40s = [str(i) for i in range(41, 50)]
-#     df_40s = df[df['Account'].isin(accounts_40s)]
-#     sum_40s = df_40s[cost_column].sum()
 
-#     # Update or add the rows for accounts 30 and 40
-#     if '30' in df['Account'].values:
-#         df.loc[df['Account'] == '30', cost_column] = sum_30s
-#     else:
-#         df = df.append({'Account': '30', cost_column: sum_30s}, ignore_index=True)
-        
-#     if '40' in df['Account'].values:
-#         df.loc[df['Account'] == '40', cost_column] = sum_40s
-#     else:
-#         df = df.append({'Account': '40', cost_column: sum_40s}, ignore_index=True)
-
-#     return df
-   
-def calculate_high_level_capital_costs(df):
+def calculate_high_level_capital_costs(df, params):
+    power_kWe = 1000 * params['Power MWe']
      # List of accounts to sum
-    accounts_to_sum = [10, 20, 30, 40]
+    accounts_to_sum = [10, 20, 30, 40, 50]
 
     # Find the column that starts with "Estimated Cost"
     cost_column = get_estimated_cost_column(df)
     
     # Calculate the sum of costs for the specified accounts
     occ_cost = df[df['Account'].isin(accounts_to_sum)][cost_column].sum()
-    # Update the existing account "OCC" with the new total cost
+    
+    # Create the OCC account "OCC" with the new total cost
     df = df._append({'Account': 'OCC','Account Title' : 'Overnight Capital Cost' ,cost_column: occ_cost}, ignore_index=True)
+    df = df._append({'Account': 'OCC per kW','Account Title' : 'Overnight Capital Cost per kW' ,cost_column: occ_cost/ power_kWe }, ignore_index=True)
+
+    #OCC excluding the fuel
+    occ_excl_fuel = occ_cost - (df.loc[df['Account'] == 25, cost_column].values[0])
+    df = df._append({'Account': 'OCC excl. fuel','Account Title' : 'Overnight Capital Cost Excluding Fuel', cost_column: occ_excl_fuel }, ignore_index=True)
+    df = df._append({'Account': 'OCC excl. fuel per kW','Account Title' : 'Overnight Capital Cost Excluding Fuel per kW', cost_column: occ_excl_fuel/ power_kWe }, ignore_index=True)
+
+    df.loc[df['Account'] == 62, cost_column] =  calculate_interest_cost(params, occ_cost)
+    return df
+
+def calculate_TCI(df, params):
+    power_kWe = 1000 * params['Power MWe']
+    # List of accounts to sum
+    accounts_to_sum = ['OCC', 60]
+    # Find the column that starts with "Estimated Cost"
+    cost_column = get_estimated_cost_column(df)
+    # Calculate the sum of costs for the specified accounts
+    tci_cost = df[df['Account'].isin(accounts_to_sum)][cost_column].sum()
+    # Update the existing account "OCC" with the new total cost
+    df = df._append({'Account': 'TCI','Account Title' : 'Total Capital Investment', cost_column: tci_cost}, ignore_index=True)
+    df = df._append({'Account': 'TCI per kW','Account Title' : 'Total Capital Investment per kW', cost_column: tci_cost/power_kWe}, ignore_index=True)
+
     return df
 
 
@@ -313,6 +321,9 @@ def bottom_up_cost_estimate(cost_database_filename, params):
     updated_cost = update_high_level_costs(scaled_cost, 'base' )
     updated_cost_with_indirect_cost = calculate_accounts_31_32_cost(updated_cost)
     updated_accounts_10_40 = update_high_level_costs(updated_cost_with_indirect_cost, 'other' )
-    high_Level_catpial_cost = calculate_high_level_capital_costs(updated_accounts_10_40)
-    return high_Level_catpial_cost
+    high_Level_capital_cost = calculate_high_level_capital_costs(updated_accounts_10_40, params)
+    updated_accounts_10_60 = update_high_level_costs(high_Level_capital_cost , 'finance' )
+    TCI = calculate_TCI(updated_accounts_10_60, params )
+
+    return TCI
 
