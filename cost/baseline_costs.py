@@ -1,6 +1,8 @@
 
 import pandas as pd
+import numpy as np
 from cost.cost_utils import *
+from reactor_engineering_evaluation.operation import *
 # **************************************************************************************************************************
 #                                                Sec. 0 :Inflation
 # **************************************************************************************************************************
@@ -37,7 +39,7 @@ def calculate_inflation_multiplier(file_path, base_dollar_year, cost_type, escal
 
 
 
-def escalate_cost_database(file_name, escalation_year):
+def escalate_cost_database(file_name, escalation_year, params):
     """
     Reads an Excel file with a specified sheet name into a Pandas DataFrame.
     
@@ -77,6 +79,14 @@ def escalate_cost_database(file_name, escalation_year):
     df['Adjusted Fixed Cost ($)'] = df['Fixed Cost ($)'] * df['inflation_multiplier']
     df['Adjusted Unit Cost ($)'] = df['Unit Cost'] * df['inflation_multiplier']
     
+
+    # also read extra economic parameters that do not need to go through the inflation adjustment
+    df_extra_params = pd.read_excel(file_name, sheet_name="Economics Parameters")
+    # Create the dictionary
+    extra_economic_parameters = dict(zip(df_extra_params["Parameter"], df_extra_params["Value"]))
+    # Add the extra economic parameters to the params dictionary using a for loop
+    for parameter, value in extra_economic_parameters.items():
+        params[parameter] = value
     return df
 
 
@@ -117,7 +127,25 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
             cost_premium = 1.15
         elif  0.2 <params['enrichment']:
             print("\033[91m ERROR: Enrichment is too high \033[0m")
-        cost = cost_premium * unit_cost *pow(scaling_variable_value,exponent)    
+        cost = cost_premium * unit_cost *pow(scaling_variable_value,exponent) 
+    elif account == 711:
+        cost_multiplier = params['FTEs Per Onsite Operator Per Year'] 
+        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
+    elif account == 712:
+        cost_multiplier = params['FTEs Per Offsite Operator (24/7)']
+        cost = cost_multiplier * unit_cost * pow(1 / scaling_variable_value, exponent) 
+    elif account == 713:
+        cost_multiplier = params['FTEs Per Security Staff (24/7)']
+        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
+    
+    elif account == 78:
+        AR = params['Annual Return']
+        LP = params ['Levelization Period']
+        cost_multiplier = - AR/(1- pow(1+AR, LP))
+        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
+    elif account == 81:
+        cost_multiplier =  params['FTEs Per Operator Per Year Per Refueling'] 
+        cost = cost_multiplier * unit_cost * pow(scaling_variable_value, exponent)
     return cost
     
 
@@ -158,7 +186,7 @@ def scale_cost(initial_database, params):
 
 
             # Assign the calculated value to the corresponding row in the new DataFrame
-            scaled_cost.at[index, f'Estimated Cost (${escalation_year } $))'] = estimated_cost
+            scaled_cost.at[index, f'Estimated Cost (${escalation_year } $)'] = estimated_cost
     return scaled_cost  
 
 def find_children_accounts(df):
@@ -206,8 +234,10 @@ def calculate_high_level_accounts_cost(df, target_level, option):
         valid_prefixes = ('3', '4', '5')
     elif option == "finance": 
         valid_prefixes = ('6')  
+    elif option == "annual": 
+        valid_prefixes = ('7', '8')      
     else:
-        raise ValueError("Invalid option. Choose 'base' or 'other' or 'finance'.")
+        raise ValueError("Invalid option. Choose 'base' or 'other' or 'finance' or 'annual'.")
 
     # Iterate over each row in the DataFrame
     for index, row in df.iterrows():
@@ -242,9 +272,7 @@ def update_high_level_costs(scaled_cost, option):
     return df_updated
 
 
-
-
-def calculate_accounts_31_32_cost( df):
+def calculate_accounts_31_32_75_82_cost( df, params):
     
     # Find the column name that starts with 'Estimated Cosoption == "other costs"t'
     estimated_cost_col = get_estimated_cost_column(df)
@@ -255,13 +283,20 @@ def calculate_accounts_31_32_cost( df):
     # Sum the values in the 'Estimated Cost' column for the filtered accounts
     tot_field_direct_cost = filtered_df[estimated_cost_col].sum()
 
-    acct_31_cost = 0.07 * tot_field_direct_cost # This ratio is based on MARVEL
+    acct_31_cost = params['indirect to direct field-related cost'] * tot_field_direct_cost # This ratio is based on MARVEL
     df.loc[df['Account'] == 31, estimated_cost_col] = acct_31_cost
 
     # To calculate the cost of factory and construction supervision (Account 32), 
     # the ratio of the factory and field indirect costs (Account 31) to the reactor systems cost (account 22) 
     # is calculated and multiplied by the cost of structures and improvements (Account 21)
     df.loc[df['Account'] == 32, estimated_cost_col] = df.loc[df['Account'] == 21, estimated_cost_col].values[0] * (df.loc[df['Account'] == 31, estimated_cost_col].values[0] / df.loc[df['Account'] == 22, estimated_cost_col].values[0])
+    
+    # decommisioning cost
+    df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Maintenance to Direct Cost Ratio']
+
+    cycle_length = params['fuel_lifetime_days'] / 365.25
+    df.loc[df['Account'] == 82, estimated_cost_col] = df.loc[df['Account'] == 25, estimated_cost_col].values[0] /  cycle_length
+
     return df
 
 
@@ -314,16 +349,115 @@ def calculate_TCI(df, params):
     return df
 
 
+
+
+def energy_cost_levelized(params, df):
+    
+    plant_lifetime_years = params['Levelization Period']
+    discount_rate = params['Interest Rate']
+    power_MWe = params['Power MWe']
+    capacity_factor = params['Capacity Factor']
+
+    estimated_cost_col = get_estimated_cost_column(df)
+
+    cap_cost = df.loc[df['Account'] == 'TCI', estimated_cost_col].values[0]
+    ann_cost = df.loc[df['Account'] == 70, estimated_cost_col].values[0]  + df.loc[df['Account'] == 80, estimated_cost_col].values[0] 
+    levelized_ann_cost = ann_cost / params['Annual Electricity Production'] 
+    
+    df = df._append({'Account': 'AC','Account Title' : 'Annualized Cost', estimated_cost_col: ann_cost}, ignore_index=True)
+    df = df._append({'Account': 'AC per MWh','Account Title' : 'Annualized Cost per MWh', estimated_cost_col: levelized_ann_cost}, ignore_index=True)
+
+    
+    sum_cost = 0 # initialization 
+    sum_elec = 0
+    
+    for i in range(  1 + plant_lifetime_years) :
+        
+        if i == 0:
+        # assuming that the cap cost is split between the cons years
+            cap_cost_per_year = cap_cost
+            annual_cost = 0
+            elec_gen = 0
+            
+        elif i >0:
+            cap_cost_per_year  = 0
+            annual_cost = ann_cost
+            elec_gen = power_MWe *capacity_factor * 365 * 24       # MW hour. 
+        sum_cost +=  (cap_cost_per_year + annual_cost)/ ((1+ discount_rate)**i) 
+        sum_elec += elec_gen/ ((1 + discount_rate)**i) 
+    lcoe =  sum_cost/ sum_elec
+    
+    
+    df = df._append({'Account': 'LCOE','Account Title' : 'Levelized Cost of Electricity ($/MWh)', estimated_cost_col: lcoe}, ignore_index=True)
+    return df
+
+
+# def transform_dataframe(df):
+#     """
+#     Divides all values in the specified column by one million, except the last two rows.
+
+#     Parameters:
+#     df (pd.DataFrame): The dataframe containing the data.
+#     column_name (str): The name of the column to be modified.
+
+#     Returns:
+#     pd.DataFrame: The modified dataframe.
+#     """
+#     column_name = get_estimated_cost_column(df)
+#     df = df.drop(columns=['Children Accounts', 'Level'])
+  
+#     df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)] / 1000000
+
+#     # Appending 'M' to the modified values
+#     df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)].astype(str) + ' M'
+
+    # return df
+
+def transform_dataframe(df):
+    """
+    Divides all values in the specified column by one million, except the last two rows,
+    rounds to one non-zero digit after the decimal point, and appends 'M'. Converts the last two rows to integers.
+
+    Parameters:
+    df (pd.DataFrame): The dataframe containing the data.
+
+    Returns:
+    pd.DataFrame: The modified dataframe.
+    """
+    column_name = get_estimated_cost_column(df)
+    df = df.drop(columns=['Children Accounts', 'Level'])
+    
+    # Dividing all the elements in 'column_name' by a million, except the last two rows
+    df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)] / 1000000
+    
+    # Rounding to one non-zero digit after the decimal point
+    df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)].apply(lambda x: round(x, -int(np.floor(np.log10(abs(x)))) + 1) if x != 0 else 0)
+    
+    # Appending 'M' to the modified values
+    df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)].astype(str) + ' M'
+    
+    # Converting the last two rows to integers
+    df.iloc[-2:, df.columns.get_loc(column_name)] = df.iloc[-2:, df.columns.get_loc(column_name)].astype(int)
+    
+    return df
 def bottom_up_cost_estimate(cost_database_filename, params):
-    escalated_cost = escalate_cost_database(cost_database_filename, params['escalation_year'])
+    escalated_cost = escalate_cost_database(cost_database_filename, params['escalation_year'], params)
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
+    
+    reactor_operation(params)
+
     scaled_cost = scale_cost(escalated_cost_cleaned, params)
     updated_cost = update_high_level_costs(scaled_cost, 'base' )
-    updated_cost_with_indirect_cost = calculate_accounts_31_32_cost(updated_cost)
+    updated_cost_with_indirect_cost = calculate_accounts_31_32_75_82_cost(updated_cost, params)
     updated_accounts_10_40 = update_high_level_costs(updated_cost_with_indirect_cost, 'other' )
     high_Level_capital_cost = calculate_high_level_capital_costs(updated_accounts_10_40, params)
+    
+
+
     updated_accounts_10_60 = update_high_level_costs(high_Level_capital_cost , 'finance' )
     TCI = calculate_TCI(updated_accounts_10_60, params )
-
-    return TCI
+    updated_accounts_70_80 = update_high_level_costs(TCI , 'annual' )
+    final_COA = energy_cost_levelized(params, updated_accounts_70_80)
+    presented_COA = transform_dataframe(final_COA )
+    return presented_COA
 

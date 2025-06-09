@@ -22,7 +22,7 @@ from core_design.drums import *
 
 # # Import engineering evaluation tools and functions
 from reactor_engineering_evaluation.tools import *
-from reactor_engineering_evaluation.operation import *
+
 from reactor_engineering_evaluation.fuel_calcs import *
 from reactor_engineering_evaluation.vessels_calcs import *
 from reactor_engineering_evaluation.BOP import *
@@ -299,21 +299,18 @@ params ['Vessel and Guard Vessel Masses'] = params['Vessel Mass'] +  params['Gua
 #                                           Sec. 10 : Operation
 # **************************************************************************************************************************
 
-# # operation
-params['num_people_required_per_refueling'] = 5
-params['num_people_required_per_startup'] = 4
+params['Operation Mode'] = "Autonomous" # "Non-Autonomous" or "Autonomous"
+params['Number of Operators'] = 2
 
-params['levelization_period_years'] = 60 # in years
-params['refueling_period_days'] = 15
-params['number_of_unanticipated_shutdowns_per_year']= 0.8
+params['Levelization Period'] = 60 # in years
+params['Refueling Period'] = 7
+params['Emergency Shutdowns Per Year']= 0.2
 
-params['duration_to_startup_after_refueling_days'] = 7
-params['duration_to_startup_after_shutdown_days'] = 14
-params['reactors_monitored_by_one_person'] = 5 
-params['FTEs_for_security_staff'] = 5 
+params['Startup Duration after Refueling'] = 2
+params['Startup Duration after Emergency Shutdown'] = 14
+params['Reactors Monitored Per Operator'] = 10
+params['Security Staff Per Shift'] = 1
 
-params['people_by_days_refueling_per_year'], params['people_by_days_startup_per_year'],\
-        params['capacity_factor'] = reactor_operation(params)
 
 # **************************************************************************************************************************
 #                                           Sec. 11 : Economic Parameters
@@ -330,10 +327,11 @@ params['escalation_year'] = 2023
 params['Excavation Volume'] = 463.93388 # m3 
 # Financing params
 # Financing params
-params['Interest Rate'] = 0.08 # 
+params['Interest Rate'] = 0.065 # 
 params['Construction Duration'] = 12 # months 
 params['Debt To Equity Ratio'] = 0.5 
 
+params['Annual Return'] = 0.0475
 
 params['Reactor Building Slab Roof Volume'] = 219.18168 # m^3
 params['Reactor Building Basement Volume'] = 219.18168 # m^3
