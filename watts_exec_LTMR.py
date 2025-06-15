@@ -184,16 +184,13 @@ params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 2
 
 try:
     openmc_plugin = watts.PluginOpenMC(build_openmc_model_LTMR, show_stderr=True)  # running the LTMR Model
-    # monitor_heat_flux(params, openmc_plugin)
+    monitor_heat_flux(params, openmc_plugin)
 
 except Exception as e:
     # Handle any errors that occur during the simulation
     print(f"An error occurred while running the OpenMC simulation: {e}")
 
-# TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-params['fuel_lifetime_days'] = 2078 # days
-params['mass_U235'] = 67711.4 # grams
-params['mass_U238'] = 278650.8  # grams
+
 params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
 
 params['all_drums_volume'], params['Control Drum Absorber Mass'], params['Control Drum Reflector Mass'], params['Control Drums Mass'] =\
@@ -371,7 +368,7 @@ print(Cost_estimate.to_string(index=False))
 #                                           Sec. 13 : Post Processing
 # **************************************************************************************************************************
 
-# params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
+params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
 
 #Calculate the code execution time
 elapsed_time = (time.time() - time_start) / 60

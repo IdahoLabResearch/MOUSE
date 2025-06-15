@@ -202,25 +202,20 @@ params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 2
 
 try:
     openmc_plugin = watts.PluginOpenMC(build_openmc_model_GCMR, show_stderr=True)  # running the LTMR Model
-    # monitor_heat_flux(params, openmc_plugin)
+    monitor_heat_flux(params, openmc_plugin)
 
 
 except Exception as e:
     print("An error occurred:")
     traceback.print_exc()
 
-    # # Handle any errors that occur during the simulation
-    # print("\n")  # Blank line before
-    # print(f"\033[91mAn error occurred while running the OpenMC simulation: {e}\033[0m")
-    # print("\n")  # Blank line after
+    # Handle any errors that occur during the simulation
+    print("\n")  # Blank line before
+    print(f"\033[91mAn error occurred while running the OpenMC simulation: {e}\033[0m")
+    print("\n")  # Blank line after
 
-# # ## TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-params['fuel_lifetime_days'] =1305 # days
-params['mass_U235'] = 61975 # grams
-params['mass_U238'] = 263372.87  # grams
+
 params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
-
-
 
 # **************************************************************************************************************************
 #                                           Sec. 7 : Fuel Calcs
@@ -380,7 +375,7 @@ print(Cost_estimate.to_string(index=False))
 #                                           Sec. 13 : Post Processing
 # **************************************************************************************************************************
 
-# params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
+params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
 
 # #Calculate the code execution time
 elapsed_time = (time.time() - time_start) / 60
