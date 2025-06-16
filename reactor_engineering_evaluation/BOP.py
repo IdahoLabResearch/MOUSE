@@ -44,11 +44,11 @@ def calculate_heat_exchanger_mass(hx_thermal_load,
     hx_alloy_volume = nchannels* hx_channel_pitch* hx_channel_thick - nchannels* pi/8* hx_channel_diameter**2
     
     hx_mass = hx_alloy_volume* rho_ss
-    hx_cost = hx_mass* ss_unit_cost
 
 
+    return hx_mass
 
-    return hx_mass, hx_cost
+
 
 # This is oversimplified and need to be modified
 
@@ -103,50 +103,27 @@ def calculate_building_structure_cost(building):
     walls_volume     = 2* inner_width* inner_height* wall_thickness +\
                        2* inner_length* inner_height* wall_thickness
 
-    slab_roof_cost = slab_roof_volume* slab_roof_unit_cost* cf_to_m3
-    basemat_cost   = basemat_volume* basemat_unit_cost* cf_to_m3
-    walls_cost     = walls_volume* walls_unit_cost* cf_to_m3
-    building_cost  = slab_roof_cost+ basemat_cost+ walls_cost
-    return building_cost
+    return slab_roof_volume, basemat_volume, walls_volume
 
 
-def calculate_reactor_building_structure_volume():
+def calculate_reactor_building_structure_volume(building_char):
     """
       * Reactor building considers that the internal walls have the dimensions
         of an ISO container.
       * The wall thickness is assumed to be 2 [m]
     """
-    building_name        = 'Reactor Building'
-    inner_width          = 2.6  # [m]
-    inner_length         = 2.6  # [m]
-    inner_height         = 11   # [m]
-    wall_thickness       = 2.0  # [m]
-    slab_roof_thickness  = 2.0  # [m]
-    basemat_thickness    = 2.0  # [m]
+    reactor_building_dimensions = building_char
 
-    reactor_building_dimensions = [building_name, inner_width, inner_length,
-                                   inner_height, wall_thickness, slab_roof_thickness,
-                                   basemat_thickness]
-
-    reactor_building_structure_cost = calculate_building_structure_cost(reactor_building_dimensions)
-    return reactor_building_structure_cost
+    rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol = calculate_building_structure_cost(reactor_building_dimensions)
+    return rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol
 
 
-def calculate_energy_conversion_building_structure_volume():
+def calculate_energy_conversion_building_structure_volume(building_char):
     """
       * Energy conversion building considers that the internal walls have dimensions 
         of an ISO container placed horizontally.
     """
-    building_name        = 'Energy Conversion Building'
-    inner_width          = 2.6  # [m]
-    inner_length         = 6.0  # [m]
-    inner_height         = 5.6  # [m]
-    wall_thickness       = 2.0  # [m]
-    slab_roof_thickness  = 2.0  # [m]
-    basemat_thickness    = 2.0  # [m]
- 
-    energy_conversion_building_structure_dimensions = [building_name, inner_width, inner_length,
-                                                       inner_height, wall_thickness, slab_roof_thickness,
-                                                       basemat_thickness]
-    energy_conversion_building_structure_cost = calculate_building_structure_cost(energy_conversion_building_structure_dimensions)
-    return energy_conversion_building_structure_cost
+    energy_conversion_building_structure_dimensions = building_char
+
+    eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol = calculate_building_structure_cost(energy_conversion_building_structure_dimensions)
+    return eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol

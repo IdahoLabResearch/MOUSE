@@ -327,17 +327,14 @@ params['Excavation Volume'] = 463.93388 # m3
 # Financing params
 params['interest_rate'] = 0.06 # 
 
-# Reactor building is dependent on ISO ocntainer dimensions
-params['Reactor Building Slab Roof Volume'] = 219.18168 # m^3
-params['Reactor Building Basement Volume'] = 219.18168 # m^3
-params['Reactor Building Exterior Walls Volume'] = 438.04376 # m^3
-
+# Reactor building is dependent on ISO container dimensions
+reactor_building = ['Reactor building', 2.6, 2.6,  11.0, 2, 2, 2]
+RB_slab_roof_volume, RB_basemat_volume, RB_walls_volume = calculate_reactor_building_structure_volume(reactor_building)
 
 
 # Energy conversion building dimensions are dependent on ISO container dimensions
-params['Turbine Building Slab Roof Volume'] = 132 # m^3
-params['Turbine Building Basement Volume'] = 132 # m^3
-params['Turbine Building Exterior Wall'] = 192.64 # m^3
+energy_conversion_building = ['Energy conversion building', 2.6, 6.0,   5.6, 2, 2, 2]
+EB_slab_roof_volume, EB_basemat_volume, EB_walls_volume = calculate_energy_conversion_building_structure_volume(energy_conversion_building)
 
 # control building
 params['Control Building Slab Roof Volume'] = 8.1 # m^3
