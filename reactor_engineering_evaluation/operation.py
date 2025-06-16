@@ -6,7 +6,7 @@ def reactor_operation(params):
     # Refueling
     # how many times you add the fuel over the entire reactor lifetime
     add_fuel_num = int(np.floor(365*params['Levelization Period']/ 
-                                (params['Refueling Period'] + params['fuel_lifetime_days'])))
+                                (params['Refueling Period'] + params['Fuel Lifetime'])))
 
     num_of_refuel_days_per_year = params['Refueling Period'] *\
         add_fuel_num/params['Levelization Period']

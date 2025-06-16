@@ -14,3 +14,5 @@ To Do List
 - Parametrizing the number of control rods
 - Cost of the YH
 - The height of the fuel discussion
+- The fuel pins arrangement seems unclear
+- The number of assemblies in a LTMR    

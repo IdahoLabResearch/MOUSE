@@ -121,11 +121,11 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
     
     elif account == 253:
-        if params['enrichment'] < 0.1:
+        if params['Enrichment'] < 0.1:
             cost_premium = 1
-        elif  0.1 <= params['enrichment'] < 0.2:
+        elif  0.1 <= params['Enrichment'] < 0.2:
             cost_premium = 1.15
-        elif  0.2 <params['enrichment']:
+        elif  0.2 <params['Enrichment']:
             print("\033[91m ERROR: Enrichment is too high \033[0m")
         cost = cost_premium * unit_cost *pow(scaling_variable_value,exponent) 
     elif account == 711:
@@ -153,7 +153,7 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
 def scale_cost(initial_database, params):
     scaled_cost = initial_database[['Account', 'Level','Account Title']]
     
-    escalation_year = params['escalation_year']
+    escalation_year = params['Escalation Year']
     
 
     # Iterate through each row in the DataFrame
@@ -294,7 +294,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
     # decommisioning cost
     df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Maintenance to Direct Cost Ratio']
 
-    cycle_length = params['fuel_lifetime_days'] / 365.25
+    cycle_length = params['Fuel Lifetime'] / 365.25
     df.loc[df['Account'] == 82, estimated_cost_col] = df.loc[df['Account'] == 25, estimated_cost_col].values[0] /  cycle_length
 
     return df
@@ -392,26 +392,7 @@ def energy_cost_levelized(params, df):
     return df
 
 
-# def transform_dataframe(df):
-#     """
-#     Divides all values in the specified column by one million, except the last two rows.
 
-#     Parameters:
-#     df (pd.DataFrame): The dataframe containing the data.
-#     column_name (str): The name of the column to be modified.
-
-#     Returns:
-#     pd.DataFrame: The modified dataframe.
-#     """
-#     column_name = get_estimated_cost_column(df)
-#     df = df.drop(columns=['Children Accounts', 'Level'])
-  
-#     df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)] / 1000000
-
-#     # Appending 'M' to the modified values
-#     df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)].astype(str) + ' M'
-
-    # return df
 
 def transform_dataframe(df):
     """
@@ -441,7 +422,7 @@ def transform_dataframe(df):
     
     return df
 def bottom_up_cost_estimate(cost_database_filename, params):
-    escalated_cost = escalate_cost_database(cost_database_filename, params['escalation_year'], params)
+    escalated_cost = escalate_cost_database(cost_database_filename, params['Escalation Year'], params)
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
     
     reactor_operation(params)
