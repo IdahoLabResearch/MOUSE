@@ -1,3 +1,4 @@
+import math
 from core_design.openmc_materials_database import *
 from core_design.utils import *
 
@@ -35,36 +36,40 @@ def calculate_drums_volumes_and_masses(params):
     params['All Drums Area'] = params['All Drums Volume']  / params['Drum Height']
 
 
+def hex_area(ftf):
+    # Calculate the area using the formula
+    area = (3 * math.sqrt(3) / 8) * (ftf ** 2)
+    return area
 
-# def calculate_reflector_mass_GCMR(params):
-#     materials_database = collect_materials_data(params)
-#     tot_number_assemblies = calculate_number_of_core_rings(params['core_rings'] )
-#     reflector_volume = (circle_area(params['core_radius']) -\
-#        tot_number_assemblies * hex_area(params['assembly_ftf']) - params['tot_drum_area_all']) * params['Active Height']
+def calculate_reflector_mass_GCMR(params):
+    materials_database = collect_materials_data(params)
+    tot_number_assemblies = calculate_number_of_core_rings(params['core_rings'] )
+    reflector_volume = (circle_area(params['core_radius']) -\
+       tot_number_assemblies * hex_area(params['assembly_ftf']) - params['All Drums Area']) * params['Active Height']
         
-#     reflector_density = materials_database[params['Reflector']].density
-#     reflector_mass = reflector_density * reflector_volume  / 1000 # Kg
-#     return reflector_mass
+    reflector_density = materials_database[params['Reflector']].density
+    reflector_mass = reflector_density * reflector_volume  / 1000 # Kg
+    return reflector_mass
 
-# def calculate_moderator_mass_GCMR(params): 
-#     materials_database = collect_materials_data(params)
-#     tot_number_assemblies = calculate_number_of_core_rings(params['core_rings'] )
+def calculate_moderator_mass_GCMR(params): 
+    materials_database = collect_materials_data(params)
+    tot_number_assemblies = calculate_number_of_core_rings(params['core_rings'] )
 
-#     # The area of one hexagonal lattice in the core
-#     A_hex  = hex_area(params['assembly_ftf'])
+    # The area of one hexagonal lattice in the core
+    A_hex  = hex_area(params['assembly_ftf'])
     
-#     # area occuplied by the fuel in one hexagonal lattice (assembly)
-#     num_fuel_regions_per_hex = calculate_number_of_core_rings(params['assembly_rings'] - 1 )
-#     area_fuel_per_hex = params['packing factor'] * circle_area(params['lattice radius']) * num_fuel_regions_per_hex
-#     area_coolant_per_hex = 2 * num_fuel_regions_per_hex * circle_area(params['coolant channel radius'])
-#     area_moderator_booster_per_hex =  0.5 * 6 * (params['assembly_rings'] - 1) * circle_area(params['booster radius'] )
+    # area occuplied by the fuel in one hexagonal lattice (assembly)
+    num_fuel_regions_per_hex = calculate_number_of_core_rings(params['assembly_rings'] - 1 )
+    area_fuel_per_hex = params['Packing Factor'] * circle_area(params['Compact Fuel Radius']) * num_fuel_regions_per_hex
+    area_coolant_per_hex = 2 * num_fuel_regions_per_hex * circle_area(params['Coolant Channel Radius'])
+    area_moderator_booster_per_hex =  0.5 * 6 * (params['assembly_rings'] - 1) * circle_area(params['Booster Radius'] )
 
-#     # area ocuupied by the moderators in one of one hexagonal lattices
-#     moderator_area = A_hex - area_fuel_per_hex - area_coolant_per_hex - area_moderator_booster_per_hex 
+    # area ocuupied by the moderators in one of one hexagonal lattices
+    moderator_area = A_hex - area_fuel_per_hex - area_coolant_per_hex - area_moderator_booster_per_hex 
 
-#     # total moderator mass
-#     tot_moderator_mass = tot_number_assemblies * moderator_area  * params['Active Height'] * materials_database[params['Moderator']].density / 1000 # Kg
-#     return tot_moderator_mass
+    # total moderator mass
+    tot_moderator_mass = tot_number_assemblies * moderator_area  * params['Active Height'] * materials_database[params['Moderator']].density / 1000 # Kg
+    return tot_moderator_mass
 
 
 def calculate_moderator_mass(params): 

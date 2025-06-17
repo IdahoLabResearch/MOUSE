@@ -1,5 +1,5 @@
 """
-This script performs a bottom-up cost estimate for a 15 MWe Liquid Metal Thermal Microreactor (LTMR).
+This script performs a bottom-up cost estimate for a Liquid Metal Thermal Microreactor (LTMR).
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
 """
@@ -28,13 +28,18 @@ def update_params(updates):
     params.update(updates)
 
 # **************************************************************************************************************************
-#                                                Sec. 1: Configuration and Materials
+#                                                Sec. 0: Settings
 # **************************************************************************************************************************
-
 update_params({
     'plotting': "Y",  # "Y" or "N": Yes or No
     'cross_sections_xml_location': '/home/hannbn/openmc_data/endfb-viii.0-hdf5/cross_sections.xml',
-    'simplified_chain_thermal_xml': '/home/hannbn/openmc_data/simplified_thermal_chain11.xml',
+    'simplified_chain_thermal_xml': '/home/hannbn/openmc_data/simplified_thermal_chain11.xml'
+})
+# **************************************************************************************************************************
+#                                                Sec. 1: Materials
+# **************************************************************************************************************************
+
+update_params({
     'reactor type': "LTMR",
     'Fuel': 'TRIGA_fuel',
     'Enrichment': 0.1975,  # Fraction between 0 and 1

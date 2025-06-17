@@ -2,7 +2,7 @@
 import openmc
 import numpy as np
 from core_design.openmc_materials_database import collect_materials_data
-from core_design.utils import create_universe_plot, circle_area
+from core_design.utils import create_universe_plot, circle_area, create_cells
 
 
 
@@ -243,14 +243,6 @@ def create_core_geometry(params, drums, drums_positions, assembly_universe):
 
     core_geometry = openmc.Geometry([core_cell] + drum_cells) 
     return core_geometry 
-
-
-def create_cells(regions:dict, materials:list)->dict:
-    return {key:openmc.Cell(name=key, fill=mat, region=value) for (key,value), mat in zip(regions.items(), materials)}
-
-
-
-
 
 
 # **************************************************************************************************************************
