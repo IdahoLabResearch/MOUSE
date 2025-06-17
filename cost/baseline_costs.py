@@ -421,7 +421,7 @@ def transform_dataframe(df):
     df.iloc[-2:, df.columns.get_loc(column_name)] = df.iloc[-2:, df.columns.get_loc(column_name)].astype(int)
     
     return df
-def bottom_up_cost_estimate(cost_database_filename, params):
+def bottom_up_cost_estimate(cost_database_filename, params, output_filename):
     escalated_cost = escalate_cost_database(cost_database_filename, params['Escalation Year'], params)
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
     
@@ -440,5 +440,6 @@ def bottom_up_cost_estimate(cost_database_filename, params):
     updated_accounts_70_80 = update_high_level_costs(TCI , 'annual' )
     final_COA = energy_cost_levelized(params, updated_accounts_70_80)
     presented_COA = transform_dataframe(final_COA )
-    return presented_COA
+    presented_COA.to_excel(output_filename, index=False)
+    print(f"\n\nThe cost estimate is saved at {output_filename}\n\n")
 
