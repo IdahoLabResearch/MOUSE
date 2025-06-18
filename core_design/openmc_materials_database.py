@@ -58,44 +58,44 @@ def collect_materials_data(params):
 
     #UO2
     try:
-        uo2 = openmc.Material(name='UO2')
-        uo2.set_density('g/cm3', 10.41)
-        uo2.add_element('U', 1.0, enrichment= 100 * params['Enrichment'])
-        uo2.add_nuclide('O16', 2.0)
-        materials.append(uo2)
-        materials_database.update({ 'uo2': uo2})
+        UO2 = openmc.Material(name='UO2')
+        UO2.set_density('g/cm3', 10.41)
+        UO2.add_element('U', 1.0, enrichment= 100 * params['Enrichment'])
+        UO2.add_nuclide('O16', 2.0)
+        materials.append(UO2)
+        materials_database.update({ 'UO2': UO2})
     except KeyError as e:
         print(f"Skipping UO2 due to missing parameter: {e}")     
 
     
     # Uranium Carbide
     try:
-        uc = openmc.Material(name='UC')
-        uc.set_density('g/cm3', 13.0)
-        uc.add_element('U', 1.0,  enrichment= 100 * params['Enrichment'])
-        uc.add_element('N', 1.0)
-        materials.append(uc)
-        materials_database.update({ 'uc': uc})
+        UC = openmc.Material(name='UC')
+        UC.set_density('g/cm3', 13.0)
+        UC.add_element('U', 1.0,  enrichment= 100 * params['Enrichment'])
+        UC.add_element('N', 1.0)
+        materials.append(UC)
+        materials_database.update({ 'UC': UC})
     except KeyError as e:
         print(f"Skipping UC due to missing parameter: {e}")    
 
 
-    #Mixed uranium dioxide (UO2) and uranium carbide (UC)
+    #UCO: Mixed uranium dioxide (UO2) and uranium carbide (UC)
     try:
-        uco = openmc.Material.mix_materials([uo2, uc], [params['UO2 atom fraction'], 1- params['UO2 atom fraction']], 'ao') # mixing UO2 and UC by atom fraction
-        materials.append(uco)
-        materials_database.update({ 'uco': uco})
+        UCO = openmc.Material.mix_materials([UO2, UC], [params['UO2 atom fraction'], 1- params['UO2 atom fraction']], 'ao') # mixing UO2 and UC by atom fraction
+        materials.append(UCO)
+        materials_database.update({ 'UCO': UCO})
     except KeyError as e:
         print(f"Skipping UCO due to missing parameter: {e}") 
     
     # Uranium Nitride
     try:
-        un = openmc.Material(name='UN') # This creates a new material named 'UN'.
-        un.set_density('g/cm3', 14.0)
-        un.add_element('U', 1.0, enrichment=100 * params['Enrichment'])
-        un.add_element('N', 1.0) # This adds nitrogen (N) to the material.
+        UN = openmc.Material(name='UN') # This creates a new material named 'UN'.
+        UN.set_density('g/cm3', 14.0)
+        UN.add_element('U', 1.0, enrichment=100 * params['Enrichment'])
+        UN.add_element('N', 1.0) # This adds nitrogen (N) to the material.
         materials.append(un)
-        materials_database.update({ 'un': un})
+        materials_database.update({ 'UN': un})
     except KeyError as e:
         print(f"Skipping UN due to missing parameter: {e}") 
 
@@ -217,12 +217,12 @@ def collect_materials_data(params):
     #This adds thermal scattering data for graphite. The add_S(α,β) thermal scattering treatment for carbon in graphite form.
     Graphite.add_s_alpha_beta('c_Graphite')
 
-    # Graphite of lower density (buffer)
-    buffer = openmc.Material(name='Buffer') # This creates a new material named 'Buffer'.
-    buffer.set_density('g/cm3', 0.95)
-    buffer.add_element('C', 1.0) #This adds carbon (C) 
+    # Graphite of lower density (buffer_graphite)
+    buffer_graphite = openmc.Material(name='Buffer') # This creates a new material named 'Buffer'.
+    buffer_graphite.set_density('g/cm3', 0.95)
+    buffer_graphite.add_element('C', 1.0) #This adds carbon (C) 
     #This adds thermal scattering data for graphite. The add_S(α,β) thermal scattering treatment for carbon in graphite form.
-    buffer.add_s_alpha_beta('c_Graphite') 
+    buffer_graphite.add_s_alpha_beta('c_Graphite') 
 
     # pyrolytic carbon (PyC) 
     PyC = openmc.Material(name='PyC') # Creates a new material named 'PyC'.
@@ -231,11 +231,11 @@ def collect_materials_data(params):
     
     #This adds thermal scattering data for graphite. The add_S(α,β) thermal scattering treatment for carbon in graphite form.
     PyC.add_s_alpha_beta('c_Graphite') 
-    materials.extend([Graphite, buffer, PyC ])
-    materials_database.update({'Graphite' : Graphite, 'buffer' : buffer, 'PyC': PyC})
+    materials.extend([Graphite, buffer_graphite, PyC ])
+    materials_database.update({'Graphite' : Graphite, 'buffer_graphite' : buffer_graphite, 'PyC': PyC})
 
     materials.export_to_xml()
     
-    return materials_database
+    return materials_database ##
 
 

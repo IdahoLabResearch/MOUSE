@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='utf-8'?>
+<materials>
+  <material depletable="true" id="2" name="uo2_12" temperature="600" volume="4071.5040790523717">
+    <density units="atom/b-cm" value="0.0808250295"/>
+    <nuclide ao="0.0731619752" name="C12"/>
+    <nuclide ao="0.000758819416" name="C13"/>
+    <nuclide ao="0.00259371545" name="O16"/>
+    <nuclide ao="1.05004397e-06" name="O17"/>
+    <nuclide ao="5.99797186e-06" name="O18"/>
+    <nuclide ao="0.000259885326" name="U235"/>
+    <nuclide ao="0.00104049396" name="U238"/>
+    <nuclide ao="0.00276954169" name="Si28"/>
+    <nuclide ao="0.000140694868" name="Si29"/>
+    <nuclide ao="9.28556098e-05" name="Si30"/>
+    <sab name="c_Graphite"/>
+  </material>
+  <material id="8" name="monolith_12" temperature="600">
+    <density units="g/cm3" value="1.63"/>
+    <nuclide ao="0.9893" name="C12"/>
+    <nuclide ao="0.0107" name="C13"/>
+    <sab name="c_Graphite"/>
+  </material>
+  <material id="15" name="monolith_rr" temperature="600">
+    <density units="g/cm3" value="1.63"/>
+    <nuclide ao="0.9893" name="C12"/>
+    <nuclide ao="0.0107" name="C13"/>
+    <sab name="c_Graphite"/>
+  </material>
+  <material id="16" name="monolith_cr" temperature="600">
+    <density units="g/cm3" value="1.63"/>
+    <nuclide ao="0.9893" name="C12"/>
+    <nuclide ao="0.0107" name="C13"/>
+    <sab name="c_Graphite"/>
+  </material>
+  <material id="17" name="htpipe" temperature="600">
+    <density units="atom/b-cm" value="0.0274917"/>
+    <nuclide ao="0.00175699" name="Mo92"/>
+    <nuclide ao="0.00109514" name="Mo94"/>
+    <nuclide ao="0.00188484" name="Mo95"/>
+    <nuclide ao="0.00197478" name="Mo96"/>
+    <nuclide ao="0.00113066" name="Mo97"/>
+    <nuclide ao="0.00285681" name="Mo98"/>
+    <nuclide ao="0.00114011" name="Mo100"/>
+    <nuclide ao="0.00646763" name="Cr50"/>
+    <nuclide ao="0.124724" name="Cr52"/>
+    <nuclide ao="0.0141423" name="Cr53"/>
+    <nuclide ao="0.00352029" name="Cr54"/>
+    <nuclide ao="0.0312186" name="Fe54"/>
+    <nuclide ao="0.490061" name="Fe56"/>
+    <nuclide ao="0.011318" name="Fe57"/>
+    <nuclide ao="0.00150617" name="Fe58"/>
+    <nuclide ao="0.0166133" name="Mn55"/>
+    <nuclide ao="0.179266" name="Na23"/>
+    <nuclide ao="0.0633738" name="Ni58"/>
+    <nuclide ao="0.0244119" name="Ni60"/>
+    <nuclide ao="0.00106115" name="Ni61"/>
+    <nuclide ao="0.00338338" name="Ni62"/>
+    <nuclide ao="0.000861654" name="Ni64"/>
+    <nuclide ao="0.0149701" name="Si28"/>
+    <nuclide ao="0.000760143" name="Si29"/>
+    <nuclide ao="0.00050109" name="Si30"/>
+  </material>
+  <material id="18" name="absorber" temperature="600">
+    <density units="g/cm3" value="2.52"/>
+    <nuclide ao="0.1572" name="B10"/>
+    <nuclide ao="0.6428" name="B11"/>
+    <nuclide ao="0.19786" name="C12"/>
+    <nuclide ao="0.00214" name="C13"/>
+  </material>
+  <material id="19" name="gap" temperature="600">
+    <density units="atom/b-cm" value="1e-10"/>
+    <nuclide ao="1.0" name="He4"/>
+  </material>
+  <material id="20" name="beryllium" temperature="600">
+    <density units="g/cm3" value="1.85"/>
+    <nuclide ao="1.0" name="Be9"/>
+    <sab name="c_Be"/>
+  </material>
+</materials>
