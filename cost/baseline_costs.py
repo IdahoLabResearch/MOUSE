@@ -1,7 +1,6 @@
 
 import pandas as pd
 import numpy as np
-from cost.cost_utils import *
 from reactor_engineering_evaluation.operation import *
 # **************************************************************************************************************************
 #                                                Sec. 0 :Inflation
@@ -443,7 +442,13 @@ def bottom_up_cost_estimate(cost_database_filename, params, output_filename):
     updated_accounts_70_80 = update_high_level_costs(TCI , 'annual' )
     final_COA = energy_cost_levelized(params, updated_accounts_70_80)
     presented_COA = transform_dataframe(final_COA )
-    presented_COA.to_excel(output_filename, index=False)
-    save_params_to_excel_file(excel_file, params)
+
+    # Create an ExcelWriter object
+    with pd.ExcelWriter(output_filename) as writer:
+        # Save the presented_COA DataFrame to the first sheet
+        presented_COA.to_excel(writer, sheet_name="cost estimate", index=False)
+        # Save the parameters to the second sheet
+        save_params_to_excel_file(writer, params)
+        
     print(f"\n\nThe cost estimate and all the paramters are saved at {output_filename}\n\n")
 

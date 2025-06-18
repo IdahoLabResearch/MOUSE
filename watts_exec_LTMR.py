@@ -3,7 +3,6 @@ This script performs a bottom-up cost estimate for a Liquid Metal Thermal Micror
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
 """
-import pandas as pd
 import numpy as np
 import watts  # Simulation workflows for one or multiple codes
 from core_design.openmc_template_LTMR import *
@@ -232,3 +231,4 @@ update_params({
 # Estimate costs using the cost database file and save the output to an Excel file
 bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_LTMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
+print('Execution time:', np.round(elapsed_time, 2), 'minutes')
