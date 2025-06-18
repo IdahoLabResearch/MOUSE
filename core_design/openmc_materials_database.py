@@ -94,8 +94,8 @@ def collect_materials_data(params):
         UN.set_density('g/cm3', 14.0)
         UN.add_element('U', 1.0, enrichment=100 * params['Enrichment'])
         UN.add_element('N', 1.0) # This adds nitrogen (N) to the material.
-        materials.append(un)
-        materials_database.update({ 'UN': un})
+        materials.append(UN)
+        materials_database.update({ 'UN': UN})
     except KeyError as e:
         print(f"Skipping UN due to missing parameter: {e}") 
 
