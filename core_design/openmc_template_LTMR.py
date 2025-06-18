@@ -76,7 +76,9 @@ def create_drums_universe(params, control_drum_absorber_material, control_drum_r
     # Define the arc angle for the absorber and reference angle for rotation
     absorber_arc = np.pi/3
     REFERENCE_ANGLE = 0
-    rotation_angle = 180
+    rotation_angle = np.pi 
+
+
 
     # Create cylindrical surfaces for the inner and outer shells of the control drum
     cd_inner_shell = openmc.ZCylinder(r= drum_radius - absorber_thickness)
@@ -85,6 +87,7 @@ def create_drums_universe(params, control_drum_absorber_material, control_drum_r
     # Define planes to cut the absorber arc segment
     cutting_plane_1 = openmc.Plane(a=1, b=absorber_arc/2)
     cutting_plane_2 = openmc.Plane(a=1, b=-absorber_arc/2)
+
 
     # Define the regions for the absorber and reflector
     drum_absorber_region = +cd_inner_shell & -cd_outer_shell & -cutting_plane_1 & -cutting_plane_2
@@ -190,11 +193,8 @@ def create_control_drums_positions(number_of_drums):
     # Placement of drums happen by tracing a line through the core apothems
     # then 2 drums are place after each apothem by deviating from this line
     # by a deviation angle
-    sector = (60/180) * np.pi
-
-    deviation_angle_between_drums = 12.86 # degrees
-    
-    deviation =  np.pi* (deviation_angle_between_drums  / 180) 
+    sector = np.pi/3
+    deviation = (np.pi/14 )
     positions = []
     for s in range(number_of_drums):
         positions.append(s*sector-deviation)
@@ -225,13 +225,14 @@ def create_core_geometry(params, drums, drums_positions, assembly_universe):
 
     drum_shells = []
     drum_cells = []
+
     for p, du in zip(drums_positions, drum_universes):
         x, y = np.cos(p)*cd_distance, np.sin(p)*cd_distance
         drum_shell = openmc.ZCylinder(x0=x, y0=y, r=drum_tube_radius)
         drum_shells.append(drum_shell)
         drum_cell = openmc.Cell(fill=du, region=-drum_shell)
         drum_cell.translation = (x, y, 0)  # translates the center of the drum universe to match the cylinder position
-        drum_cells.append(drum_cell)
+        drum_cells.append(drum_cell)    
     
     drums_outside = +drum_shells[0]
     for d in drum_shells[1:]:
@@ -352,6 +353,16 @@ def build_openmc_model_LTMR(params):
     # **************************************************************************************************************************
     
     drums = create_drums_universe(params, control_drum_absorber, control_drum_reflector )
+    if params['plotting'] == "Y":
+    # plotting
+        for i in range(len(drums)):
+             create_universe_plot(drums[i], 
+                        pin_plot_width = 2.2 * params['Drum Radius'],
+                        num_pixels = 500, 
+                        font_size = 16,
+                        title = "Control Drum", 
+                        fig_size = 8, 
+                        output_file_name = f"drum{1+i}.png")
     
     # **************************************************************************************************************************
     #                                                Sec. 1.4 : Fuel Assembly
@@ -420,13 +431,6 @@ def build_openmc_model_LTMR(params):
                         title = "Reactor Core", 
                         fig_size = 8, 
                         output_file_name = "core.png")
-
-        # # Plotting
-        # plot = openmc.Plot.from_geometry(core_geometry)
-        # plot.pixels = (2000, 2000)
-        # plot.filename = 'lattice_plot'
-    
-        # plot.to_ipython_image()
     
     # # **************************************************************************************************************************
     # #                                                Sec. 1.7 : SIMULATION

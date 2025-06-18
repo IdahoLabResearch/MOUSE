@@ -391,8 +391,13 @@ def energy_cost_levelized(params, df):
     df = df._append({'Account': 'LCOE','Account Title' : 'Levelized Cost of Electricity ($/MWh)', estimated_cost_col: lcoe}, ignore_index=True)
     return df
 
-
-
+def save_params_to_excel_file(excel_file, params):
+    # Convert the Parameters object to a dictionary
+    params_dict = dict(params)
+    # Create a DataFrame from the dictionary
+    df = pd.DataFrame(list(params_dict.items()), columns=['Parameter', 'Value'])
+    # Write the DataFrame to an Excel file with a specified sheet name
+    df.to_excel(excel_file, sheet_name='Parameters', index=False)
 
 def transform_dataframe(df):
     """
@@ -433,13 +438,12 @@ def bottom_up_cost_estimate(cost_database_filename, params, output_filename):
     updated_accounts_10_40 = update_high_level_costs(updated_cost_with_indirect_cost, 'other' )
     high_Level_capital_cost = calculate_high_level_capital_costs(updated_accounts_10_40, params)
     
-
-
     updated_accounts_10_60 = update_high_level_costs(high_Level_capital_cost , 'finance' )
     TCI = calculate_TCI(updated_accounts_10_60, params )
     updated_accounts_70_80 = update_high_level_costs(TCI , 'annual' )
     final_COA = energy_cost_levelized(params, updated_accounts_70_80)
     presented_COA = transform_dataframe(final_COA )
     presented_COA.to_excel(output_filename, index=False)
-    print(f"\n\nThe cost estimate is saved at {output_filename}\n\n")
+    save_params_to_excel_file(excel_file, params)
+    print(f"\n\nThe cost estimate and all the paramters are saved at {output_filename}\n\n")
 
