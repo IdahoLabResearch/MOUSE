@@ -303,8 +303,8 @@ def build_openmc_model_LTMR(params):
 
     if params['plotting'] == "Y":
         # plotting
-        create_universe_plot(fuel_pin_universe, 
-                        pin_plot_width = 2.2 * params['Fuel Pin Radii'][-1],
+        create_universe_plot(materials_database, fuel_pin_universe, 
+                        plot_width = 2.2 * params['Fuel Pin Radii'][-1],
                         num_pixels = 500, 
                         font_size = 16,
                         title = "Fuel Pin Universe", 
@@ -335,8 +335,8 @@ def build_openmc_model_LTMR(params):
 
     if params['plotting'] == "Y":
         # plotting
-        create_universe_plot(moderator_pin_universe, 
-                        pin_plot_width = 2.2 * params['Moderator Pin Radii'][-1],
+        create_universe_plot(materials_database, moderator_pin_universe, 
+                        plot_width = 2.2 * params['Moderator Pin Radii'][-1],
                         num_pixels = 500, 
                         font_size = 16,
                         title = "Moderator Pin Universe", 
@@ -353,16 +353,6 @@ def build_openmc_model_LTMR(params):
     # **************************************************************************************************************************
     
     drums = create_drums_universe(params, control_drum_absorber, control_drum_reflector )
-    if params['plotting'] == "Y":
-    # plotting
-        for i in range(len(drums)):
-             create_universe_plot(drums[i], 
-                        pin_plot_width = 2.2 * params['Drum Radius'],
-                        num_pixels = 500, 
-                        font_size = 16,
-                        title = "Control Drum", 
-                        fig_size = 8, 
-                        output_file_name = f"drum{1+i}.png")
     
     # **************************************************************************************************************************
     #                                                Sec. 1.4 : Fuel Assembly
@@ -379,15 +369,6 @@ def build_openmc_model_LTMR(params):
                                                  coolant_universe)
 
 
-    if params['plotting'] == "Y":
-        # plotting
-        create_universe_plot(assembly_universe, 
-                        pin_plot_width = 2.2 * params['Lattice Radius'],
-                        num_pixels = 2000, 
-                        font_size = 16,
-                        title = "Fuel Assembly Universe", 
-                        fig_size = 8, 
-                        output_file_name = "fuel_assembly_universe.png")
     # # **************************************************************************************************************************
     # #                                                Sec. 1.5 : VOLUME INFO for Depletion
     # # **************************************************************************************************************************
@@ -424,8 +405,8 @@ def build_openmc_model_LTMR(params):
     core_geometry.export_to_xml()
     
     if params['plotting'] == "Y":
-        create_universe_plot(core_geometry, 
-                        pin_plot_width = 2.01 * params['Core Radius'],
+        create_universe_plot(materials_database, core_geometry, 
+                        plot_width = 2.01 * params['Core Radius'],
                         num_pixels = 2000, 
                         font_size = 16,
                         title = "Reactor Core", 
@@ -442,8 +423,8 @@ def build_openmc_model_LTMR(params):
     settings.source = source
     settings.batches = 100
     settings.inactive = 50
-    settings.particles = 2000
+    settings.particles = 1000
 
     # Set max_lost_particles to half the number of particles
-    settings.max_lost_particles = 1000
+    settings.max_lost_particles = 500
     settings.export_to_xml()

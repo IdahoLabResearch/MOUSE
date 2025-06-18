@@ -3,7 +3,8 @@ import openmc
 import openmc.deplete
 import watts
 import traceback # tracing errors
-
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 
 
@@ -25,9 +26,6 @@ def cylinder_radial_shell(r, h):
     # calculating the outer area of a cylinder
     return circle_perimeter(r) * h
 
-# def hexagon_area(side):
-#     return (3 * np.sqrt(3))/2 * side**2
-
 def calculate_lattice_radius(params):
     pin_diameter = 2 * params['Fuel Pin Radii'][-1]
     lattice_radius = pin_diameter * params['Number of Rings per Assembly']  +\
@@ -40,7 +38,6 @@ def calculate_heat_flux(params):
     
     return params['Power MWt']/heat_transfer_surface # MW/m^2
 
-
 def calculate_pins_in_assembly(params, pin_type):
      # Get the rings configuration from the parameters
     rings = params['Pins Arrangement']
@@ -50,14 +47,6 @@ def calculate_pins_in_assembly(params, pin_type):
 
 def create_cells(regions:dict, materials:list)->dict:
     return {key:openmc.Cell(name=key, fill=mat, region=value) for (key,value), mat in zip(regions.items(), materials)}
-
-# def hex_area(ftf):
-#     apothem = ftf/2
-#     side = apothem / (np.sqrt(3)/2)
-#     perimeter = 6*side
-#     area = apothem * perimeter /2
-#     return area
-
 
 def calculate_reflector_mass_LTMR(params):
     hex_area =  2.598 * params['Lattice Radius'] * params['Lattice Radius']
@@ -71,77 +60,68 @@ def calculate_reflector_mass_LTMR(params):
     mass_reflector = vol_reflector * 3.02/1000 # mass in Kg
     params['Reflector Mass'] = mass_reflector 
 
-
 def calculate_number_of_core_rings(core_rings_over_one_edge):
     return 2 * core_rings_over_one_edge * (core_rings_over_one_edge -1) +\
         2 * sum(range(1, core_rings_over_one_edge -1)) +\
             2*core_rings_over_one_edge-1
 
 
-
-
-
-
-
-
-
-
-
-
-
-# # def create_moderator_pin_regions(params):
-# #         ## Reflector
-# #     moderator_radii = {'moderator': params['moderator_pin_radii'][0],
-# #                     'cladding': params['moderator_pin_radii'][1]
-# #                     }
-# #     shells = [openmc.ZCylinder(r=r) for r in moderator_radii.values()]
+def create_universe_plot(materials_database, universe, plot_width, num_pixels, font_size, title, fig_size, output_file_name):
+    # Define potential colors for materials
+    potential_colors = {
+        'TRIGA_fuel': 'red',
+        'ZrH': 'yellow',
+        'uo2': 'green',
+        'uc': 'purple',
+        'uco': 'orange',
+        'un': 'cyan',
+        'YHx': 'magenta',
+        'NaK': 'blue',
+        'Helium': 'grey',
+        'Be': 'brown',
+        'BeO': 'pink',
+        'Zr': 'lime',
+        'SS304': 'black',
+        'B4C_natural': 'olive',
+        'SiC': 'teal',
+        'Graphite': 'coral',
+        'buffer': 'gold',
+        'PyC': 'salmon'
+    }
     
-# #     region = {'moderator': -shells[0],
-# #             'cladding': +shells[0] & -shells[1],
-# #             'coolant': +shells[1]
-# #     }
-# #     return region
+  # Create the plot_colors dictionary only with existing materials
+    colors = {materials_database[mat_name]: color for mat_name, color in potential_colors.items() if mat_name in materials_database}
 
+    # Create the plot
+    universe_plot = universe.plot(width=(plot_width, plot_width),
+                                  pixels=(num_pixels, num_pixels), color_by='material', colors=colors)
+    universe_plot.set_xlabel('x [cm]', fontsize=font_size)
+    universe_plot.set_ylabel('y [cm]', fontsize=font_size)
+    universe_plot.set_title(title, fontsize=font_size)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def create_universe_plot(pin_universe, pin_plot_width, num_pixels, font_size,\
-    title, fig_size, output_file_name):
-    
-    pin_plot = pin_universe.plot(width = ( pin_plot_width, pin_plot_width),
-                                 pixels=(num_pixels, num_pixels), color_by='material')
-    pin_plot.set_xlabel('x [cm]', fontsize= font_size)
-    pin_plot.set_ylabel('y [cm]', fontsize= font_size)
-    pin_plot.set_title(title, fontsize= font_size)
-
-    pin_plot.tick_params(axis='x', labelsize= font_size)
-    pin_plot.tick_params(axis='y', labelsize= font_size)
+    universe_plot.tick_params(axis='x', labelsize=font_size)
+    universe_plot.tick_params(axis='y', labelsize=font_size)
    
     # Retrieve the figure from the Axes object
-    fig = pin_plot.figure
-    fig.set_size_inches(fig_size, fig_size) 
-    fig.tight_layout()
+    fig = universe_plot.figure
+    fig.set_size_inches(fig_size, fig_size)
+
+    # Extract the materials present in the universe
+    universe_materials = [cell.fill for cell in universe.get_all_cells().values()]
+    used_materials = set(universe_materials)
+    
+    # Create legend patches for only the used materials
+    legend_patches = [mpatches.Patch(color=color, label=mat_name) 
+                      for mat_name, color in potential_colors.items() 
+                      if mat_name in materials_database and materials_database[mat_name] in used_materials]
+        
+    # Add the legend to the plot, positioning it outside the plot area
+    universe_plot.legend(handles=legend_patches, fontsize=font_size, loc='center left', bbox_to_anchor=(1, 0.5))
     # Save the figure to a file
-    fig.savefig(output_file_name) 
+    fig.savefig(output_file_name, bbox_inches='tight')
+
+
+
 
     
 def openmc_depletion(params, lattice_geometry, settings):
@@ -174,7 +154,6 @@ def openmc_depletion(params, lattice_geometry, settings):
             break
     fuel_lifetime_days = (time[i])   
     orig_material = results.export_to_materials(0)
-
     mass_U235 = orig_material[0].get_mass('U235')
     mass_U238 = orig_material[0].get_mass('U238')
     return fuel_lifetime_days, mass_U235, mass_U238
@@ -182,7 +161,6 @@ def openmc_depletion(params, lattice_geometry, settings):
 
 def run_depletion_analysis(params):
     openmc.run()
-   
     lattice_geometry = openmc.Geometry.from_xml()
     settings = openmc.Settings.from_xml()
     depletion_results = openmc_depletion(params, lattice_geometry, settings)
@@ -216,26 +194,9 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
             traceback.print_exc()
 
 
-
-# def list_to_dict(var_list):
-#     return {str(var): var for var in var_list}        
-
-
-
-
-
-
-
-
-
-
-
 def cyclic_rotation(input_array, k):
     return input_array[-k:] + input_array[:-k]
 
 
-
 def flatten_list(nested_list):
-    return [item for sublist in nested_list for item in sublist]
-    
-  
+    return [item for sublist in nested_list for item in sublist]  
