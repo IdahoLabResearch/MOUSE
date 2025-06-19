@@ -36,27 +36,31 @@ def calculate_drums_volumes_and_masses(params):
     params['All Drums Area'] = params['All Drums Volume']  / params['Drum Height']
 
 
-def hex_area(ftf):
-    # Calculate the area using the formula
-    area = (3 * math.sqrt(3) / 8) * (ftf ** 2)
+
+
+def hexagonal_area_from_ftf(ftf_distance):
+    # Calculate the area directly from the flat-to-flat distance
+    area = (np.sqrt(3) / 2) * ftf_distance ** 2
     return area
+
 
 def calculate_reflector_mass_GCMR(params):
     materials_database = collect_materials_data(params)
     tot_number_assemblies = calculate_number_of_rings(params['Core Rings'] )
     reflector_volume = (circle_area(params['Core Radius']) -\
-       tot_number_assemblies * hex_area(params['Assembly FTF']) - params['All Drums Area']) * params['Active Height']
+       tot_number_assemblies * hexagonal_area_from_ftf(params['Assembly FTF']) - params['All Drums Area']) * params['Active Height']
         
     reflector_density = materials_database[params['Reflector']].density
     reflector_mass = reflector_density * reflector_volume  / 1000 # Kg
     params['Reflector Mass'] = reflector_mass
+
 
 def calculate_moderator_mass_GCMR(params): 
     materials_database = collect_materials_data(params)
     tot_number_assemblies = calculate_number_of_rings(params['Core Rings'] )
 
     # The area of one hexagonal lattice in the core
-    A_hex  = hex_area(params['Assembly FTF'])
+    A_hex  = hexagonal_area_from_ftf(params['Assembly FTF'])
     
     # area occuplied by the fuel in one hexagonal lattice (assembly)
     num_fuel_regions_per_hex = calculate_number_of_rings( params['Assembly Rings'] - 1 )

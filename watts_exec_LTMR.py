@@ -29,11 +29,13 @@ def update_params(updates):
 # **************************************************************************************************************************
 #                                                Sec. 0: Settings
 # **************************************************************************************************************************
+
 update_params({
     'plotting': "Y",  # "Y" or "N": Yes or No
     'cross_sections_xml_location': '/home/hannbn/openmc_data/endfb-viii.0-hdf5/cross_sections.xml',
     'simplified_chain_thermal_xml': '/home/hannbn/openmc_data/simplified_thermal_chain11.xml'
 })
+
 # **************************************************************************************************************************
 #                                                Sec. 1: Materials
 # **************************************************************************************************************************
@@ -67,6 +69,7 @@ update_params({
     'Number of Rings per Assembly': 12,
     'Reflector Thickness': 14  # cm
 })
+
 params['Lattice Radius'] = calculate_lattice_radius(params)
 params['Active Height']  = 2 * params['Lattice Radius']
 params['Fuel Pin Count'] = calculate_pins_in_assembly(params, "FUEL")
@@ -105,7 +108,6 @@ params['Heat Flux'] =  calculate_heat_flux(params)
 
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_LTMR, heat_flux_monitor, params)
-
 fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # **************************************************************************************************************************
@@ -128,19 +130,20 @@ update_params({
 update_params({
     'In Vessel Shield Thickness': 10.16,  # cm
     'In Vessel Shield Inner Radius': params['Core Radius'],
-    'In Vessel Shield Outer Radius': params['Core Radius'] + 10.16,  # params['In Vessel Shield Thickness']
-    'In Vessel Shielding Material': 'B4C_natural',
+    'In Vessel Shield Material': 'B4C_natural',
     'Out Of Vessel Shield Thickness': 39.37,  # cm
     'Out Of Vessel Shield Material': 'WEP',
-    'Out Of Vessel Shield Effective Density Factor': 0.5
+    'Out Of Vessel Shield Effective Density Factor': 0.5 # The out of vessel shield is not fully made of the out of vessel material (e.g. WEP) so we use an effective density factor
 })
+
+params['In Vessel Shield Outer Radius'] =  params['Core Radius'] + params['In Vessel Shield Thickness']
 
 # **************************************************************************************************************************
 #                                           Sec. 8: Vessels Calculations
 # ************************************************************************************************************************** 
 
 update_params({
-    'Vessel Radius': params['Core Radius'] + 10.16,  # params['In Vessel Shield Thickness']
+    'Vessel Radius': params['Core Radius'] +  params['In Vessel Shield Thickness'],
     'Vessel Thickness': 2,  # cm
     'Vessel Lower Plenum Height': 30,  # cm
     'Vessel Upper Plenum Height': 60,  # cm

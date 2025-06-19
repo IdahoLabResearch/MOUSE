@@ -15,30 +15,33 @@ def materials_densities(material):
     }
     return material_densities[material] # in gram/cm^3
 
-# def material_specific_heat(material):
-#     material_cp= {
-#     "Helium": 5193      # J/(Kg.K)
+def material_specific_heat(material):
+    material_cp= {
+    "Helium": 5193      # J/(Kg.K)
 
-#     }
-#     return material_cp[material] # in gram/cm^3    
+    }
+    return material_cp[material] # in gram/cm^3    
 
 def cylinder_annulus_mass(outer_radius , inner_radius,height, material ):
+
     volume = 3.14* (outer_radius**2 - inner_radius**2) * height
     mass = volume* materials_densities(material)/1000 # Kilograms
     return mass # in kg
 
 def calculate_shielding_masses(params):
     params['In Vessel Shield Mass'] = cylinder_annulus_mass(params['In Vessel Shield Outer Radius'],\
-    params['In Vessel Shield Inner Radius'], params['Vessel Height'], params['In Vessel Shielding Material'] )
-
+    params['In Vessel Shield Inner Radius'], params['Vessel Height'], params['In Vessel Shield Material'] )
     params['Outer Shield Outer Radius'] = params['Out Of Vessel Shield Thickness']+ params['Vessels Total Radius']
 
     outer_shield_mass = cylinder_annulus_mass(params['Outer Shield Outer Radius'], params['Out Of Vessel Shield Thickness'],\
     params['Vessels Total Height'], params['Out Of Vessel Shield Material']) 
     params['Out Of Vessel Shield Mass'] = params['Out Of Vessel Shield Effective Density Factor'] * outer_shield_mass
 
-# def mass_flow_rate(thermal_power_MW, deltaT, coolant):
-#     coolant_specific_heat = material_specific_heat(coolant)
-#     m_dot = 1000000 * thermal_power_MW/ (deltaT * coolant_specific_heat)
-#     return m_dot
+def mass_flow_rate(params):
+    thermal_power_MW = params['Power MWt']
+    deltaT =  params['Coolant Temperature Difference']
+    coolant = params['Coolant']
+    coolant_specific_heat = material_specific_heat(coolant)
+    m_dot = 1000000 * thermal_power_MW/ (deltaT * coolant_specific_heat)
+    params['Coolant Mass Flow Rate']  =m_dot 
     

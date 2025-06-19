@@ -17,3 +17,4 @@ To Do List
 - The fuel pins arrangement seems unclear
 - The number of assemblies in a LTMR   
 - Drums Rotation 
+- Consider other layers of shielding

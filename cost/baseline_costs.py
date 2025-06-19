@@ -109,6 +109,8 @@ def remove_irrelevant_account(df, params):
     return df 
 
 def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent, params):
+    
+
     # pumps
     if account == 222.11 or account == 222.12:
         cost_multiplier = (0.2 / (1 - params['Pump Isentropic Efficiency'])) + 1
@@ -170,18 +172,26 @@ def scale_cost(initial_database, params):
             exponent = row['Exponent']
 
             if row['Standard Cost Equation?'] == 'standard' :
-                # Check if there is a ref value for the scaling variable or just use the unit cost
-                if row['Scaling Variable Ref Value'] > 0:
-                    estimated_cost = fixed_cost +\
-                    unit_cost * pow(scaling_variable_value,exponent) /(pow(scaling_variable_ref_value,exponent-1))
+                
+                if pd.notna(row['Scaling Variable']) and scaling_variable_value == 0:
+                    estimated_cost = 0
+                
+                else:     
+                    # Check if there is a ref value for the scaling variable or just use the unit cost
+                    if row['Scaling Variable Ref Value'] > 0:
+                        estimated_cost = fixed_cost +\
+                        unit_cost * pow(scaling_variable_value,exponent) /(pow(scaling_variable_ref_value,exponent-1))
 
-                else:
-                    # Calculate the 'Estimated Cost
-                    estimated_cost = fixed_cost + unit_cost * scaling_variable_value
+                    else:
+                        # Calculate the 'Estimated Cost
+                        estimated_cost = fixed_cost + unit_cost * scaling_variable_value
             
             elif row['Standard Cost Equation?'] == 'nonstandard':
-                estimated_cost = non_standard_cost_scale(row['Account'],\
-                 unit_cost, scaling_variable_value, exponent, params)
+                if pd.notna(row['Scaling Variable']) and scaling_variable_value == 0:
+                    estimated_cost = 0
+                else:    
+                    estimated_cost = non_standard_cost_scale(row['Account'],\
+                    unit_cost, scaling_variable_value, exponent, params)
 
 
             # Assign the calculated value to the corresponding row in the new DataFrame
