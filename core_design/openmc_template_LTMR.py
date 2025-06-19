@@ -76,9 +76,7 @@ def create_drums_universe(params, control_drum_absorber_material, control_drum_r
     # Define the arc angle for the absorber and reference angle for rotation
     absorber_arc = np.pi/3
     REFERENCE_ANGLE = 0
-    rotation_angle = np.pi 
-
-
+    rotation_angle = 180 
 
     # Create cylindrical surfaces for the inner and outer shells of the control drum
     cd_inner_shell = openmc.ZCylinder(r= drum_radius - absorber_thickness)
@@ -423,8 +421,5 @@ def build_openmc_model_LTMR(params):
     settings.source = source
     settings.batches = 100
     settings.inactive = 50
-    settings.particles = 1000
-
-    # Set max_lost_particles to half the number of particles
-    settings.max_lost_particles = 500
+    settings.particles = 500
     settings.export_to_xml()

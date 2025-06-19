@@ -15,4 +15,5 @@ To Do List
 - Cost of the YH
 - The height of the fuel discussion
 - The fuel pins arrangement seems unclear
-- The number of assemblies in a LTMR    
+- The number of assemblies in a LTMR   
+- Drums Rotation 
