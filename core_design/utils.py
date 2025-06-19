@@ -21,6 +21,10 @@ def sphere_volume(r):
 def circle_perimeter(r):
     return 2*(np.pi)*r
 
+def sphere_area(radius):
+    area = 4 * np.pi * (radius ** 2)
+    return area
+
 
 def cylinder_radial_shell(r, h):
     # calculating the outer area of a cylinder
@@ -60,10 +64,26 @@ def calculate_reflector_mass_LTMR(params):
     mass_reflector = vol_reflector * 3.02/1000 # mass in Kg
     params['Reflector Mass'] = mass_reflector 
 
-def calculate_number_of_core_rings(core_rings_over_one_edge):
-    return 2 * core_rings_over_one_edge * (core_rings_over_one_edge -1) +\
-        2 * sum(range(1, core_rings_over_one_edge -1)) +\
-            2*core_rings_over_one_edge-1
+def calculate_number_of_rings(rings_over_one_edge):
+    # total number of rings given the rings over one edge
+    return 2 * rings_over_one_edge * (rings_over_one_edge -1) +\
+        2 * sum(range(1, rings_over_one_edge -1)) +\
+            2*rings_over_one_edge-1
+
+
+def calculate_number_of_TRISO_particles_per_compact_fuel(params):
+    compact_fuel_vol = cylinder_volume(params['Compact Fuel Radius'], params['Active Height'])
+    one_particle_volume = sphere_volume(params['Fuel Pin Radii'][-1])
+    number_of_particles_per_compact_fuel_vol = np.floor(params['Packing Factor'] *compact_fuel_vol / one_particle_volume) 
+    total_number_of_particles = number_of_particles_per_compact_fuel_vol * calculate_number_of_rings(params['Assembly Rings']) *\
+     calculate_number_of_rings(params['Core Rings'])
+    return total_number_of_particles
+
+def calculate_heat_flux_TRISO(params):
+    number_of_triso_particles = calculate_number_of_TRISO_particles_per_compact_fuel(params)
+    total_area_triso = number_of_triso_particles * sphere_area(params['Fuel Pin Radii'][0]) * 1e-4 #  # cm^2 to m^2
+    heat_flux = params['Power MWt'] / total_area_triso
+    return heat_flux
 
 
 def create_universe_plot(materials_database, universe, plot_width, num_pixels, font_size, title, fig_size, output_file_name):
@@ -71,10 +91,10 @@ def create_universe_plot(materials_database, universe, plot_width, num_pixels, f
     potential_colors = {
         'TRIGA_fuel': 'red',
         'ZrH': 'yellow',
-        'uo2': 'green',
-        'uc': 'purple',
-        'uco': 'orange',
-        'un': 'cyan',
+        'UO2': 'green',
+        'UC': 'purple',
+        'UCO': 'orange',
+        'UN': 'cyan',
         'YHx': 'magenta',
         'NaK': 'blue',
         'Helium': 'grey',
@@ -85,11 +105,16 @@ def create_universe_plot(materials_database, universe, plot_width, num_pixels, f
         'B4C_natural': 'olive',
         'SiC': 'teal',
         'Graphite': 'coral',
-        'buffer': 'gold',
+        'buffer_graphite': 'gold',
         'PyC': 'salmon'
     }
     
-  # Create the plot_colors dictionary only with existing materials
+    # Check for materials in the database that do not have a color specified
+    undefined_colors = [mat_name for mat_name in materials_database if mat_name not in potential_colors]
+    if undefined_colors:
+        raise ValueError(f"Error: The following materials do not have colors specified in the potential_colors dictionary: {', '.join(undefined_colors)}")
+    
+    # Create the plot_colors dictionary only with existing materials
     colors = {materials_database[mat_name]: color for mat_name, color in potential_colors.items() if mat_name in materials_database}
 
     # Create the plot

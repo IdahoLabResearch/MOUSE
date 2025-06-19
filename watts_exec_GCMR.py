@@ -7,7 +7,6 @@ Users can modify parameters in the "params" dictionary below.
 import numpy as np
 import watts  # Simulation workflows for one or multiple codes
 from core_design.openmc_template_GCMR import *
-from core_design.pins_arrangement import LTMR_pins_arrangement
 from core_design.utils import *
 from core_design.drums import *
 from reactor_engineering_evaluation.fuel_calcs import fuel_calculations
@@ -39,12 +38,10 @@ update_params({
 # **************************************************************************************************************************
 #                                                Sec. 1: Materials
 # **************************************************************************************************************************
-params['Control Drum Reflector'] = 'BeO'   # The reflector material in the control drums  
-
 update_params({
     'reactor type': "GCMR",
     'TRISO Fueled': "Yes",
-    'Fuel': 'un',
+    'Fuel': 'UN',
     'Enrichment': 0.19,  # The enrichment is a fraction. It has to be between 0 and 1
     'UO2 atom fraction': 0.7,  # Mixing UO2 and UC by atom fraction
     'Reflector': 'BeO',
@@ -65,106 +62,60 @@ update_params({
 
 update_params({
     # fuel pin details
-    'Fuel Pin Materials': ['un', 'buffer', 'PyC', 'SiC', 'PyC'],
+    'Fuel Pin Materials': ['UN', 'buffer_graphite', 'PyC', 'SiC', 'PyC'],
     'Fuel Pin Radii': [0.025, 0.035, 0.039, 0.0425, 0.047],  # cm
     'Compact Fuel Radius': 0.6225,  # cm # The radius of the area that is occupied by the TRISO particles (fuel compact/ fuel element)
     'Packing Factor': 0.3,
-
+    
     # Coolant channel and booster dimensions
     'Coolant Channel Radius': 0.35,  # cm
-    'Booster Radius': 0.55,  # cm
-
-    # Hexagonal lattice dimensions
-    'Hex Lattice Radius':  1.3,  # cm
+    'Moderator Booster Radius': 0.55,
+      # cm
+})
+# **************************************************************************************************************************
+#                                           Sec. 4 : User-Defined Parameters (Hex Fuel Assembly & Core)
+# **************************************************************************************************************************  
+update_params({
    
 })
 
-params['Lattice Pitch'] = params['Hex Lattice Radius']* np.sqrt(3)
-params['Lattice Compact Volume'] =  cylinder_volume(params['Compact Fuel Radius'], 4),
-
-# **************************************************************************************************************************
-#                                           Sec. 4 : User-Defined Parameters (Hexagonal Lattice)
-# **************************************************************************************************************************  
-
-# The number of rings (pins) along the edge of the hexagonal lattice
-params['assembly_rings'] = 6
-# the height of the hexagonal of one fuel assembly
-params['assembly_ftf'] = params['Lattice Pitch']*(params['assembly_rings']-1)*np.sqrt(3)
-
-# #The thickness of the reflector around the lattice
-params['core_rings'] = 5
-# extra thickness for the reflector beyond the control drums
-params['extra_reflector'] = params['assembly_ftf'] / 10 #cm
-params['core_radius'] = params['assembly_ftf']* params['core_rings'] +  params['extra_reflector']
-params['Active Height'] = 2 * params['core_radius']
-
-
+params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
+params['Core Radius'] = params['Assembly FTF']* params['Core Rings'] +  params['Reflector Thickness']
+params['Active Height'] = 2 * params['Core Radius']
 
 # **************************************************************************************************************************
 #                                           Sec. 5 : User-Defined Parameters (Control Drums)
 # ************************************************************************************************************************** 
-
-params['Drum Radius'] = 9 #cm  
-
-# # Each of the control drums includes a reflector material (most of the drum) and an absorber material (the outer layer)
-# # The thickness of the absorber layer
-params['Drum Absorber Thickness'] = 1 # cm
-
-# # If there are two drums alone each edge of the hexagonal lattice, the angle between drums pairs will be 60 degrees
-# params['angle_between_drums_pairs'] = 60 # degrees
-
-# # Placement of drums happen by tracing a line through the core apothems
-# # then 2 drums are place around each apothem by deviating from this line
-# # by a deviation angle
-# params["deviation angle between drums"] = 12.86 # degrees
-
-# The radius of the tube of the control drum
-params['drum_tube_radius'] = params['Drum Radius'] +(params['Drum Radius']/ 45)  # cm
-
-params['drum_height_to_lattice_height'] = 1.24
-params['Drum Height'] = 1 * params['Active Height']
+update_params({
+    'Drum Radius' : 9, #cm   
+    'Drum Absorber Thickness': 1, # cm
+    'Drum Height': params['Active Height']
+    })
 
 calculate_drums_volumes_and_masses(params)
-
-params['Reflector Mass'] = calculate_reflector_mass_GCMR(params)          
-params['Moderator Mass'] = calculate_moderator_mass_GCMR(params) 
+calculate_reflector_mass_GCMR(params)          
+calculate_moderator_mass_GCMR(params) 
 # **************************************************************************************************************************
 #                                           Sec. 6 : User-Defined Parameters (Overall System)
 # ************************************************************************************************************************** 
+update_params({
+    'Power MWt': 15,  # MWt
+    'Thermal Efficiency': 0.4,
+    'Heat Flux Criteria': 0.9,  # MW/m^2 (This one needs to be reviewed)
+    'Burnup Steps': [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0,
+                                     30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0]  # MWd_per_Kg
+    })
 
-# # The reactor power (thermal) MW
-params['Power MWt'] = 15 # MWt
-params['thermal_efficiency'] = 0.4
-params['Power MWe'] = params['Power MWt'] * params['thermal_efficiency']
-# TEMPRARY: NEED TO CHANGE!!!
-
-# # The actual heat flux (MW/m^2)
-params['Heat Flux'] = 0.8 # calculate_heat_flux(params['fuel_pin_radii'][-1], params['lattice_height'], params['rings'], params['power_MW_th'])
-# # Target Heat Flux : Approximate calculated value for a typical sodium-cooled fast reactor (SFR)
-params['Heat Flux Criteria'] = 0.9
-
-# # The burnup steps for depletion calculations
-params['Burnup Steps'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0,
-                                     30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0]
-
-
-
+params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency'] 
+params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 # **************************************************************************************************************************
 #                                           Sec. 7 : Running OpenMC
 # ************************************************************************************************************************** 
 
-# A function that runs OpenMC and the depletion calculations
-# If the heat flux is too high, the code stops running
-# The results such as the heat flux, the fuel lifetime and the mass of the fuel are added to the "params"
-
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 
-# # # ## TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-# params['fuel_lifetime_days'] =1305 # days
-# params['mass_U235'] = 61975 # grams
-# params['mass_U238'] = 263372.87  # grams
-# params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
+fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # # **************************************************************************************************************************
 # #                                           Sec. 7 : Fuel Calcs
