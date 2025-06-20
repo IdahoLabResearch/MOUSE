@@ -39,7 +39,7 @@ update_params({
 #                                                Sec. 1: Materials
 # **************************************************************************************************************************
 update_params({
-    'reactor type': "GCMR",
+    'reactor type': "GCMR",  # LTMR or GCMR
     'TRISO Fueled': "Yes",
     'Fuel': 'UN',
     'Enrichment': 0.19,  # The enrichment is a fraction. It has to be between 0 and 1
@@ -231,7 +231,7 @@ update_params({
 # **************************************************************************************************************************
 #                                           Sec. 13: Post Processing
 # **************************************************************************************************************************
-
+params['Number of Samples'] = 100 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
 bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
