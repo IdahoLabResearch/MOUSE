@@ -42,6 +42,7 @@ update_params({
 
 update_params({
     'reactor type': "LTMR",
+    'TRISO Fueled': "No",
     'Fuel': 'TRIGA_fuel',
     'Enrichment': 0.1975,  # Fraction between 0 and 1
     "H_Zr_ratio": 1.6,  # Proportion of hydrogen to zirconium atoms

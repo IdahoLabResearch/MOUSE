@@ -106,6 +106,7 @@ params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
+fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # **************************************************************************************************************************
 #                                         Sec. 6: Balance of Plant
