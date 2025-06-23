@@ -22,10 +22,15 @@ def truncated_normal_sample(mean, std, lower_bound, upper_bound):
         if lower_bound <= sample <= upper_bound:
             return sample
 
+def uniform_sample(low, high):
+    return np.random.uniform(low, high)
+
 def sampler(distribution, **kwargs):
     if distribution == "Lognormal":
         return create_lognormal_sampler(kwargs['low_cost'], kwargs['high_cost'], kwargs['class3_cost'])
     elif distribution == "Truncated Normal":
         return truncated_normal_sample(kwargs['mean'], kwargs['std'], kwargs['lower_bound'], kwargs['upper_bound'])
+    elif distribution == "Uniform":
+        return uniform_sample(kwargs['low'], kwargs['high'])    
     else:
         raise ValueError("Unavailable Distribution")

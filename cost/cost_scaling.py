@@ -73,6 +73,9 @@ def scale_cost(initial_database, params):
                 if params['Number of Samples'] > 1:
                     if fixed_cost_dist == 'Lognormal':
                         fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
+                    elif fixed_cost_dist == 'Uniform': 
+                        fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
+
                     else:
                         fixed_cost = fixed_cost_0
             else:
