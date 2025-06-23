@@ -13,7 +13,7 @@ from reactor_engineering_evaluation.fuel_calcs import fuel_calculations
 from reactor_engineering_evaluation.BOP import *
 from reactor_engineering_evaluation.vessels_calcs import *
 from reactor_engineering_evaluation.tools import *
-from cost.baseline_costs import bottom_up_cost_estimate
+from cost.cost_estimation import bottom_up_cost_estimate
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -231,7 +231,7 @@ update_params({
 # **************************************************************************************************************************
 #                                           Sec. 13: Post Processing
 # **************************************************************************************************************************
-params['Number of Samples'] = 100 # Accounting for cost uncertainties
+params['Number of Samples'] = 1000 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
 bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time

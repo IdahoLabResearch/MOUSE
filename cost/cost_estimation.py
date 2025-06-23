@@ -10,7 +10,7 @@ from reactor_engineering_evaluation.operation import reactor_operation
 
 def calculate_high_level_accounts_cost(df, target_level, option, FOAK_or_NOAK):
     cost_column = get_estimated_cost_column(df, FOAK_or_NOAK)
-    print(f"Updating costs of the level {target_level} accounts for the {cost_column}")
+    # print(f"Updating costs of the level {target_level} accounts for the {cost_column}")
 
     # Determine the prefix condition based on the option parameter
     if option == "base":
@@ -29,7 +29,7 @@ def calculate_high_level_accounts_cost(df, target_level, option, FOAK_or_NOAK):
         # Check if the account starts with the valid prefixes
         if str(row["Account"]).startswith(valid_prefixes):
             if row["Level"] == target_level and pd.isna(row[cost_column]):
-                print(f"Updating Account {row['Account']}")
+                # print(f"Updating Account {row['Account']}")
                 children_accounts = row["Children Accounts"]
                 
                 if not pd.isna(children_accounts):
@@ -143,8 +143,10 @@ def bottom_up_cost_estimate(cost_database_filename, params, output_filename):
 
     COA_list = []
     # sampling
-    for i in range(params['Number of Samples'] ):
-        print(f"\n\nSample # {i+1}")
+    for i in range(params['Number of Samples']):
+        if (i + 1) % 100 == 0:
+            print(f"\n\nSample # {i+1}")
+            
         scaled_cost = scale_cost(escalated_cost_cleaned, params)
         NOAK_COA = FOAK_to_NOAK(scaled_cost, params)
 

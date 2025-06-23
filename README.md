@@ -18,3 +18,4 @@ To Do List
 - The number of assemblies in a LTMR   
 - Drums Rotation 
 - Consider other layers of shielding
+- Parallel capability for sampling
