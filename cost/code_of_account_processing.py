@@ -50,10 +50,51 @@ def find_children_accounts(df):
 def get_estimated_cost_column(df, option):
     if option == 'F':
         for col in df.columns:
-            if col.startswith("FOAK Estimated Cost"):
+            if col.startswith("FOAK Estimated Cost ("):
                 return col
     elif option == 'N'   :
         for col in df.columns:
-            if col.startswith("NOAK Estimated Cost"):
-                return col         
+            if col.startswith("NOAK Estimated Cost ("):
+                return col       
+    elif option == 'F std'   :
+        for col in df.columns:
+            if col.startswith("FOAK Estimated Cost std ("):
+                return col  
+    elif option == 'N std'   :
+        for col in df.columns:
+            if col.startswith("NOAK Estimated Cost std ("):
+                return col                              
     return None
+
+
+
+def create_cost_dictionary(df, params, tracked_params_list):
+    # create a dictionary of costs we are interested in tracking
+    
+    # start with params we are tracking
+    filtered_params = {key: params[key] for key in tracked_params_list if key in params}
+
+    # Initialize the dictionary with all required accounts and default values
+    accounts = ['OCC', 'OCC per kW', 'OCC excl. fuel', 'OCC excl. fuel per kW', 'TCI', 'TCI per kW', 'AC', 'AC per MWh', 'LCOE']
+    cost_dict = {}
+    
+    for account in accounts:
+        cost_dict[f"{account}_FOAK Estimated Cost"] = None
+        cost_dict[f"{account}_NOAK Estimated Cost"] = None
+        cost_dict[f"{account}_FOAK Estimated Cost std"] = None
+        cost_dict[f"{account}_NOAK Estimated Cost std"] = None
+    
+    # Populate the dictionary with values from the dataframe
+    for _, row in df.iterrows():
+        account = row['Account']
+        if account in accounts:
+            cost_dict[f"{account}_FOAK Estimated Cost"] =     row[get_estimated_cost_column(df, 'F')]
+            cost_dict[f"{account}_NOAK Estimated Cost"] =     row[get_estimated_cost_column(df, 'N')]
+            cost_dict[f"{account}_FOAK Estimated Cost std"] = row[get_estimated_cost_column(df, 'F std')]
+            cost_dict[f"{account}_NOAK Estimated Cost std"] = row[get_estimated_cost_column(df, 'N std')]  
+    
+    
+    filtered_params.update(cost_dict)
+
+    return filtered_params
+

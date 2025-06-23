@@ -1,7 +1,9 @@
+import os
 import pandas as pd
 import numpy as np
+import csv
 from cost.cost_escalation import escalate_cost_database
-from cost.code_of_account_processing import remove_irrelevant_account, get_estimated_cost_column, find_children_accounts
+from cost.code_of_account_processing import remove_irrelevant_account, get_estimated_cost_column, find_children_accounts, create_cost_dictionary
 from cost.cost_scaling import scale_cost
 from cost.non_direct_cost import calculate_accounts_31_32_75_82_cost, calculate_high_level_capital_costs, calculate_TCI, energy_cost_levelized
 from reactor_engineering_evaluation.operation import reactor_operation
@@ -136,7 +138,7 @@ def reorder_dataframe(df):
     return df
 
 
-def bottom_up_cost_estimate(cost_database_filename, params, output_filename):
+def bottom_up_cost_estimate(cost_database_filename, params):
     escalated_cost = escalate_cost_database(cost_database_filename, params['Escalation Year'], params)
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
     reactor_operation(params)
@@ -146,7 +148,7 @@ def bottom_up_cost_estimate(cost_database_filename, params, output_filename):
     for i in range(params['Number of Samples']):
         if (i + 1) % 100 == 0:
             print(f"\n\nSample # {i+1}")
-            
+
         scaled_cost = scale_cost(escalated_cost_cleaned, params)
         NOAK_COA = FOAK_to_NOAK(scaled_cost, params)
 
@@ -185,8 +187,27 @@ def bottom_up_cost_estimate(cost_database_filename, params, output_filename):
     non_numeric_columns = concatenated_df.select_dtypes(exclude='number').groupby(concatenated_df.index).first()
     result_df = mean_df.join(non_numeric_columns)
     reordered_df = reorder_dataframe(result_df)
-    pretty_df =transform_dataframe(reordered_df)
+    return reordered_df
 
+def parametric_studies(cost_database_filename, params, tracked_params_list, output_csv_filename):
+    detatiled_cost_table = bottom_up_cost_estimate(cost_database_filename, params)
+    tracked_costs = create_cost_dictionary(detatiled_cost_table, params, tracked_params_list)
+    
+    file_exists = os.path.isfile(output_csv_filename)
+    
+    with open(output_csv_filename, 'a', newline='') as csvfile:
+        fieldnames = tracked_costs.keys()
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        if not file_exists or os.stat(output_csv_filename).st_size == 0:
+            writer.writeheader()
+        
+        writer.writerow(tracked_costs)
+        print(f"Results are being saved on {output_csv_filename}")
+
+def detailed_bottom_up_cost_estimate(cost_database_filename, params, output_filename):
+    detatiled_cost_table = bottom_up_cost_estimate(cost_database_filename, params)
+    pretty_df = transform_dataframe(detatiled_cost_table)
     # Create an ExcelWriter object
     with pd.ExcelWriter(output_filename) as writer:
         # Save the presented_COA DataFrame to the first sheet
