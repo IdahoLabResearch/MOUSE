@@ -310,6 +310,11 @@ params['Out Of Vessel Shielding Mass'] = params['out_vessel_shield_effective_den
         params['out_of_vessel_shield_thickness'], params['vessels_total_height'], params['Out Of Vessel Shielding Material']) 
 params ['Vessel and Guard Vessel Masses'] = params['Vessel Mass'] +  params['Guard Vessel Mass']
 
+
+## RVACS Related
+params['RVACS Scaling'] = 'RPV Surface Area'
+params['RPV Surface Area'] = np.pi*params['vessels_total_radius']*params['vessel_height']/1e4 # m2
+
 # **************************************************************************************************************************
 #                                           Sec. 10 : Operation
 # **************************************************************************************************************************
