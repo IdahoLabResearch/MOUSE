@@ -5,9 +5,8 @@ import csv
 from cost.cost_escalation import escalate_cost_database
 from cost.code_of_account_processing import remove_irrelevant_account, get_estimated_cost_column, find_children_accounts, create_cost_dictionary
 from cost.cost_scaling import scale_cost, scale_redundant_loops
-from cost.non_direct_cost import calculate_accounts_31_32_75_82_cost, calculate_high_level_capital_costs, calculate_TCI, energy_cost_levelized
+from cost.non_direct_cost import calculate_accounts_31_32_75_82_cost, calculate_decommissioning_cost, calculate_high_level_capital_costs, calculate_TCI, energy_cost_levelized
 from reactor_engineering_evaluation.operation import reactor_operation
-
 
 
 def calculate_high_level_accounts_cost(df, target_level, option, FOAK_or_NOAK):

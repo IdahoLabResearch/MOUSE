@@ -103,6 +103,7 @@ def create_universe_plot(materials_database, universe, plot_width, num_pixels, f
         'Zr': 'lime',
         'SS304': 'black',
         'B4C_natural': 'olive',
+        'B4C_enriched': 'olive',
         'SiC': 'teal',
         'Graphite': 'coral',
         'buffer_graphite': 'gold',

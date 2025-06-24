@@ -39,8 +39,8 @@ def calculate_accounts_31_32_75_82_cost( df, params):
         # Check if replacement period is specified in params
         refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling']
         refueling_period_yr = refueling_period / 365
-        param_df = pd.DataFrame(params.items(), columns=['keys', 'values'])
-        if params_df.loc[params_df['key'].str.contains('replacement', case=False), 'key'].size > 0:
+        params_df = pd.DataFrame(params.items(), columns=['keys', 'values'])
+        if params_df.loc[params_df['keys'].str.contains('replacement', case=False), 'keys'].size > 0:
             # Input Case includes period replacement of internals (esp. GCMS)
             A20_replacement_period = refueling_period_yr * np.array([params['A75: Vessel Replacement Period (cycles)'],
                                                                      1, # Moderator Block Replacement Period (cycles)
@@ -53,7 +53,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
                                         df.loc[df['Account'] == 221.31, estimated_cost_col].values.sum(),
                                         df.loc[df['Account'] == 221.2,  estimated_cost_col].values.sum(),
                                         df.loc[df['Account'] == 222,    estimated_cost_col].values.sum()])
-            annualized_replacement_cost = (A20_capital_cost*crf(params['Discount Rate'], A20_replacement_period)).sum()
+            annualized_replacement_cost = (A20_capital_cost*_crf(params['Discount Rate'], A20_replacement_period)).sum()
             A20_other_cost = df.loc[df['Account'] == 20, estimated_cost_col].values[0] - A20_capital_cost.sum()
             annualized_other_cost = A20_other_cost * params['Mainenance to Direct Cost Ratio']
             df.loc[df['Account'] == 75, estimated_cost_col] = annualized_replacement_cost + annualized_other_cost
@@ -62,7 +62,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
 
         # A82: Annualized Fuel Cost
         lump_fuel_cost = df.loc[df['Account'] == 25, estimated_cost_col].values[0]
-        annualized_fuel_cost = lump_fuel_cost*crf(params['Discount Rate'], refueling_period_yr)
+        annualized_fuel_cost = lump_fuel_cost*_crf(params['Discount Rate'], refueling_period_yr)
         df.loc[df['Account'] == 82, estimated_cost_col] = annualized_fuel_cost
 
     return df

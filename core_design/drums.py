@@ -15,7 +15,8 @@ def calculate_drums_volumes_and_masses(params):
         number_of_drums = 12 
     elif params['reactor type'] == "GCMR":
         number_of_drums = 6 * (params['Core Rings']-1) 
-        
+        if 'Drum Count' in params.keys():
+            number_of_drums = params['Drum Count']
 
     all_drums_volume = drum_volume * number_of_drums
     
@@ -34,7 +35,6 @@ def calculate_drums_volumes_and_masses(params):
     params['Control Drum Reflector Mass'] = drum_refl_all_mass
     params['Control Drums Mass'] = Control_Drums_Mass # all the drums masses
     params['All Drums Area'] = params['All Drums Volume']  / params['Drum Height']
-
 
 
 
