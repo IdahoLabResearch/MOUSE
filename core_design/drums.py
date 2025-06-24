@@ -54,8 +54,9 @@ def calculate_moderator_mass_GCMR(params):
     moderator_area = A_hex - area_fuel_per_hex - area_coolant_per_hex - area_moderator_booster_per_hex 
 
     # total moderator mass
-    tot_moderator_mass = tot_number_assemblies * moderator_area  * params['active_height'] * materials_database[params['Moderator']].density / 1000 # Kg
-    return tot_moderator_mass
+    tot_moderator_mass = (tot_number_assemblies * moderator_area  * params['active_height'] * materials_database[params['Moderator']].density / 1000) # Kg
+    tot_booster_mass = tot_number_assemblies * area_moderator_booster_per_hex * params['active_height'] * materials_database[params['moderator_booster']].density / 1000
+    return tot_moderator_mass, tot_booster_mass
 
 
 def calculate_moderator_mass(params): 

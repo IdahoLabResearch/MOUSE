@@ -170,7 +170,8 @@ params['tot_drum_area_all'] = params['all_drums_volume'] / params['drum_height']
 
 
 params['Reflector Mass'] = calculate_reflector_mass_GCMR(params)          
-params['Moderator Mass'] = calculate_moderator_mass_GCMR(params) 
+params['Moderator Mass'], params['Moderator Booster Mass'] = calculate_moderator_mass_GCMR(params) 
+
 # **************************************************************************************************************************
 #                                           Sec. 6 : User-Defined Parameters (Overall System)
 # ************************************************************************************************************************** 
