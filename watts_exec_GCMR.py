@@ -237,8 +237,9 @@ params['Secondary HX Mass'] = 0
 params['Compressor Pressure Ratio'] = 4 
 params['Compressor Isentropic Efficiency'] = 0.8
 # Coolant Temperature Differnce between the inlet and the outlet (reactor size)
-params['Coolant Temperature Difference'] = 360 #K or C
-params['Coolant Mass Flow Rate'] = mass_flow_rate( params['Power MWt'] , params['Coolant Temperature Difference'], params['Coolant'])
+params['Primary Loop Pressure Drop'] = 50e3 # [Pa] TODO: implement some rough TH code for dP estimation
+params['Primary Loop Compressor Power'] = calculate_circulator_mechanical_power(params)
+
 # **************************************************************************************************************************
 #                                           Sec. 8 : Shielding
 # ************************************************************************************************************************** 
