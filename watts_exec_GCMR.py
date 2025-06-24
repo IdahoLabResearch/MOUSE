@@ -179,6 +179,7 @@ params['Moderator Mass'], params['Moderator Booster Mass'] = calculate_moderator
 params['Power MWt'] = 15 # MWt
 params['thermal_efficiency'] = 0.4
 params['Power MWe'] = params['Power MWt'] * params['thermal_efficiency']
+params['Power kWe'] = params['Power MWe'] * 1e3
 # TEMPRARY: NEED TO CHANGE!!!
 
 # # The actual heat flux (MW/m^2)
@@ -229,15 +230,33 @@ params['Natural Uranium Mass'], params['fuel_tail_waste_mass_Kg'], params['SWU']
         fuel_calculations(params)
 
 # **************************************************************************************************************************
-#                                           Sec. 7 : Balance of Plant
+#                                           Sec. 7 : Primary Loop / Balance of Plant
 # ************************************************************************************************************************** 
-params['Primary HX Mass']  =  calculate_heat_exchanger_mass(params)[0] # Kg
-params['Secondary HX Mass'] = 0
-params['Compressor Pressure Ratio'] = 4 
+
+# Primary Loop Specifications
+params['Primary Loop Count'] = 2
+params['Primary Loop per loop load fraction'] = 0.5
+params['Primary Loop Power MWt'] = params['Power MWt'] * params['Primary Loop per loop load fraction']
+params['Primary Loop Purification'] = False
+
+# Equipments
+params['HX Material']               = 'SS316'
+params['Primary HX Mass']           = 1000 * 0.8 * params['Primary Loop Power MWt'] # [Kg] TODO: replace with better estimate
+params['Secondary HX Mass']         = 0
 params['Compressor Isentropic Efficiency'] = 0.8
+
 # Coolant Temperature Differnce between the inlet and the outlet (reactor size)
+params['Primary Loop Outlet Temperature'] = 550 + 273.15 # K
+params['Primary Loop Temperature Difference'] = 250 
+params['Primary Loop Mass Flow Rate'] = mass_flow_rate(params['Primary Loop Power MWt'],
+                                                       params['Primary Loop Temperature Difference'], 
+                                                       params['Coolant'])
 params['Primary Loop Pressure Drop'] = 50e3 # [Pa] TODO: implement some rough TH code for dP estimation
 params['Primary Loop Compressor Power'] = calculate_circulator_mechanical_power(params)
+
+params['BoP Count'] = 2
+params['BoP per loop load fraction'] = 0.5
+params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
 
 # **************************************************************************************************************************
 #                                           Sec. 8 : Shielding

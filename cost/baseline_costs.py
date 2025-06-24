@@ -109,16 +109,20 @@ def remove_irrelevant_account(df, params):
 
     return df 
 
-def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent, params):
-    # pumps
+def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent, params, row):
+    # A222.11, A222.12: pumps
     if account == 222.11 or account == 222.12:
         cost_multiplier = (0.2 / (1 - params['Pump Isentropic Efficiency'])) + 1
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
     
-    # compressors
+    # A222.13: compressors
     elif account == 222.13:
-        cost_multiplier = (1 / (0.95 - params['Compressor Isentropic Efficiency'])) * params['Compressor Pressure Ratio'] * np.log(params['Compressor Pressure Ratio'])
-        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
+        # Account for multiple primary loops and their individual rated load
+        primary_loop_count = params['Primary Loop Count']
+        
+        cost_multiplier = (((params['Primary Loop Outlet Temperature'] - 273.15)/650)**1.29 *
+                           (params['Primary Loop Compressor Power']/1e6/2.6)**0.74)
+        cost = cost_multiplier * unit_cost
     
     elif account == 253:
         if params['enrichment'] < 0.1:
@@ -188,6 +192,16 @@ def scale_cost(initial_database, params):
             # Assign the calculated value to the corresponding row in the new DataFrame
             scaled_cost.at[index, f'Estimated Cost (${escalation_year } $)'] = estimated_cost
     return scaled_cost  
+
+def scale_specific_accounts(df, params):
+    estimated_cost_col = get_estimated_cost_column(df)
+    if 'Primary Loop Count' in params.keys():
+        df.loc[df['Account'].astype(str).str.startswith('222'), estimated_cost_col] *= params['Primary Loop Count']
+    if 'BoP Count' in params.keys():
+        df.loc[df['Account'].astype(str).str.startswith('232'), estimated_cost_col] *= params['BoP Count']
+    if 'Primary Loop Purification' in params.keys():
+        df.loc[df['Account'] == 226, estimated_cost_col] *= int(params['Primary Loop Purification'])
+    return df
 
 def find_children_accounts(df):
     # Find the column name that starts with "Estimated Cost"
@@ -447,6 +461,7 @@ def bottom_up_cost_estimate(cost_database_filename, params):
     reactor_operation(params)
 
     scaled_cost = scale_cost(escalated_cost_cleaned, params)
+    scaled_cost = scale_specific_accounts(scaled_cost, params)
     updated_cost = update_high_level_costs(scaled_cost, 'base' )
     updated_cost_with_indirect_cost = calculate_accounts_31_32_75_82_cost(updated_cost, params)
     updated_accounts_10_40 = update_high_level_costs(updated_cost_with_indirect_cost, 'other' )
