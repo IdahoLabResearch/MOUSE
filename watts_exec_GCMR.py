@@ -51,7 +51,7 @@ update_params({
     'Coolant': 'Helium',
     'Common Temperature': 850,  # Kelvins
     'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
-    'Control Drum Reflector': 'Graphite'  # The reflector material in the control drums
+    'Control Drum Reflector': 'Graphite',  # The reflector material in the control drums
     'HX Material': 'SS316', 
 })
 # **************************************************************************************************************************
@@ -80,10 +80,10 @@ params['Active Height'] = 2 * params['Core Radius']
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 update_params({
-    'Drum Count': 24
+    'Drum Count': 24,
     'Drum Radius' : 9, #cm   
     'Drum Absorber Thickness': 1, # cm
-    'Drum Height': params['Active Height']
+    'Drum Height': params['Active Height'],
     })
 
 calculate_drums_volumes_and_masses(params)
@@ -120,11 +120,11 @@ params.update({
     'Secondary HX Mass': 0,
     'Compressor Pressure Ratio': 4,
     'Compressor Isentropic Efficiency': 0.8,
-    'Coolant Temperature Difference': 250  # Coolant Temperature Differnce between the inlet and the outlet (reactor side)
+    'Coolant Temperature Difference': 250,  # Coolant Temperature Differnce between the inlet and the outlet (reactor side)
     'Primary Loop Count': 2,
     'Primary Loop per loop load fraction': 0.5,
-    'Primary Loop Outlet Temperature': 550 + 273.15 # K
-    'Primary Loop Pressure Drop': 50e3 # Pa TODO: implement TH code for dP estimation
+    'Primary Loop Outlet Temperature': 550 + 273.15, # K
+    'Primary Loop Pressure Drop': 50e3, # Pa TODO: implement TH code for dP estimation
     'BoP Count': 2,
     'BoP per loop load fraction': 0.5,
     })

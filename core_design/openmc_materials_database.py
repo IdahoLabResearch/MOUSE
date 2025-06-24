@@ -199,7 +199,7 @@ def collect_materials_data(params):
     B4C_natural.set_density("g/cm3", 2.52)
 
     # Enriched B4C
-    B4C_enriched = openmc.Material(name="B4C_enriched", temperature= params['common_temperature'])
+    B4C_enriched = openmc.Material(name="B4C_enriched", temperature= params['Common Temperature'])
     B4C_enriched.add_element("boron", 4, enrichment=0.9, enrichment_target='B10', enrichment_type='ao')
     B4C_enriched.add_element("carbon", 1)
     B4C_enriched.set_density("g/cm3", 2.52)
