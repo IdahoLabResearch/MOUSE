@@ -331,6 +331,19 @@ params['Startup Duration after Emergency Shutdown'] = 14
 params['Reactors Monitored Per Operator'] = 10
 params['Security Staff Per Shift'] = 1
 
+# A75: Annualized Capital Expenditures
+## Input for replacement of large capital equipments. Replacements are made during refueling cycles
+## Components to be replaced:
+## 1. Vessel: every ~10 years 
+## 2. Internals (moderator, reflector, drums, HX, circulators): every refueling cycle
+## If the period is 0, it is assumed to never be replaced throughout Levelization period
+params['A75: Vessel Replacement Period (cycles)']    = 4
+params['A75: Reflector Replacement Period (cycles)'] = 1
+params['A75: Drum Replacement Period (cycles)']      = 1
+params['A75: HX Replacement Period (cycles)']        = 1
+
+# A78: Annualized Decommissioning Cost
+params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
 
 # **************************************************************************************************************************
 #                                           Sec. 11 : Economic Parameters
@@ -346,7 +359,7 @@ params['escalation_year'] = 2024
 params['Excavation Volume'] = 463.93388 # m3 
 
 # Financing params
-# Financing params
+params['Discount Rate'] = 0.085
 params['Interest Rate'] = 0.065 # 
 params['Construction Duration'] = 12 # months 
 params['Debt To Equity Ratio'] = 0.5 

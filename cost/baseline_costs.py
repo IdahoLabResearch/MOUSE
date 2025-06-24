@@ -140,13 +140,7 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
         cost = cost_multiplier * unit_cost * pow(1 / scaling_variable_value, exponent) 
     elif account == 713:
         cost_multiplier = params['FTEs Per Security Staff (24/7)']
-        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
-    
-    elif account == 78:
-        AR = params['Annual Return']
-        LP = params ['Levelization Period']
-        cost_multiplier = - AR/(1- pow(1+AR, LP))
-        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
+        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)              
     elif account == 81:
         cost_multiplier =  params['FTEs Per Operator Per Year Per Refueling'] 
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value, exponent)
@@ -186,8 +180,7 @@ def scale_cost(initial_database, params):
             
             elif row['Standard Cost Equation?'] == 'nonstandard':
                 estimated_cost = non_standard_cost_scale(row['Account'],\
-                 unit_cost, scaling_variable_value, exponent, params)
-
+                 unit_cost, scaling_variable_value, exponent, params, row)
 
             # Assign the calculated value to the corresponding row in the new DataFrame
             scaled_cost.at[index, f'Estimated Cost (${escalation_year } $)'] = estimated_cost
@@ -285,10 +278,20 @@ def update_high_level_costs(scaled_cost, option):
         df_updated = calculate_high_level_accounts_cost(df_with_children_accounts, level, option)
     return df_updated
 
+def crf(rate, period):
+    # Returns the Capital Recovery Factor  based on the discount rate and period
+    numer = rate * (1 + rate)**period
+    denum = (1 + rate)**period - 1
+    factor = numer/denum 
+    
+    ## If components are not set for replacement (i.e. period == 0) return 0
+    if np.array(factor).size > 1:
+        factor[factor == np.inf] = 0
+    return factor
 
 def calculate_accounts_31_32_75_82_cost( df, params):
     
-    # Find the column name that starts with 'Estimated Cosoption == "other costs"t'
+    # Find the column name that starts with 'Estimated Cost option == "other costs"'
     estimated_cost_col = get_estimated_cost_column(df)
 
     # Filter the DataFrame for accounts 21, 22, and 23
@@ -303,16 +306,48 @@ def calculate_accounts_31_32_75_82_cost( df, params):
     # To calculate the cost of factory and construction supervision (Account 32), 
     # the ratio of the factory and field indirect costs (Account 31) to the reactor systems cost (account 22) 
     # is calculated and multiplied by the cost of structures and improvements (Account 21)
-    df.loc[df['Account'] == 32, estimated_cost_col] = df.loc[df['Account'] == 21, estimated_cost_col].values[0] * (df.loc[df['Account'] == 31, estimated_cost_col].values[0] / df.loc[df['Account'] == 22, estimated_cost_col].values[0])
-    
-    # decommisioning cost
-    df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Maintenance to Direct Cost Ratio']
+    df.loc[df['Account'] == 32, estimated_cost_col] = (df.loc[df['Account'] == 21, estimated_cost_col].values[0] * 
+                                                       (df.loc[df['Account'] == 31, estimated_cost_col].values[0] / 
+                                                        df.loc[df['Account'] == 22, estimated_cost_col].values[0]))
 
-    cycle_length = params['fuel_lifetime_days'] / 365.25
-    df.loc[df['Account'] == 82, estimated_cost_col] = df.loc[df['Account'] == 25, estimated_cost_col].values[0] /  cycle_length
+    # A75: Annualized Capital Expenditures
+    refueling_period = params['fuel_lifetime_days'] + params['Refueling Period'] + params['Startup Duration after Refueling']
+    refueling_period_yr = refueling_period / 365
+    A20_replacement_period = refueling_period_yr * np.array([params['A75: Vessel Replacement Period (cycles)'],
+                                                             1, # Moderator Block Replacement Period (cycles)
+                                                             params['A75: Reflector Replacement Period (cycles)'],
+                                                             params['A75: Drum Replacement Period (cycles)'],
+                                                             params['A75: HX Replacement Period (cycles)'],])
+    ## Keep the same ordering as `A20_replacement_period`
+    A20_capital_cost = np.array([df.loc[df['Account'].isin([222.12, 222.13]), estimated_cost_col].values.sum(), 
+                                 df.loc[df['Account'] == 221.33, estimated_cost_col].values.sum(),
+                                 df.loc[df['Account'] == 221.31, estimated_cost_col].values.sum(),
+                                 df.loc[df['Account'] == 221.2,  estimated_cost_col].values.sum(),
+                                 df.loc[df['Account'] == 222,    estimated_cost_col].values.sum()])
+    annualized_replacement_cost = (A20_capital_cost*crf(params['Discount Rate'], A20_replacement_period)).sum()
+    df.loc[df['Account'] == 75, estimated_cost_col] = annualized_replacement_cost
+    
+    # A82: Annualized Fuel Cost
+    lump_fuel_cost = df.loc[df['Account'] == 25, estimated_cost_col].values[0]
+    annualized_fuel_cost = lump_fuel_cost*crf(params['Discount Rate'], refueling_period_yr)
+    df.loc[df['Account'] == 82, estimated_cost_col] = annualized_fuel_cost
 
     return df
 
+def calculate_decommissioning_cost(df, params):
+    # A78: Annualized Decommissioning Cost
+    # Find the column name that starts with 'Estimated Cost option == "other costs"'
+    estimated_cost_col = get_estimated_cost_column(df)
+    capex = df.loc[df['Account'].isin([10, 20, 30, 40, 50]), estimated_cost_col].sum()
+    AR = params['Annual Return']
+    LP = params ['Levelization Period']
+
+    decommissioning_fv_cost = capex * params['A78: CAPEX to Decommissioning Cost Ratio']
+    fv_to_pv_of_annuity = -AR/(1- pow(1+AR, LP))
+    annualized_decommisioning_cost = decommissioning_fv_cost * fv_to_pv_of_annuity     
+    df.loc[df['Account'] == 78, estimated_cost_col] = annualized_decommisioning_cost
+
+    return df
 
 def calculate_interest_cost(params, OCC):
     interest_rate = params['Interest Rate']
@@ -323,7 +358,6 @@ def calculate_interest_cost(params, OCC):
     C  =((np.log(1+ interest_rate)*(construction_duration/12)/3.14)**2+1)
     Interest_expenses = debt_to_equity_ratio*OCC*((0.5*B/C)-1)
     return Interest_expenses
-
 
 def calculate_high_level_capital_costs(df, params):
     power_kWe = 1000 * params['Power MWe']
@@ -361,9 +395,6 @@ def calculate_TCI(df, params):
     df = df._append({'Account': 'TCI per kW','Account Title' : 'Total Capital Investment per kW', cost_column: tci_cost/power_kWe}, ignore_index=True)
 
     return df
-
-
-
 
 def energy_cost_levelized(params, df):
     
@@ -454,6 +485,7 @@ def transform_dataframe(df):
     df.iloc[-2:, df.columns.get_loc(column_name)] = df.iloc[-2:, df.columns.get_loc(column_name)].astype(int)
     
     return df
+
 def bottom_up_cost_estimate(cost_database_filename, params):
     escalated_cost = escalate_cost_database(cost_database_filename, params['escalation_year'], params)
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
@@ -471,7 +503,8 @@ def bottom_up_cost_estimate(cost_database_filename, params):
 
     updated_accounts_10_60 = update_high_level_costs(high_Level_capital_cost , 'finance' )
     TCI = calculate_TCI(updated_accounts_10_60, params )
-    updated_accounts_70_80 = update_high_level_costs(TCI , 'annual' )
+    TCI_w_decommissioning = calculate_decommissioning_cost(TCI, params)
+    updated_accounts_70_80 = update_high_level_costs(TCI_w_decommissioning , 'annual' )
     final_COA = energy_cost_levelized(params, updated_accounts_70_80)
     presented_COA = transform_dataframe(final_COA )
     return presented_COA
