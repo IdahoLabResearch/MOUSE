@@ -25,7 +25,7 @@ def energy_cost_levelized( plant_lifetime_years, capital_cost, ann_cost, discoun
         elif i >0:
             cap_cost_per_year  = 0
             annual_cost = ann_cost
-            elec_gen = power_MWe *capacity_factor * 365.25 * 24       # MW hour. 
+            elec_gen = power_MWe *capacity_factor * 365 * 24       # MW hour. 
         sum_cost +=  (cap_cost_per_year + annual_cost)/ ((1+ discount_rate)**i) 
         sum_elec += elec_gen/ ((1 + discount_rate)**i) 
     LCOE =  sum_cost/ sum_elec
