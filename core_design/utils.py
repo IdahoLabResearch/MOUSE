@@ -71,16 +71,18 @@ def calculate_number_of_rings(rings_over_one_edge):
             2*rings_over_one_edge-1
 
 
-def calculate_number_of_TRISO_particles_per_compact_fuel(params):
+def calculate_total_number_of_TRISO_particles(params):
     compact_fuel_vol = cylinder_volume(params['Compact Fuel Radius'], params['Active Height'])
     one_particle_volume = sphere_volume(params['Fuel Pin Radii'][-1])
     number_of_particles_per_compact_fuel_vol = np.floor(params['Packing Factor'] *compact_fuel_vol / one_particle_volume) 
+    params['Number Of TRISO Particles Per Compact Fuel'] =number_of_particles_per_compact_fuel_vol
     total_number_of_particles = number_of_particles_per_compact_fuel_vol * calculate_number_of_rings(params['Assembly Rings']) *\
      calculate_number_of_rings(params['Core Rings'])
+    params['Total Number of TRISO Particles'] = total_number_of_particles
     return total_number_of_particles
 
 def calculate_heat_flux_TRISO(params):
-    number_of_triso_particles = calculate_number_of_TRISO_particles_per_compact_fuel(params)
+    number_of_triso_particles = calculate_total_number_of_TRISO_particles(params)
     total_area_triso = number_of_triso_particles * sphere_area(params['Fuel Pin Radii'][0]) * 1e-4 #  # cm^2 to m^2
     heat_flux = params['Power MWt'] / total_area_triso
     return heat_flux
@@ -92,6 +94,7 @@ def create_universe_plot(materials_database, universe, plot_width, num_pixels, f
         'TRIGA_fuel': 'red',
         'ZrH': 'yellow',
         'UO2': 'green',
+        'UO2_2': 'green',
         'UC': 'purple',
         'UCO': 'orange',
         'UN': 'cyan',
