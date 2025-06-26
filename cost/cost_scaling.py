@@ -18,6 +18,7 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
                                 (params['Primary Loop Compressor Power']/1e6/2.6)**0.74)
             cost = cost_multiplier * unit_cost
         else:
+            # Old Correlation kept as backup
             cost_multiplier = (1 / (0.95 - params['Compressor Isentropic Efficiency'])) * params['Compressor Pressure Ratio'] * np.log(params['Compressor Pressure Ratio'])
             cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
     
