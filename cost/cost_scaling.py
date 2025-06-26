@@ -12,8 +12,8 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
     elif account == 222.13:
         if 'Primary Loop Count' in params.keys():
             # Account for multiple primary loops and their individual rated load
-            primary_loop_count = params['Primary Loop Count']
-            
+            ## PR1: Updated cost correlation based on ANL/NSE-20/28 in-place of default
+            ## due to inherent uncertainty of compressor pressure ratio between GCMR designs
             cost_multiplier = (((params['Primary Loop Outlet Temperature'] - 273.15)/650)**1.29 *
                                 (params['Primary Loop Compressor Power']/1e6/2.6)**0.74)
             cost = cost_multiplier * unit_cost
