@@ -82,7 +82,9 @@ def calculate_decommissioning_cost(df, params):
         
         if 'A78: CAPEX to Decommissioning Cost Ratio' not in params.keys():
             # Key is not specified. Use the default recommeneded value
-            # TODO: Try to implement this as part of the default input
+            # PR#1: Chosen over previous unit_cost based estiamte
+            # Estimating A78 based on a fraction of CAPEX suggested by 
+            # Venneri, (2023) (15%) and INL/EXT-21-63067 (9%)
             params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
 
         decommissioning_fv_cost = capex * params['A78: CAPEX to Decommissioning Cost Ratio']
