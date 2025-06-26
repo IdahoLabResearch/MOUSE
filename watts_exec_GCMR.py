@@ -132,7 +132,7 @@ params.update({
 # calculate coolant mass flow rate
 params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
 mass_flow_rate(params)
-circulator_power(params)
+compressor_power(params)
 # # **************************************************************************************************************************
 # #                                           Sec. 8 : Shielding
 # # ************************************************************************************************************************** 

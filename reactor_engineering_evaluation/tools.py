@@ -52,7 +52,7 @@ def mass_flow_rate(params):
     params['Coolant Mass Flow Rate']  = m_dot / loop_factor # For Reactor Mass Flow Rate
     params['Primary Loop Mass Flow Rate'] = m_dot # For individual Primary Loop Mass Flow Rate
     
-def circulator_power(params):
+def compressor_power(params):
     rho_he = 3.3297 # kg/m3. TODO: Consider importing CoolProp to estiate density based on cold leg temperature and pressure
     power = params['Primary Loop Pressure Drop']*params['Primary Loop Mass Flow Rate']/params['Compressor Isentropic Efficiency']/rho_he
     params['Primary Loop Compressor Power'] = power # W
