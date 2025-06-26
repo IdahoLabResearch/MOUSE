@@ -80,7 +80,7 @@ params['Active Height'] = 2 * params['Core Radius']
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 update_params({
-    'Drum Count': 24,
+    # 'Drum Count': 24, # Automatically calculated in the Reactor Evaluation Side
     'Drum Radius' : 9, #cm   
     'Drum Absorber Thickness': 1, # cm
     'Drum Height': params['Active Height'],
