@@ -54,7 +54,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
                                         df.loc[df['Account'] == 221.31, estimated_cost_col].values.sum(),
                                         df.loc[df['Account'] == 221.2,  estimated_cost_col].values.sum(),
                                         df.loc[df['Account'] == 222,    estimated_cost_col].values.sum()])
-            annualized_replacement_cost = (A20_capital_cost*_crf(params['Discount Rate'], A20_replacement_period)).sum()
+            annualized_replacement_cost = (A20_capital_cost*_crf(params['Interest Rate'], A20_replacement_period)).sum()
             A20_other_cost = df.loc[df['Account'] == 20, estimated_cost_col].values[0] - A20_capital_cost.sum()
             annualized_other_cost = A20_other_cost * params['Mainenance to Direct Cost Ratio']
             # For non-specified CAPEX components, use the old method of saving 
@@ -67,7 +67,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
 
         # A82: Annualized Fuel Cost
         lump_fuel_cost = df.loc[df['Account'] == 25, estimated_cost_col].values[0]
-        annualized_fuel_cost = lump_fuel_cost*_crf(params['Discount Rate'], refueling_period_yr)
+        annualized_fuel_cost = lump_fuel_cost*_crf(params['Interest Rate'], refueling_period_yr)
         df.loc[df['Account'] == 82, estimated_cost_col] = annualized_fuel_cost
 
     return df
