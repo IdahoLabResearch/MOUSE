@@ -41,7 +41,8 @@ def calculate_accounts_31_32_75_82_cost( df, params):
         refueling_period_yr = refueling_period / 365
         params_df = pd.DataFrame(params.items(), columns=['keys', 'values'])
         if params_df.loc[params_df['keys'].str.contains('replacement', case=False), 'keys'].size > 0:
-            # Input Case includes period replacement of internals (esp. GCMS)
+            # Input Case includes period replacement of internals (e.g. GCMS)
+            # Replacements are assumed to match with refueling so #cycles are used instead of #years
             A20_replacement_period = refueling_period_yr * np.array([params['A75: Vessel Replacement Period (cycles)'],
                                                                      1, # Moderator Block Replacement Period (cycles)
                                                                      params['A75: Reflector Replacement Period (cycles)'],
@@ -56,8 +57,12 @@ def calculate_accounts_31_32_75_82_cost( df, params):
             annualized_replacement_cost = (A20_capital_cost*_crf(params['Discount Rate'], A20_replacement_period)).sum()
             A20_other_cost = df.loc[df['Account'] == 20, estimated_cost_col].values[0] - A20_capital_cost.sum()
             annualized_other_cost = A20_other_cost * params['Mainenance to Direct Cost Ratio']
+            # For non-specified CAPEX components, use the old method of saving 
+            # `params['Mainenance to Direct Cost Ratio']` * CAPEX annually
             df.loc[df['Account'] == 75, estimated_cost_col] = annualized_replacement_cost + annualized_other_cost
         else:
+            # If no A75's specified in `params`, rely on
+            # `params['Mainenance to Direct Cost Ratio']` * CAPEX annually
             df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Mainenance to Direct Cost Ratio']
 
         # A82: Annualized Fuel Cost
