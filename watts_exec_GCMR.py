@@ -124,7 +124,7 @@ params.update({
     'Primary Loop Count': 2, # Number of Primary Coolant Loops present in plant
     'Primary Loop per loop load fraction': 0.5, # based on assuming that each Primary Loop Handles the total load evenly (1/2)
     'Primary Loop Outlet Temperature': 550 + 273.15, # K
-    'Primary Loop Pressure Drop': 50e3, # Pa TODO: implement TH code for dP estimation
+    'Primary Loop Pressure Drop': 50e3, # Pa. Assumption based on Enrique's estimate
     'BoP Count': 2, # Number of BoP present in plant
     'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
