@@ -73,7 +73,8 @@ update_params({
       'Core Rings' : 5,
 })
 params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
-params['Reflector Thickness'] = params['Assembly FTF'] / 10  # cm
+params['Reflector Thickness'] = 10.5722 # cm
+# params['Reflector Thickness'] = params['Assembly FTF'] / 10  # cm
 params['Core Radius'] = params['Assembly FTF']* params['Core Rings'] +  params['Reflector Thickness']
 params['Active Height'] = 2 * params['Core Radius']
 # **************************************************************************************************************************
@@ -110,6 +111,7 @@ params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
+
 
 # **************************************************************************************************************************
 #                                         Sec. 6: Primary Loop + Balance of Plant
@@ -150,22 +152,23 @@ params['In Vessel Shield Outer Radius'] =  params['Core Radius'] + params['In Ve
 #                                           Sec. 9 : Vessels Calculations
 # ************************************************************************************************************************** 
 update_params({
+    # Assume to be the Core Barrel
     'Vessel Radius': params['Core Radius'] +  params['In Vessel Shield Thickness'],
-    'Vessel Thickness': 7.6,  # cm
+    'Vessel Thickness': 1,  # cm
     'Vessel Lower Plenum Height': 30,  # cm
     'Vessel Upper Plenum Height': 60,  # cm
     'Vessel Upper Gas Gap': 10,  # cm
     'Vessel Bottom Depth': 35,  # cm
     'Vessel Material': 'stainless_steel',
-    # No guard vessel
-    'Gap Between Vessel And Guard Vessel': 0,  # cm
-    'Guard Vessel Thickness': 0,  # cm
-    'Guard Vessel Material': 'stainless_steel',
+    # Assumed to be the RPV instead of the Guard Vessel
+    'Gap Between Vessel And Guard Vessel': 0.5,  # cm
+    'Guard Vessel Thickness': 9,  # cm
+    'Guard Vessel Material': 'low_alloy_steel',
     
     'Gap Between Guard Vessel And Cooling Vessel': 5,  # cm
     'Cooling Vessel Thickness': 0.5,  # cm
     'Cooling Vessel Material': 'stainless_steel',
-    'Gap Between Cooling Vessel And Intake Vessel': 3,  # cm
+    'Gap Between Cooling Vessel And Intake Vessel': 4,  # cm
     'Intake Vessel Thickness': 0.5,  # cm
     'Intake Vessel Material': 'stainless_steel'
 })
@@ -188,6 +191,15 @@ update_params({
     'Security Staff Per Shift': 1
 })
 
+# A721: Coolant Refill
+## 20 Tanks total are on-site. 
+## Assuming ~50% are used for fresh coolant, 50% are used for dirty
+## Calculated based on 10 tanks w/ 291 cuft ea @ 2400psi, 30°C
+## Density=24.417 kg/m3, Volume=8.2402 m3
+## Refill Frequency: 1 /yr if purified, 6 /yr if not purified
+params['Onsite Coolant Inventory'] = 10 * 24.417 * 8.2402 # kg
+params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 6
+
 # A75: Annualized Capital Expenditures
 ## Input for replacement of large capital equipments. Replacements are made during refueling cycles
 ## Components to be replaced:
@@ -198,7 +210,7 @@ params['A75: Vessel Replacement Period (cycles)']    = 4
 params['A75: Reflector Replacement Period (cycles)'] = 1
 params['A75: Drum Replacement Period (cycles)']      = 1
 params['A75: HX Replacement Period (cycles)']        = 1
-params['Mainenance to Direct Cost Ratio']            = 0.02
+params['Mainenance to Direct Cost Ratio']            = 0.015
 
 # A78: Annualized Decommisioning Cost
 params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
@@ -215,18 +227,24 @@ update_params({
     'Escalation Year': 2023,
     
     'Excavation Volume': 412.605,  # m^3
-    'Reactor Building Slab Roof Volume': 87.12,  # m^3
-    'Reactor Building Basement Volume': 87.12,  # m^3
-    'Reactor Building Exterior Walls Volume': 228.8,  # m^3
+    'Reactor Building Slab Roof Volume': (9750*6502.4*1500)/1e9,  # m^3
+    'Reactor Building Basement Volume': (9750*6502.4*1500)/1e9,  # m^3
+    'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
     
-    'Turbine Building Slab Roof Volume': 132,  # m^3
-    'Turbine Building Basement Volume': 132,  # m^3
-    'Turbine Building Exterior Walls Volume': 192.64,  # m^3
+    'Turbine Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Turbine Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Turbine Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
     
-    'Control Building Slab Roof Volume': 8.1,  # m^3
-    'Control Building Basement Volume': 27,  # m^3
-    'Control Building Exterior Walls Volume': 19.44,  # m^3
+    # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+    'Control Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
+    'Control Building Basement Volume': (12192*2438*200)/1e9,  # m^3
+    'Control Building Exterior Walls Volume': ((12192*2496*200)+(2038*2496*200))*2/1e9,  # m^3
     
+    # Manipulator Building
+    'Manipulator Building Slab Roof Volume': (4876.8*2438.4*400)/1e9, # m^3
+    'Manipulator Building Basement Volume': (4876.8*2438.4*1500)/1e9, # m^3
+    'Manipulator Building Exterior Walls Volume': ((4876.8*4445*400)+(2038.4*4445*400*2))/1e9, # m^3
+
     'Refueling Building Slab Roof Volume': 0,  # m^3
     'Refueling Building Basement Volume': 0,  # m^3
     'Refueling Building Exterior Walls Volume': 0,  # m^3
@@ -239,9 +257,10 @@ update_params({
     'Emergency Building Basement Volume': 0,  # m^3
     'Emergency Building Exterior Walls Volume': 0,  # m^3
     
-    'Storage Building Slab Roof Volume': 0,  # m^3
-    'Storage Building Basement Volume': 0,  # m^3
-    'Storage Building Exterior Walls Volume': 0,  # m^3
+    # Building to host operational spares (CO2, He, filters, etc.)
+    'Storage Building Slab Roof Volume': (8400*3500*400)/1e9, # m^3
+    'Storage Building Basement Volume': (8400*3500*400)/1e9, # m^3
+    'Storage Building Exterior Walls Volume': ((8400*2700*400)+(3100*2700*400*2))/1e9, # m^3
     
     'Radwaste Building Slab Roof Volume': 0,  # m^3
     'Radwaste Building Basement Volume': 0,  # m^3
