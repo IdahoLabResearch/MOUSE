@@ -123,12 +123,12 @@ params.update({
     'Compressor Pressure Ratio': 4,
     'Compressor Isentropic Efficiency': 0.8,
     'Coolant Temperature Difference': 250,  # Coolant Temperature Differnce between the inlet and the outlet (reactor side)
-    'Primary Loop Count': 2,
-    'Primary Loop per loop load fraction': 0.5,
+    'Primary Loop Count': 2, # Number of Primary Coolant Loops present in plant
+    'Primary Loop per loop load fraction': 0.5, # based on assuming that each Primary Loop Handles the total load evenly (1/2)
     'Primary Loop Outlet Temperature': 550 + 273.15, # K
     'Primary Loop Pressure Drop': 50e3, # Pa TODO: implement TH code for dP estimation
-    'BoP Count': 2,
-    'BoP per loop load fraction': 0.5,
+    'BoP Count': 2, # Number of BoP present in plant
+    'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
 
 # calculate coolant mass flow rate
