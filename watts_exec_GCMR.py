@@ -194,7 +194,10 @@ update_params({
 ## 1. Vessel: every ~10 years 
 ## 2. Internals (moderator, reflector, drums, HX, circulators): every refueling cycle
 ## If the period is 0, it is assumed to never be replaced throughout Levelization period
-params['A75: Vessel Replacement Period (cycles)']    = 4
+## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
+total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
+total_refueling_period_yr = total_refueling_period/365
+params['A75: Vessel Replacement Period (cycles)']    = np.floor(10/total_refueling_period_yr)*total_refueling_period_yr
 params['A75: Reflector Replacement Period (cycles)'] = 1
 params['A75: Drum Replacement Period (cycles)']      = 1
 params['A75: HX Replacement Period (cycles)']        = 1
