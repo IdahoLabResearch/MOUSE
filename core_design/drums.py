@@ -13,10 +13,13 @@ def calculate_drums_volumes_and_masses(params):
     drum_refl_vol = drum_volume - drum_absorp_vol 
     if params['reactor type'] == "LTMR":
         number_of_drums = 12 
+        params['Drum Count'] = number_of_drums
     elif params['reactor type'] == "GCMR":
-        number_of_drums = 6 * (params['Core Rings']-1) 
         if 'Drum Count' in params.keys():
             number_of_drums = params['Drum Count']
+        else:
+            number_of_drums = 6 * (params['Core Rings']-1) 
+            params['Drum Count'] = number_of_drums
 
     all_drums_volume = drum_volume * number_of_drums
     
