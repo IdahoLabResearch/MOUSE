@@ -415,7 +415,7 @@ def build_openmc_model_GCMR(params):
     settings_file.inactive = inactive
     settings_file.particles = particles
     settings_file.output = {'tallies': True}
-    settings_file.temperature = {'default': 900.0,
+    settings_file.temperature = {'default': params['Common Temperature'],
                                  'method': 'interpolation',
                                  'tolerance': 50.0}
 
