@@ -76,5 +76,5 @@ def vessels_specs(params):
     params['Total Vessels Mass'] = total_vessels_mass
 
     if params['reactor type'] == 'GCMR':
-        params['RPV Outer Radius'] = (params['Guard Vessel Radius'] + param['Guard Vessel Thickness'])
+        params['RPV Outer Radius'] = (params['Guard Vessel Radius'] + params['Guard Vessel Thickness'])
         params['RPV Outer Height'] = params['Vessel Height'] + 2*params['Gap Between Vessel And Guard Vessel'] + 2*params['Guard Vessel Thickness'] + 2*params['Vessel Bottom Depth'] + 2*params['Vessel Thickness']
