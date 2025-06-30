@@ -74,9 +74,9 @@ update_params({
 })
 params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
 params['Reflector Thickness'] = 10.5722 # cm
-# params['Reflector Thickness'] = params['Assembly FTF'] / 10  # cm
+params['Axial Reflector Thickness'] = 40 # cm. Current CAD model only hosts a top axial refl
 params['Core Radius'] = params['Assembly FTF']* params['Core Rings'] +  params['Reflector Thickness']
-params['Active Height'] = 2 * params['Core Radius']
+params['Active Height'] = 250
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
@@ -155,10 +155,10 @@ update_params({
     # Assume to be the Core Barrel
     'Vessel Radius': params['Core Radius'] +  params['In Vessel Shield Thickness'],
     'Vessel Thickness': 1,  # cm
-    'Vessel Lower Plenum Height': 30,  # cm
-    'Vessel Upper Plenum Height': 60,  # cm
-    'Vessel Upper Gas Gap': 10,  # cm
-    'Vessel Bottom Depth': 35,  # cm
+    'Vessel Lower Plenum Height': 42.848 - 40,  # cm, based on Reflecting Barrel~RPV Liner (-Reflector Thickness, which is currently missing in CAD)
+    'Vessel Upper Plenum Height': 47.152,       # cm, based on Reflector Ends~RPV Liner distance
+    'Vessel Upper Gas Gap': 0,                  # cm, assumed non-existed for GCMRv1
+    'Vessel Bottom Depth': 32.629,              # cm, top head (ellipsoid): 51.190, bottom head (ellipsoid): 37.695
     'Vessel Material': 'stainless_steel',
     # Assumed to be the RPV instead of the Guard Vessel
     'Gap Between Vessel And Guard Vessel': 0.5,  # cm
