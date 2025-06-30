@@ -84,7 +84,7 @@ update_params({
     # 'Drum Count': 24, # Automatically calculated in the Reactor Evaluation Side
     'Drum Radius' : 9, #cm   
     'Drum Absorber Thickness': 1, # cm
-    'Drum Height': params['Active Height'],
+    'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
     })
 
 calculate_drums_volumes_and_masses(params)
