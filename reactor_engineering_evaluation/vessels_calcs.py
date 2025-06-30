@@ -48,6 +48,9 @@ def vessels_specs(params):
     params['Vessels Total Radius'] = vessels_full_radius
     params['Vessel Height'] = vessel_height
     params['Vessels Total Height'] = total_vessel_height
+    params['Guard Vessel Radius'] = guard_vessel_radius
+    params['Cooling Vessel Radius'] = cooling_vessel_radius
+    params['Intake Vessel Radius'] = intake_vessel_radius
     params['Vessel Mass'] = vessel_mass_kg
     params['Guard Vessel Mass'] = guard_vessel_mass_kg
     params['Cooling Vessel Mass'] = cooling_vessel_mass
