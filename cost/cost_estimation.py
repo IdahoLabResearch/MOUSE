@@ -230,3 +230,6 @@ def detailed_bottom_up_cost_estimate(cost_database_filename, params, output_file
         save_params_to_excel_file(writer, params)
         
     print(f"\n\nThe cost estimate and all the paramters are saved at {output_filename}\n\n")
+
+    # Return final DataFrame for post processing
+    return detatiled_cost_table
