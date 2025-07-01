@@ -75,7 +75,7 @@ def calculate_secondary_pump_mechanical_power(secondary_mass_flow_rate):
 
 
 
-def calculate_building_structure_cost(building):
+def calculate_building_structure_volumes(building):
     building_name       = building[0]
     inner_width         = building[1]
     inner_length        = building[2]
@@ -114,7 +114,7 @@ def calculate_reactor_building_structure_volume(building_char):
     """
     reactor_building_dimensions = building_char
 
-    rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol = calculate_building_structure_cost(reactor_building_dimensions)
+    rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol = calculate_building_structure_volumes(reactor_building_dimensions)
     return rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol
 
 
@@ -125,5 +125,72 @@ def calculate_energy_conversion_building_structure_volume(building_char):
     """
     energy_conversion_building_structure_dimensions = building_char
 
-    eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol = calculate_building_structure_cost(energy_conversion_building_structure_dimensions)
+    eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol = calculate_building_structure_volumes(energy_conversion_building_structure_dimensions)
     return eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol
+
+
+def calculate_control_building_structure_volume(building_char):
+    """
+      * The control building dimensions are not completely based on assumptions.
+      * The idea is that the control building is assumed to be occupied by two operators
+        .. if needed.
+    """
+    control_building_dimensions = building_char
+
+    cb_slab_roof_vol, cb_basemat_vol, cb_walls_vol = calculate_building_structure_volumes(control_building_dimensions)
+    return cb_slab_roof_vol, cb_basemat_vol, cb_walls_vol
+
+
+def calculate_refueling_building_strucutre_volume(building_char):
+    """
+      * Refueling building dimensions are entirely based on assumptions.
+      * Some key notes prior to assumptions:
+        - refueling building is larger than control building
+        - Radioactive material needs to be handled so area needs to be large in
+          order to account for existing shielding and equipment.
+    """
+    refueling_building_dimensions = building_char
+
+    rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol = calculate_building_structure_volumes(refueling_building_dimensions)
+    return rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol
+
+def calculate_spent_fuel_building_structure_volume(building_char):
+    """
+      * It is expected that spent fuel building will have less equipment compared to refueling area
+      * As a result, it has a smaller area
+    """
+    spent_fuel_building_dimensions = building_char
+
+    sfb_slab_roof_vol, sfb_basemat_vol, sfb_walls_vol = calculate_building_structure_volumes(spent_fuel_building_dimensions)
+    return sfb_slab_roof_vol, sfb_basemat_vol, sfb_walls_vol
+
+
+def calculate_emergency_building_structure_volume(building_char):
+    """
+      * Dimensions are solely based on assumptions.
+      * No supporting details for assumptions
+    """
+    emergency_building_dimensions = building_char
+
+    eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol = calculate_building_structure_volumes(emergency_building_dimensions)
+    return eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol
+
+def calculate_storage_building_structure_volume(building_char):
+    """
+      * Dimensions are solely based on assumptinos
+      * No supporting details for assumptions
+    """
+    storage_building_dimensions = building_char
+
+    sb_slab_roof_vol, sb_basemat_vol, sb_walls_vol = calculate_building_structure_volumes(storage_building_dimensions)
+    return sb_slab_roof_vol, sb_basemat_vol, sb_walls_vol
+
+def calculate_radwaste_building_structure_volume(building_char):
+    """
+      * Dimensions are solely based on dimensions.
+      * No elaboration on details of the assumptions
+    """
+    radwaste_storage_building_dimensions = building_char
+
+    radb_slab_roof_vol, radb_basemat_vol, radb_walls_vol = calculate_building_structure_volumes(radwaste_storage_building_dimensions)
+    return radb_slab_roof_vol, radb_basemat_vol, radb_walls_vol

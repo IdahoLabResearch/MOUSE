@@ -317,40 +317,43 @@ params['escalation_year'] = 2023
 params['Excavation Volume'] = 412.605 # m^3
 
 # reactor building
-params['Reactor Building Slab Roof Volume'] = 87.12 # m^3
-params['Reactor Building Basement Volume'] = 87.12 # m^3
-params['Reactor Building Exterior Walls Volume'] = 228.8 # m^3
+reactor_building = ['Reactor building', 2.6, 2.6,  11.0, 2, 2, 2]
+RB_slab_roof_volume, RB_basemat_volume, RB_walls_volume = calculate_reactor_building_structure_volume(reactor_building)
+
 
 # Energy conversion building
-params['Turbine Building Slab Roof Volume'] = 132 # m^3
-params['Turbine Building Basement Volume'] = 132 # m^3
-params['Turbine Building Exterior Wall'] = 192.64 # m^3
+energy_conversion_building = ['Energy conversion building', 2.6, 6.0,   5.6, 2, 2, 2]
+EB_slab_roof_volume, EB_basemat_volume, EB_walls_volume = calculate_energy_conversion_building_structure_volume(energy_conversion_building)
+
+
 # control building
-params['Control Building Slab Roof Volume'] = 8.1
-params['Control Building Basement Volume'] = 27
-params['Control Building Exterior Walls Volume'] = 19.44
+control_building = ['Control building', 2.4, 8.4,   3.0, 2, 2, 2]
+cb_slab_roof_volume, cb_basemat_volume, cb_walls_volume = calculate_control_building_structure_volume(control_building)
+
 
 # Refueling building
-params['Refueling Building Slab Roof Volume'] = 312
-params['Refueling Building Basement Volume'] = 312
-params['Refueling Building Exterior Walls Volume'] = 340
+refueling_building = ['Refueling area building', 8.0, 9.0,   5.0, 2, 2, 2]
+rb_slab_roof_volume, rb_basemat_volume, rb_walls_volume = calculate_refueling_building_structure_volume(refueling_building)
+
 
 # spent fuel building
-params['Spent Fuel Building Slab Roof Volume'] = 240
-params['Spent Fuel Building Basement Volume'] = 240
-params['Spent Fuel Building Exterior Walls Volume'] = 313.6
+spent_fuel_building = ['Spent fuel building', 6.0, 8.0,   5.6, 2, 2, 2]
+sfb_slab_roof_volume, sfb_basemat_volume, sfb_walls_volume = calculate_spent_fuel_building_structure_volume(spent_fuel_building)
 
-params['Emergency Building Slab Roof Volume'] =  128
-params['Emergency Building Basement Volume'] = 128
-params['Emergency Building Exterior Walls Volume'] = 180
 
-params['Storage Building Slab Roof Volume'] =  200
-params['Storage Building Basement Volume'] =  200
-params['Storage Building Exterior Walls Volume'] =  268.8
+# emergency building
+emergency_building = ['Emergency and startup power system building', 4.0, 4.0,   5.6, 2, 2, 2]
+eb_slab_roof_volume, eb_basemat_volume, eb_walls_volume = calculate_emergency_building_structure_volume(emergency_building)
 
-params['Radwaste Building Slab Roof Volume'] =  200
-params['Radwaste Building Basement Volume'] =  200
-params['Radwaste Building Exterior Walls Volume'] =  268.8
+# storage building
+storage_building = ['Storage and warehouse building', 6.0, 6.0,   5.6, 2, 2, 2]
+sb_slab_roof_volume, sb_basemat_volume, sb_walls_volume = calculate_emergency_building_structure_volume(storage_building)
+
+
+# radwaste building
+radwaste_storage_building = ['Radwaste building', 6.0, 6.0,   5.6, 2, 2, 2]
+radb_slab_rood_volume, radb_basemat_volume, radb_walls_volume = calculate_radwaste_building_structure_volume(radwaste_storage_building)
+
 
 # Financing params
 params['interest_rate'] = 0.06 # 
