@@ -47,13 +47,13 @@ def calculate_accounts_31_32_75_82_cost( df, params):
                                                                      1, # Moderator Block Replacement Period (cycles)
                                                                      params['A75: Reflector Replacement Period (cycles)'],
                                                                      params['A75: Drum Replacement Period (cycles)'],
-                                                                     params['A75: HX Replacement Period (cycles)'],])
+                                                                     params['A75: Integrated HX Replacement Period (cycles)'],])
             ## Keep the same ordering as `A20_replacement_period`
-            A20_capital_cost = np.array([df.loc[df['Account'].isin([222.12, 222.13]), estimated_cost_col].values.sum(), 
-                                        df.loc[df['Account'] == 221.33, estimated_cost_col].values.sum(),
-                                        df.loc[df['Account'] == 221.31, estimated_cost_col].values.sum(),
-                                        df.loc[df['Account'] == 221.2,  estimated_cost_col].values.sum(),
-                                        df.loc[df['Account'] == 222,    estimated_cost_col].values.sum()])
+            A20_capital_cost = np.array([df.loc[df['Account'].isin([221.12, 221.13]),             estimated_cost_col].values.sum(), 
+                                        df.loc[df['Account'] == 221.33,                           estimated_cost_col].values.sum(),
+                                        df.loc[df['Account'] == 221.31,                           estimated_cost_col].values.sum(),
+                                        df.loc[df['Account'] == 221.2,                            estimated_cost_col].values.sum(),
+                                        df.loc[df['Account'].isin([222.1, 222.2, 222.3, 222.61]), estimated_cost_col].values.sum()])
             annualized_replacement_cost = (A20_capital_cost*_crf(params['Interest Rate'], A20_replacement_period)).sum()
             A20_other_cost = df.loc[df['Account'] == 20, estimated_cost_col].values[0] - A20_capital_cost.sum()
             annualized_other_cost = A20_other_cost * params['Mainenance to Direct Cost Ratio']
