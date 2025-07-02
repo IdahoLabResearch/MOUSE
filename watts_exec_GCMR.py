@@ -68,21 +68,21 @@ update_params({
     # Coolant channel and booster dimensions
     'Coolant Channel Radius': 0.35,  # cm
     'Moderator Booster Radius': 0.55, # cm
-      'Lattice Pitch'  : 2.25,
+      'Lattice Pitch'  : 1.85,
       'Assembly Rings' : 6,
       'Core Rings' : 5,
 })
 params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
-params['Reflector Thickness'] = 10.5722 # cm
+params['Reflector Thickness'] = 27.393 # cm
 params['Axial Reflector Thickness'] = 40 # cm. Current CAD model only hosts a top axial refl
-params['Core Radius'] = params['Assembly FTF']* params['Core Rings'] +  params['Reflector Thickness']
+params['Core Radius'] = params['Assembly FTF']*params['Core Rings'] +  params['Reflector Thickness']
 params['Active Height'] = 250
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 update_params({
     # 'Drum Count': 24, # Automatically calculated in the Reactor Evaluation Side
-    'Drum Radius' : 9, #cm   
+    'Drum Radius' : 15, # cm   
     'Drum Absorber Thickness': 1, # cm
     'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
     })
@@ -127,11 +127,16 @@ params.update({
     'Primary Loop per loop load fraction': 0.5, # based on assuming that each Primary Loop Handles the total load evenly (1/2)
     'Primary Loop Outlet Temperature': 550 + 273.15, # K
     'Primary Loop Pressure Drop': 50e3, # Pa. Assumption based on Enrique's estimate
+})
+# calculate coolant mass flow rate
+mass_flow_rate(params)
+compressor_power(params)
+
+# Update BoP Parameters
+params.update({
     'BoP Count': 2, # Number of BoP present in plant
     'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
-
-# calculate coolant mass flow rate
 params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
 mass_flow_rate(params)
 compressor_power(params)
@@ -158,10 +163,10 @@ update_params({
     'Vessel Lower Plenum Height': 42.848 - 40,  # cm, based on Reflecting Barrel~RPV Liner (-Reflector Thickness, which is currently missing in CAD)
     'Vessel Upper Plenum Height': 47.152,       # cm, based on Reflector Ends~RPV Liner distance
     'Vessel Upper Gas Gap': 0,                  # cm, assumed non-existed for GCMRv1
-    'Vessel Bottom Depth': 32.629,              # cm, top head (ellipsoid): 51.190, bottom head (ellipsoid): 37.695
+    'Vessel Bottom Depth': 32.129,              # cm, bot/top head (ellipsoid): 32.129 cm (not exact match with CAD, estimated to match RPV Height)
     'Vessel Material': 'stainless_steel',
     # Assumed to be the RPV instead of the Guard Vessel
-    'Gap Between Vessel And Guard Vessel': 0.5,  # cm
+    'Gap Between Vessel And Guard Vessel': 1,  # cm, (not exact match with CAD, estimated to match RPV OD) 
     'Guard Vessel Thickness': 9,  # cm
     'Guard Vessel Material': 'low_alloy_steel',
     
