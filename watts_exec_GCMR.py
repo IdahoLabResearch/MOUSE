@@ -138,8 +138,20 @@ params.update({
     'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
 params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
-mass_flow_rate(params)
-compressor_power(params)
+
+# Integrated Heat Transfer Vessel
+# Assumed to house the PCHE, Circulator, Pipings, Insulation, Liner
+# This is all housed in a 6cm-thick SA508 Pressure Vessel
+# This is a pressure boundary with primary coolant connections.
+ITH_vessel_thickness = 6 # cm
+# PCHE_volume = params['Primary HX Mass'] / params['HX Material']
+params.update({
+    'Integrated Heat Transfer Vessel Thickness': 6, # cm
+    'Integrated Heat Transfer Vessel Material': 'SA508',
+})
+GCMR_integrated_heat_transfer_vessel(params)
+
+
 # # **************************************************************************************************************************
 # #                                           Sec. 8 : Shielding
 # # ************************************************************************************************************************** 

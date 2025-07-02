@@ -56,6 +56,43 @@ def mass_flow_rate(params):
     params['Primary Loop Mass Flow Rate'] = m_dot # For individual Primary Loop Mass Flow Rate
     
 def compressor_power(params):
+    # Estimates the required compressor power based on a simplified
+    # model using pressure drop, and compressor isentropic efficiency
+
     rho_he = 3.3297 # kg/m3. TODO: Consider importing CoolProp to estiate density based on cold leg temperature and pressure
     power = params['Primary Loop Pressure Drop']*params['Primary Loop Mass Flow Rate']/params['Compressor Isentropic Efficiency']/rho_he
     params['Primary Loop Compressor Power'] = power # W
+    return
+
+def compressor_wheel_diameter(params):
+    # Estimates the approximate size of the compressor based on its 
+    # Specific Speed and Diameter that matches MIGHTRs Horizontal HTGR
+    # Ref for Specific Speed: 
+    #  https://www.dropbox.com/scl/fi/fnqdg2hyi6y4ozu9p7nyu/final-report-str-mech-ARDP-redacted-V3.pdf?rlkey=h97dii28tvf0bxtffo8q62tn5&st=zsls1bs2&dl=0
+    ref_specific_diameter = 3.6 # dimensionless
+    rho_He = 3.330 # kg/m3 for He at 4 MPa, 300 °C. TODO: use He density correlation or CoolProp to estimate density based on cold leg temperature and pressure
+    Vdot_gcmr = params['Primary Loop Mass Flow Rate'] / rho_He # m3/s. Volumetric flow rate 
+    dP = params['Primary Loop Pressure Drop']
+    diameter = ref_specific_diameter/1.054 / (dP/rho_He)**0.25 * np.sqrt(Vdot_gcmr) # m
+    return diameter
+
+def GCMR_integrated_heat_transfer_vessel(params):
+    # Calculates the required parameters for the 
+    # GCMR's Integrated Heat Transfer Vessel that houses:
+    #   circulator, PCHE, piping, valves, insulation
+    
+    contingency = 0.3 # Accounts for the volume/mass of valves, fittings, connections
+    PCHE_volume = (params['Primary HX Mass'] / (materials_densities(params['HX Material'])*1e3) / 0.4) # account for coolant channel assumed void fraction 60%
+    compressor_volume = (compressor_wheel_diameter(params))**3 # Assume a cube area side 1.3*wheel_diameter. TODO: get more accurate compressor sizing
+
+    vessel_inner_volume = (1+contingency)*(PCHE_volume + compressor_volume) # Assume a cube-like structure
+    vessel_outer_volume = (vessel_inner_volume**(1/3)+ 1e-2*params['Integrated Heat Transfer Vessel Thickness'])**3 # m3
+    vessel_volume = vessel_outer_volume - vessel_inner_volume
+    vessel_density = materials_densities(params['Integrated Heat Transfer Vessel Material'])*1e3
+    params['Integrated Heat Transfer Vessel Outer Volume'] = vessel_outer_volume
+    params['Integrated Heat Transfer Vessel Mass'] = vessel_volume * vessel_density
+
+    # Rough Estimate of the mass held by the Support Structure
+    # Primary HX + Integrated Heat Transfer Vessel + Compressure + Valves/Fittings/Bolts/etc.
+    # params['Integrated Heat Transfer System Mass'] = params['Primary HX Mass'] + (vessel_volume * vessel_density) + compressor_volume*8000
+    return 
