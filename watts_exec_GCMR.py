@@ -250,6 +250,7 @@ update_params({
     'Reactor Building Slab Roof Volume': (9750*6502.4*1500)/1e9,  # m^3
     'Reactor Building Basement Volume': (9750*6502.4*1500)/1e9,  # m^3
     'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
+    'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
     
     'Turbine Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
     'Turbine Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
