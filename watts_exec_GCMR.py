@@ -252,9 +252,16 @@ update_params({
     'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
     'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
     
-    'Turbine Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Turbine Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Turbine Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
+    # Connected to the Reactor Building (contains steel liner)
+    'Integrated Heat Exchanger Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
+    'Integrated Heat Exchanger Building Superstructure Area': ((2*7014*3500)+(2*5000*5000))/1e6, # m^2
+    
+    # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+    'Turbine Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Basement Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Exterior Walls Volume': ((12192*2496*200)+(2038*2496*200))*2/1e9,  # m^3
     
     # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
     'Control Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
