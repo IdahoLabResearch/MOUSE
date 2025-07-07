@@ -15,7 +15,8 @@ def calculate_drums_volumes_and_masses(params):
         number_of_drums = 12 
     elif params['reactor type'] == "GCMR":
         number_of_drums = 6 * (params['Core Rings']-1) 
-        
+        if 'Drum Count' in params.keys():
+            number_of_drums = params['Drum Count']
 
     all_drums_volume = drum_volume * number_of_drums
     
@@ -34,7 +35,6 @@ def calculate_drums_volumes_and_masses(params):
     params['Control Drum Reflector Mass'] = drum_refl_all_mass
     params['Control Drums Mass'] = Control_Drums_Mass # all the drums masses
     params['All Drums Area'] = params['All Drums Volume']  / params['Drum Height']
-
 
 
 
@@ -75,6 +75,9 @@ def calculate_moderator_mass_GCMR(params):
     # total moderator mass
     tot_moderator_mass = tot_number_assemblies * moderator_area  * params['Active Height'] * materials_database[params['Moderator']].density / 1000 # Kg
     params['Moderator Mass'] = tot_moderator_mass 
+    tot_booster_mass   = tot_number_assemblies * area_moderator_booster_per_hex * params['Active Height'] * materials_database[params['Moderator Booster']].density / 1000 # Kg
+    params['Moderator Booster Mass'] = tot_booster_mass
+
 
 
 def calculate_moderator_mass(params): 

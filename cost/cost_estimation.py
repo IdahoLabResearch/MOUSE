@@ -4,10 +4,9 @@ import numpy as np
 import csv
 from cost.cost_escalation import escalate_cost_database
 from cost.code_of_account_processing import remove_irrelevant_account, get_estimated_cost_column, find_children_accounts, create_cost_dictionary
-from cost.cost_scaling import scale_cost
-from cost.non_direct_cost import calculate_accounts_31_32_75_82_cost, calculate_high_level_capital_costs, calculate_TCI, energy_cost_levelized
+from cost.cost_scaling import scale_cost, scale_redundant_loops
+from cost.non_direct_cost import calculate_accounts_31_32_75_82_cost, calculate_decommissioning_cost, calculate_high_level_capital_costs, calculate_TCI, energy_cost_levelized
 from reactor_engineering_evaluation.operation import reactor_operation
-
 
 
 def calculate_high_level_accounts_cost(df, target_level, option, FOAK_or_NOAK):
@@ -50,6 +49,7 @@ def calculate_high_level_accounts_cost(df, target_level, option, FOAK_or_NOAK):
     return df
 
 
+
 def update_high_level_costs(scaled_cost, option):
     # input is the scaled cost
     df_with_children_accounts =  find_children_accounts(scaled_cost)
@@ -60,7 +60,6 @@ def update_high_level_costs(scaled_cost, option):
 
 
 
-
 def save_params_to_excel_file(excel_file, params):
     # Convert the Parameters object to a dictionary
     params_dict = dict(params)
@@ -68,6 +67,8 @@ def save_params_to_excel_file(excel_file, params):
     df = pd.DataFrame(list(params_dict.items()), columns=['Parameter', 'Value'])
     # Write the DataFrame to an Excel file with a specified sheet name
     df.to_excel(excel_file, sheet_name='Parameters', index=False)
+
+
 
 def transform_dataframe(df):
     """
@@ -101,8 +102,10 @@ def transform_dataframe(df):
     return df
 
 
+
 def learning_rate_muliplier(learning_rate, number_of_units):
     return pow(1 -learning_rate ,np.log2(number_of_units))
+
 
 
 def FOAK_to_NOAK(df, params):
@@ -123,6 +126,8 @@ def FOAK_to_NOAK(df, params):
     df[noak_column ] = df['Multiplier'] * df[foak_col ]
     return df
 
+
+
 def reorder_dataframe(df):
     # List the desired order of the first two columns
     first_columns = ['Account', 'Account Title']
@@ -138,6 +143,7 @@ def reorder_dataframe(df):
     return df
 
 
+
 def bottom_up_cost_estimate(cost_database_filename, params):
     escalated_cost = escalate_cost_database(cost_database_filename, params['Escalation Year'], params)
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
@@ -150,14 +156,16 @@ def bottom_up_cost_estimate(cost_database_filename, params):
             print(f"\n\nSample # {i+1}")
 
         scaled_cost = scale_cost(escalated_cost_cleaned, params)
+        scaled_cost = scale_redundant_loops(scaled_cost, params)
         NOAK_COA = FOAK_to_NOAK(scaled_cost, params)
 
         updated_cost = update_high_level_costs(scaled_cost, 'base' )
         updated_cost_with_indirect_cost = calculate_accounts_31_32_75_82_cost(updated_cost, params)
-        updated_accounts_10_40 = update_high_level_costs(updated_cost_with_indirect_cost, 'other' )
+        cost_with_decommissioning = calculate_decommissioning_cost(updated_cost_with_indirect_cost, params)
+        updated_accounts_10_40 = update_high_level_costs(cost_with_decommissioning, 'other' )
         high_Level_capital_cost = calculate_high_level_capital_costs(updated_accounts_10_40, params)
         
-        updated_accounts_10_60 = update_high_level_costs(high_Level_capital_cost , 'finance' )
+        updated_accounts_10_60 = update_high_level_costs(high_Level_capital_cost, 'finance' )
         TCI = calculate_TCI(updated_accounts_10_60, params )
         updated_accounts_70_80 = update_high_level_costs(TCI , 'annual' )
         Final_COA = energy_cost_levelized(params, updated_accounts_70_80)
@@ -166,7 +174,6 @@ def bottom_up_cost_estimate(cost_database_filename, params):
         Final_COA = Final_COA[['Account', 'Account Title',  FOAK_column  ,NOAK_column  ]]
         
         COA_list.append(Final_COA)
-
     
     # Concatenate all dataframes along the rows
     concatenated_df = pd.concat(COA_list)
@@ -189,6 +196,8 @@ def bottom_up_cost_estimate(cost_database_filename, params):
     reordered_df = reorder_dataframe(result_df)
     return reordered_df
 
+
+
 def parametric_studies(cost_database_filename, params, tracked_params_list, output_csv_filename):
     detatiled_cost_table = bottom_up_cost_estimate(cost_database_filename, params)
     tracked_costs = create_cost_dictionary(detatiled_cost_table, params, tracked_params_list)
@@ -204,6 +213,8 @@ def parametric_studies(cost_database_filename, params, tracked_params_list, outp
         
         writer.writerow(tracked_costs)
         print(f"Results are being saved on {output_csv_filename}")
+
+
 
 def detailed_bottom_up_cost_estimate(cost_database_filename, params, output_filename):
     detatiled_cost_table = bottom_up_cost_estimate(cost_database_filename, params)

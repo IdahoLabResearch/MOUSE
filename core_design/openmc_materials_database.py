@@ -198,13 +198,21 @@ def collect_materials_data(params):
     B4C_natural.add_element("carbon", 1)
     B4C_natural.set_density("g/cm3", 2.52)
 
+    # Enriched B4C
+    B4C_enriched = openmc.Material(name="B4C_enriched", temperature= params['Common Temperature'])
+    B4C_enriched.add_element("boron", 4, enrichment=0.9, enrichment_target='B10', enrichment_type='ao')
+    B4C_enriched.add_element("carbon", 1)
+    B4C_enriched.set_density("g/cm3", 2.52)
+
     SiC = openmc.Material(name='SiC') # Creates a new material named 'SiC'.
     SiC.set_density('g/cm3', 3.18)
     SiC.add_element('Si', 0.5) #  Adds silicon (Si) to the material with a fraction of 0.5.
     SiC.add_element('C', 0.5) # Adds carbon (C) to the material with a fraction of 0.5.
 
-    materials.extend([B4C_natural, SiC])
-    materials_database.update({'B4C_natural': B4C_natural, 'SiC': SiC})
+    materials.extend([B4C_natural, B4C_enriched, SiC])
+    materials_database.update({'B4C_natural':  B4C_natural, 
+                               'B4C_enriched': B4C_enriched, 
+                               'SiC': SiC})
 
     # """""""""""""""""""""
     # Sec. 1.8 : Carbon Based Materials : Graphite (Buffer)  & pyrolytic carbon (PyC) 

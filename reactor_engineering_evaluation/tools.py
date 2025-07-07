@@ -9,9 +9,11 @@ def circle_area(r):
 
 def materials_densities(material):
     material_densities = {
-    "stainless_steel": 8.0,       # Approximate density of stainless steel
-    "B4C_natural": 2.52,        # Approximate density of boron carbide
-    "WEP": 1.1 # WEP density (water extended polymer)
+    "stainless_steel": 8.0,  # Approximate density of stainless steel
+    "low_alloy_steel": 7.85, # Approximate density of SA508 Gr3 Cls 1
+    "B4C_enriched": 2.52,    # Approximate density of boron carbide
+    "B4C_natural": 2.52,     # Approximate density of boron carbide
+    "WEP": 1.1,              # WEP density (water extended polymer)
     }
     return material_densities[material] # in gram/cm^3
 
@@ -38,10 +40,19 @@ def calculate_shielding_masses(params):
     params['Out Of Vessel Shield Mass'] = params['Out Of Vessel Shield Effective Density Factor'] * outer_shield_mass
 
 def mass_flow_rate(params):
+    loop_factor = 1
     thermal_power_MW = params['Power MWt']
+    if 'Primary Loop per loop load fraction' in params.keys():
+        loop_factor = params['Primary Loop per loop load fraction']
+        thermal_power_MW = params['Power MWt'] * loop_factor
     deltaT =  params['Coolant Temperature Difference']
     coolant = params['Coolant']
     coolant_specific_heat = material_specific_heat(coolant)
-    m_dot = 1000000 * thermal_power_MW/ (deltaT * coolant_specific_heat)
-    params['Coolant Mass Flow Rate']  =m_dot 
+    m_dot = 1e6 * thermal_power_MW/ (deltaT * coolant_specific_heat)
+    params['Coolant Mass Flow Rate']  = m_dot / loop_factor # For Reactor Mass Flow Rate
+    params['Primary Loop Mass Flow Rate'] = m_dot # For individual Primary Loop Mass Flow Rate
     
+def compressor_power(params):
+    rho_he = 3.3297 # kg/m3. TODO: Consider importing CoolProp to estiate density based on cold leg temperature and pressure
+    power = params['Primary Loop Pressure Drop']*params['Primary Loop Mass Flow Rate']/params['Compressor Isentropic Efficiency']/rho_he
+    params['Primary Loop Compressor Power'] = power # W

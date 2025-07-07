@@ -42,16 +42,17 @@ update_params({
     'reactor type': "GCMR",  # LTMR or GCMR
     'TRISO Fueled': "Yes",
     'Fuel': 'UN',
-    'Enrichment': 0.19,  # The enrichment is a fraction. It has to be between 0 and 1
+    'Enrichment': 0.1975,  # The enrichment is a fraction. It has to be between 0 and 1
     'UO2 atom fraction': 0.7,  # Mixing UO2 and UC by atom fraction
-    'Reflector': 'BeO',
-    'Matrix Material': 'Graphite', #         # matrix material is a background material  within the compact fuel element between the TRISO particles
-    'Moderator': 'Graphite', # # The moderator is outside this compact fuel region 
-    'Moderator Booster': 'YHx',
+    'Reflector': 'Graphite',
+    'Matrix Material': 'Graphite', # matrix material is a background material  within the compact fuel element between the TRISO particles
+    'Moderator': 'Graphite', # The moderator is outside this compact fuel region 
+    'Moderator Booster': 'ZrH',
     'Coolant': 'Helium',
     'Common Temperature': 850,  # Kelvins
-    'Control Drum Absorber': 'B4C_natural',  # The absorber material in the control drums
-    'Control Drum Reflector': 'BeO'  # The reflector material in the control drums
+    'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
+    'Control Drum Reflector': 'Graphite',  # The reflector material in the control drums
+    'HX Material': 'SS316', 
 })
 # **************************************************************************************************************************
 #                                           Sec. 2: Geometry: Fuel Pins, Moderator Pins, Coolant, Hexagonal Lattice
@@ -79,9 +80,10 @@ params['Active Height'] = 2 * params['Core Radius']
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 update_params({
+    # 'Drum Count': 24, # Automatically calculated in the Reactor Evaluation Side
     'Drum Radius' : 9, #cm   
     'Drum Absorber Thickness': 1, # cm
-    'Drum Height': params['Active Height']
+    'Drum Height': params['Active Height'],
     })
 
 calculate_drums_volumes_and_masses(params)
@@ -99,6 +101,7 @@ update_params({
     })
 
 params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency'] 
+params['Power kWe'] = params['Power MWe'] * 1e3 # kWe
 params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 # **************************************************************************************************************************
 #                                           Sec. 5: Running OpenMC
@@ -109,18 +112,27 @@ run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # **************************************************************************************************************************
-#                                         Sec. 6: Balance of Plant
+#                                         Sec. 6: Primary Loop + Balance of Plant
 # ************************************************************************************************************************** 
 params.update({
+    'Primary Loop Purification': False,
     'Primary HX Mass': calculate_heat_exchanger_mass(params)[0],  # Kg
     'Secondary HX Mass': 0,
     'Compressor Pressure Ratio': 4,
     'Compressor Isentropic Efficiency': 0.8,
-    'Coolant Temperature Difference': 360  # Coolant Temperature Differnce between the inlet and the outlet (reactor side):  K or C
+    'Coolant Temperature Difference': 250,  # Coolant Temperature Differnce between the inlet and the outlet (reactor side)
+    'Primary Loop Count': 2, # Number of Primary Coolant Loops present in plant
+    'Primary Loop per loop load fraction': 0.5, # based on assuming that each Primary Loop Handles the total load evenly (1/2)
+    'Primary Loop Outlet Temperature': 550 + 273.15, # K
+    'Primary Loop Pressure Drop': 50e3, # Pa. Assumption based on Enrique's estimate
+    'BoP Count': 2, # Number of BoP present in plant
+    'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
 
 # calculate coolant mass flow rate
+params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
 mass_flow_rate(params)
+compressor_power(params)
 # # **************************************************************************************************************************
 # #                                           Sec. 8 : Shielding
 # # ************************************************************************************************************************** 
@@ -131,7 +143,6 @@ update_params({
     'Out Of Vessel Shield Thickness': 39.37,  # cm
     'Out Of Vessel Shield Material': 'WEP',
     'Out Of Vessel Shield Effective Density Factor': 0.5 # The out of vessel shield is not fully made of the out of vessel material (e.g. WEP) so we use an effective density factor
-
 })
 params['In Vessel Shield Outer Radius'] =  params['Core Radius'] + params['In Vessel Shield Thickness']
 
@@ -177,10 +188,27 @@ update_params({
     'Security Staff Per Shift': 1
 })
 
+# A75: Annualized Capital Expenditures
+## Input for replacement of large capital equipments. Replacements are made during refueling cycles
+## Components to be replaced:
+## 1. Vessel: every ~10 years 
+## 2. Internals (moderator, reflector, drums, HX, circulators): every refueling cycle
+## If the period is 0, it is assumed to never be replaced throughout Levelization period
+## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
+total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
+total_refueling_period_yr = total_refueling_period/365
+params['A75: Vessel Replacement Period (cycles)']    = np.floor(10/total_refueling_period_yr)*total_refueling_period_yr
+params['A75: Reflector Replacement Period (cycles)'] = 1
+params['A75: Drum Replacement Period (cycles)']      = 1
+params['A75: HX Replacement Period (cycles)']        = 1
+params['Mainenance to Direct Cost Ratio']            = 0.02
+
+# A78: Annualized Decommisioning Cost
+params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
+
 # **************************************************************************************************************************
 #                                           Sec. 11 : Economic Parameters
 # **************************************************************************************************************************
-
 update_params({
     # A conservative estimate for the land area 
     # Ref: McDowell, B., and D. Goodman. "Advanced Nuclear Reactor Plant Parameter Envelope and
@@ -202,27 +230,27 @@ update_params({
     'Control Building Basement Volume': 27,  # m^3
     'Control Building Exterior Walls Volume': 19.44,  # m^3
     
-    'Refueling Building Slab Roof Volume': 312,  # m^3
-    'Refueling Building Basement Volume': 312,  # m^3
-    'Refueling Building Exterior Walls Volume': 340,  # m^3
+    'Refueling Building Slab Roof Volume': 0,  # m^3
+    'Refueling Building Basement Volume': 0,  # m^3
+    'Refueling Building Exterior Walls Volume': 0,  # m^3
     
-    'Spent Fuel Building Slab Roof Volume': 240,  # m^3
-    'Spent Fuel Building Basement Volume': 240,  # m^3
-    'Spent Fuel Building Exterior Walls Volume': 313.6,  # m^3
+    'Spent Fuel Building Slab Roof Volume': 0,  # m^3
+    'Spent Fuel Building Basement Volume': 0,  # m^3
+    'Spent Fuel Building Exterior Walls Volume': 0,  # m^3
     
-    'Emergency Building Slab Roof Volume': 128,  # m^3
-    'Emergency Building Basement Volume': 128,  # m^3
-    'Emergency Building Exterior Walls Volume': 180,  # m^3
+    'Emergency Building Slab Roof Volume': 0,  # m^3
+    'Emergency Building Basement Volume': 0,  # m^3
+    'Emergency Building Exterior Walls Volume': 0,  # m^3
     
-    'Storage Building Slab Roof Volume': 200,  # m^3
-    'Storage Building Basement Volume': 200,  # m^3
-    'Storage Building Exterior Walls Volume': 268.8,  # m^3
+    'Storage Building Slab Roof Volume': 0,  # m^3
+    'Storage Building Basement Volume': 0,  # m^3
+    'Storage Building Exterior Walls Volume': 0,  # m^3
     
-    'Radwaste Building Slab Roof Volume': 200,  # m^3
-    'Radwaste Building Basement Volume': 200,  # m^3
-    'Radwaste Building Exterior Walls Volume': 268.8,  # m^3,
+    'Radwaste Building Slab Roof Volume': 0,  # m^3
+    'Radwaste Building Basement Volume': 0,  # m^3
+    'Radwaste Building Exterior Walls Volume': 0,  # m^3,
     
-    'Interest Rate': 0.065,
+    'Interest Rate': 0.085,
     'Construction Duration': 12,  # months
     'Debt To Equity Ratio': 0.5,
     'Annual Return': 0.0475  # Annual return on decommissioning costs

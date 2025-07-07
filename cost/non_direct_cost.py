@@ -1,8 +1,21 @@
 import numpy as np
+import pandas as pd
 from cost.code_of_account_processing import get_estimated_cost_column
 
-def calculate_accounts_31_32_75_82_cost( df, params):
+def _crf(rate, period):
+    # Returns the Capital Recovery Factor  based on the discount rate and period
+    numer = rate * (1 + rate)**period
+    denum = (1 + rate)**period - 1
+    factor = numer/denum 
     
+    ## If components are not set for replacement (i.e. period == 0) return 0
+    if np.array(factor).size > 1:
+        factor[factor == np.inf] = 0
+    return factor
+
+
+
+def calculate_accounts_31_32_75_82_cost( df, params):
     # Find the column name that starts with 'Estimated Cosoption == "other costs"t'
     estimated_cost_col_F = get_estimated_cost_column(df, 'F')
     estimated_cost_col_N = get_estimated_cost_column(df, 'N')
@@ -22,13 +35,70 @@ def calculate_accounts_31_32_75_82_cost( df, params):
         # is calculated and multiplied by the cost of structures and improvements (Account 21)
         df.loc[df['Account'] == 32, estimated_cost_col] = df.loc[df['Account'] == 21, estimated_cost_col].values[0] * (df.loc[df['Account'] == 31, estimated_cost_col].values[0] / df.loc[df['Account'] == 22, estimated_cost_col].values[0])
         
-        # decommisioning cost
-        df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Maintenance to Direct Cost Ratio']
+        # A75: Annualized Capital Expenditures
+        # Check if replacement period is specified in params
+        refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling']
+        refueling_period_yr = refueling_period / 365
+        params_df = pd.DataFrame(params.items(), columns=['keys', 'values'])
+        if params_df.loc[params_df['keys'].str.contains('replacement', case=False), 'keys'].size > 0:
+            # Input Case includes period replacement of internals (e.g. GCMS)
+            # Replacements are assumed to match with refueling so #cycles are used instead of #years
+            A20_replacement_period = refueling_period_yr * np.array([params['A75: Vessel Replacement Period (cycles)'],
+                                                                     1, # Moderator Block Replacement Period (cycles)
+                                                                     params['A75: Reflector Replacement Period (cycles)'],
+                                                                     params['A75: Drum Replacement Period (cycles)'],
+                                                                     params['A75: HX Replacement Period (cycles)'],])
+            ## Keep the same ordering as `A20_replacement_period`
+            A20_capital_cost = np.array([df.loc[df['Account'].isin([222.12, 222.13]), estimated_cost_col].values.sum(), 
+                                        df.loc[df['Account'] == 221.33, estimated_cost_col].values.sum(),
+                                        df.loc[df['Account'] == 221.31, estimated_cost_col].values.sum(),
+                                        df.loc[df['Account'] == 221.2,  estimated_cost_col].values.sum(),
+                                        df.loc[df['Account'] == 222,    estimated_cost_col].values.sum()])
+            annualized_replacement_cost = (A20_capital_cost*_crf(params['Interest Rate'], A20_replacement_period)).sum()
+            A20_other_cost = df.loc[df['Account'] == 20, estimated_cost_col].values[0] - A20_capital_cost.sum()
+            annualized_other_cost = A20_other_cost * params['Mainenance to Direct Cost Ratio']
+            # For non-specified CAPEX components, use the old method of saving 
+            # `params['Mainenance to Direct Cost Ratio']` * CAPEX annually
+            df.loc[df['Account'] == 75, estimated_cost_col] = annualized_replacement_cost + annualized_other_cost
+        else:
+            # If no A75's specified in `params`, rely on
+            # `params['Mainenance to Direct Cost Ratio']` * CAPEX annually
+            df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Mainenance to Direct Cost Ratio']
 
-        cycle_length = params['Fuel Lifetime'] / 365.25
-        df.loc[df['Account'] == 82, estimated_cost_col] = df.loc[df['Account'] == 25, estimated_cost_col].values[0] /  cycle_length
+        # A82: Annualized Fuel Cost
+        lump_fuel_cost = df.loc[df['Account'] == 25, estimated_cost_col].values[0]
+        annualized_fuel_cost = lump_fuel_cost*_crf(params['Interest Rate'], refueling_period_yr)
+        df.loc[df['Account'] == 82, estimated_cost_col] = annualized_fuel_cost
 
     return df
+
+
+
+def calculate_decommissioning_cost(df, params):
+    # A78: Annualized Decommissioning Cost
+    # Find the column name that starts with 'Estimated Cost option == "other costs"'
+    estimated_cost_col_F = get_estimated_cost_column(df, 'F')
+    estimated_cost_col_N = get_estimated_cost_column(df, 'N')
+
+    for estimated_cost_col in [estimated_cost_col_F, estimated_cost_col_N ]:
+        capex = df.loc[df['Account'].isin([10, 20]), estimated_cost_col].sum()
+        AR = params['Annual Return']
+        LP = params ['Levelization Period']
+        
+        if 'A78: CAPEX to Decommissioning Cost Ratio' not in params.keys():
+            # Key is not specified. Use the default recommeneded value
+            # PR#1: Chosen over previous unit_cost based estiamte
+            # Estimating A78 based on a fraction of CAPEX suggested by 
+            # Venneri, (2023) (15%) and INL/EXT-21-63067 (9%)
+            params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
+
+        decommissioning_fv_cost = capex * params['A78: CAPEX to Decommissioning Cost Ratio']
+        fv_to_pv_of_annuity = -AR/(1- pow(1+AR, LP))
+        annualized_decommisioning_cost = decommissioning_fv_cost * fv_to_pv_of_annuity     
+        df.loc[df['Account'] == 78, estimated_cost_col] = annualized_decommisioning_cost
+
+    return df
+
 
 
 def calculate_interest_cost(params, OCC):

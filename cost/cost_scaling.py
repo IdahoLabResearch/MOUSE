@@ -3,8 +3,6 @@ import pandas as pd
 from cost.sampling import sampler
 
 def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent, params):
-    
-
     # pumps
     if account == 222.11 or account == 222.12:
         cost_multiplier = (0.2 / (1 - params['Pump Isentropic Efficiency'])) + 1
@@ -12,8 +10,17 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
     
     # compressors
     elif account == 222.13:
-        cost_multiplier = (1 / (0.95 - params['Compressor Isentropic Efficiency'])) * params['Compressor Pressure Ratio'] * np.log(params['Compressor Pressure Ratio'])
-        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
+        if 'Primary Loop Count' in params.keys():
+            # Account for multiple primary loops and their individual rated load
+            ## PR1: Updated cost correlation based on ANL/NSE-20/28 in-place of default
+            ## due to inherent uncertainty of compressor pressure ratio between GCMR designs
+            cost_multiplier = (((params['Primary Loop Outlet Temperature'] - 273.15)/650)**1.29 *
+                                (params['Primary Loop Compressor Power']/1e6/2.6)**0.74)
+            cost = cost_multiplier * unit_cost
+        else:
+            # Old Correlation kept as backup
+            cost_multiplier = (1 / (0.95 - params['Compressor Isentropic Efficiency'])) * params['Compressor Pressure Ratio'] * np.log(params['Compressor Pressure Ratio'])
+            cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
     
     elif account == 253:
         if params['Enrichment'] < 0.1:
@@ -32,12 +39,6 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
     elif account == 713:
         cost_multiplier = params['FTEs Per Security Staff (24/7)']
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
-    
-    elif account == 78:
-        AR = params['Annual Return']
-        LP = params ['Levelization Period']
-        cost_multiplier = - AR/(1- pow(1+AR, LP))
-        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
     elif account == 81:
         cost_multiplier =  params['FTEs Per Operator Per Year Per Refueling'] 
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value, exponent)
@@ -45,12 +46,27 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
 
 
 
+def scale_redundant_loops(df, params):
+    # Scales special cases to handle redundant / multiple coolant, BoP loops
+    escalation_year = params['Escalation Year']
+    cost_col = f'FOAK Estimated Cost (${escalation_year })'
+
+    if 'Primary Loop Count' in params.keys():
+        df.loc[df['Account'].astype(str).str.startswith('222'), cost_col] *= params['Primary Loop Count']
+    if 'BoP Count' in params.keys():
+        df.loc[df['Account'].astype(str).str.startswith('232'), cost_col] *= params['BoP Count']
+    if 'Primary Loop Purification' in params.keys():
+        df.loc[df['Account'] == 226, cost_col] *= int(params['Primary Loop Purification'])
+
+    return df
+
+
 
 def scale_cost(initial_database, params):
-    scaled_cost = initial_database[['Account', 'Level','Account Title', 'FOAK to NOAK Multiplier Type',\
-    "Fixed Cost Low End", "Fixed Cost High End", "Fixed Cost Distribution",\
-     "Unit Cost Low End", "Unit Cost High End", "Unit Cost Distribution",\
-     "Exponent std",  "Exponent Max","Exponent Min", "Exponent Distribution"]]
+    scaled_cost = initial_database[['Account', 'Level', 'Account Title', 'FOAK to NOAK Multiplier Type',\
+                                    "Fixed Cost Low End", "Fixed Cost High End", "Fixed Cost Distribution",\
+                                    "Unit Cost Low End", "Unit Cost High End", "Unit Cost Distribution",\
+                                    "Exponent std",  "Exponent Max", "Exponent Min", "Exponent Distribution"]]
     
     escalation_year = params['Escalation Year']
     
@@ -75,9 +91,10 @@ def scale_cost(initial_database, params):
                         fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
                     elif fixed_cost_dist == 'Uniform': 
                         fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
-
                     else:
                         fixed_cost = fixed_cost_0
+                else:
+                    fixed_cost = fixed_cost_0
             else:
                 fixed_cost = 0    
             
@@ -90,6 +107,10 @@ def scale_cost(initial_database, params):
                 if params['Number of Samples'] > 1:
                     if unit_cost_dist == 'Lognormal':
                         unit_cost = sampler("Lognormal", low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
+                    elif unit_cost_dist == 'Uniform': 
+                        unit_cost = sampler('Uniform', low=unit_cost_lo, high=unit_cost_hi)
+                    else:
+                        unit_cost = unit_cost_0
                 else:
                     unit_cost =unit_cost_0
 
@@ -107,6 +128,8 @@ def scale_cost(initial_database, params):
                 if params['Number of Samples'] > 1:
                     if exponent_dist == 'Truncated Normal':
                         exponent = sampler("Truncated Normal", mean=exponent_0, std=exponent_std, lower_bound=exponent_min, upper_bound=exponent_max)
+                    else:
+                        exponent = exponent_0
                 else:
                     exponent = exponent_0
             
