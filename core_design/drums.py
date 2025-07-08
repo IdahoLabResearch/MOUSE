@@ -50,8 +50,11 @@ def hexagonal_area_from_ftf(ftf_distance):
 def calculate_reflector_mass_GCMR(params):
     materials_database = collect_materials_data(params)
     tot_number_assemblies = calculate_number_of_rings(params['Core Rings'] )
-    reflector_volume = (circle_area(params['Core Radius']) -\
-       tot_number_assemblies * hexagonal_area_from_ftf(params['Assembly FTF']) - params['All Drums Area']) * params['Active Height']
+    reflector_height = (params['Active Height'] if 'Axial Reflector Thickness' not in params.keys() 
+                                                else params['Active Height'] + 2*params['Axial Reflector Thickness'])
+    reflector_volume = reflector_height * (circle_area(params['Core Radius']) 
+                                           - tot_number_assemblies*hexagonal_area_from_ftf(params['Assembly FTF'])
+                                           - params['All Drums Area']) 
         
     reflector_density = materials_database[params['Reflector']].density
     reflector_mass = reflector_density * reflector_volume  / 1000 # Kg

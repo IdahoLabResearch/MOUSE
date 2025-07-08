@@ -10,7 +10,10 @@ def circle_area(r):
 def materials_densities(material):
     material_densities = {
     "stainless_steel": 8.0,  # Approximate density of stainless steel
+    "SS316": 8.0,            # Approximate density of SS316
+    "SS304": 7.93,           # Approximate density of SS304
     "low_alloy_steel": 7.85, # Approximate density of SA508 Gr3 Cls 1
+    "SA508": 7.85,           # Approximate density of SA508 Gr3 Cls 1
     "B4C_enriched": 2.52,    # Approximate density of boron carbide
     "B4C_natural": 2.52,     # Approximate density of boron carbide
     "WEP": 1.1,              # WEP density (water extended polymer)
