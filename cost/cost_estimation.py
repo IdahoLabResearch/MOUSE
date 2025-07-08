@@ -184,7 +184,10 @@ def bottom_up_cost_estimate(cost_database_filename, params):
     mean_df = concatenated_df[numeric_columns].groupby(concatenated_df.index).mean()
 
     # Calculate the standard deviation for each numeric column grouped by the index
-    std_df = concatenated_df[numeric_columns].groupby(concatenated_df.index).std()
+    if params["Number of Samples"] > 1:
+        std_df = concatenated_df[numeric_columns].groupby(concatenated_df.index).std()
+    else:
+        std_df = concatenated_df[numeric_columns].groupby(concatenated_df.index).std(ddof=0)
 
     # Add the standard deviation columns to the mean dataframe
     mean_df[FOAK_column.replace('Cost', 'Cost std')] = std_df[FOAK_column]
@@ -227,3 +230,6 @@ def detailed_bottom_up_cost_estimate(cost_database_filename, params, output_file
         save_params_to_excel_file(writer, params)
         
     print(f"\n\nThe cost estimate and all the paramters are saved at {output_filename}\n\n")
+
+    # Return final DataFrame for post processing
+    return detatiled_cost_table

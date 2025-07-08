@@ -280,6 +280,6 @@ update_params({
 # **************************************************************************************************************************
 params['Number of Samples'] = 1000 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
-detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
+estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 2), 'minutes')
