@@ -39,6 +39,12 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
     elif account == 713:
         cost_multiplier = params['FTEs Per Security Staff (24/7)']
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
+    elif account == 721:
+        if (params['reactor type'] == 'GCMR') and ("Annual Coolant Supply Frequency" in params.keys()):
+            cost_multiplier = params['Annual Coolant Supply Frequency']
+            cost = cost_multiplier * unit_cost * scaling_variable_value
+        else:
+            cost = 0
     elif account == 81:
         cost_multiplier =  params['FTEs Per Operator Per Year Per Refueling'] 
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value, exponent)
