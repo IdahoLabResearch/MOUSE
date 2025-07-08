@@ -138,8 +138,20 @@ params.update({
     'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
 params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
-mass_flow_rate(params)
-compressor_power(params)
+
+# Integrated Heat Transfer Vessel
+# Assumed to house the PCHE, Circulator, Pipings, Insulation, Liner
+# This is all housed in a 6cm-thick SA508 Pressure Vessel
+# This is a pressure boundary with primary coolant connections.
+ITH_vessel_thickness = 6 # cm
+# PCHE_volume = params['Primary HX Mass'] / params['HX Material']
+params.update({
+    'Integrated Heat Transfer Vessel Thickness': 6, # cm
+    'Integrated Heat Transfer Vessel Material': 'SA508',
+})
+GCMR_integrated_heat_transfer_vessel(params)
+
+
 # # **************************************************************************************************************************
 # #                                           Sec. 8 : Shielding
 # # ************************************************************************************************************************** 
@@ -214,11 +226,11 @@ params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purificati
 ## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
-params['A75: Vessel Replacement Period (cycles)']    = np.floor(10/total_refueling_period_yr)*total_refueling_period_yr
-params['A75: Reflector Replacement Period (cycles)'] = 1
-params['A75: Drum Replacement Period (cycles)']      = 1
-params['A75: HX Replacement Period (cycles)']        = 1
-params['Mainenance to Direct Cost Ratio']            = 0.015
+params['A75: Vessel Replacement Period (cycles)']        = np.floor(10/total_refueling_period_yr)*total_refueling_period_yr
+params['A75: Reflector Replacement Period (cycles)']     = 1
+params['A75: Drum Replacement Period (cycles)']          = 1
+params['A75: Integrated HX Replacement Period (cycles)'] = 1
+params['Mainenance to Direct Cost Ratio']                = 0.015
 
 # A78: Annualized Decommisioning Cost
 params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
@@ -238,10 +250,18 @@ update_params({
     'Reactor Building Slab Roof Volume': (9750*6502.4*1500)/1e9,  # m^3
     'Reactor Building Basement Volume': (9750*6502.4*1500)/1e9,  # m^3
     'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
+    'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
     
-    'Turbine Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Turbine Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Turbine Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
+    # Connected to the Reactor Building (contains steel liner)
+    'Integrated Heat Exchanger Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
+    'Integrated Heat Exchanger Building Superstructure Area': ((2*7014*3500)+(2*5000*5000))/1e6, # m^2
+    
+    # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+    'Turbine Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Basement Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Exterior Walls Volume': ((12192*2496*200)+(2038*2496*200))*2/1e9,  # m^3
     
     # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
     'Control Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3

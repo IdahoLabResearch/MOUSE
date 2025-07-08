@@ -52,7 +52,7 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
 
 
 
-def scale_redundant_loops(df, params):
+def scale_GCMR_accounts(df, params):
     # Scales special cases to handle redundant / multiple coolant, BoP loops
     escalation_year = params['Escalation Year']
     cost_col = f'FOAK Estimated Cost (${escalation_year })'
@@ -60,7 +60,10 @@ def scale_redundant_loops(df, params):
     if 'Primary Loop Count' in params.keys():
         df.loc[df['Account'].astype(str).str.startswith('222'), cost_col] *= params['Primary Loop Count']
     if 'BoP Count' in params.keys():
+        # Balance of Plant
         df.loc[df['Account'].astype(str).str.startswith('232'), cost_col] *= params['BoP Count']
+        # Balance of Plant Building - Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+        df.loc[df['Account'].astype(str).str.startswith('213.1'), cost_col] *= params['BoP Count']
     if 'Primary Loop Purification' in params.keys():
         df.loc[df['Account'] == 226, cost_col] *= int(params['Primary Loop Purification'])
 

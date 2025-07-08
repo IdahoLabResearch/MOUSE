@@ -4,7 +4,7 @@ import numpy as np
 import csv
 from cost.cost_escalation import escalate_cost_database
 from cost.code_of_account_processing import remove_irrelevant_account, get_estimated_cost_column, find_children_accounts, create_cost_dictionary
-from cost.cost_scaling import scale_cost, scale_redundant_loops
+from cost.cost_scaling import scale_cost, scale_GCMR_accounts
 from cost.non_direct_cost import calculate_accounts_31_32_75_82_cost, calculate_decommissioning_cost, calculate_high_level_capital_costs, calculate_TCI, energy_cost_levelized
 from reactor_engineering_evaluation.operation import reactor_operation
 
@@ -156,7 +156,7 @@ def bottom_up_cost_estimate(cost_database_filename, params):
             print(f"\n\nSample # {i+1}")
 
         scaled_cost = scale_cost(escalated_cost_cleaned, params)
-        scaled_cost = scale_redundant_loops(scaled_cost, params)
+        scaled_cost = scale_GCMR_accounts(scaled_cost, params)
         NOAK_COA = FOAK_to_NOAK(scaled_cost, params)
 
         updated_cost = update_high_level_costs(scaled_cost, 'base' )
