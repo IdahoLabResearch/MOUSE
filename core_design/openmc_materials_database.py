@@ -242,7 +242,7 @@ def collect_materials_data(params):
     materials.extend([Graphite, buffer_graphite, PyC ])
     materials_database.update({'Graphite' : Graphite, 'buffer_graphite' : buffer_graphite, 'PyC': PyC})
 
-    materials.export_to_xml()
+    #materials.export_to_xml()
     
     return materials_database ##
 
