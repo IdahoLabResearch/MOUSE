@@ -43,17 +43,19 @@ def calculate_accounts_31_32_75_82_cost( df, params):
         if params_df.loc[params_df['keys'].str.contains('replacement', case=False), 'keys'].size > 0:
             # Input Case includes period replacement of internals (e.g. GCMS)
             # Replacements are assumed to match with refueling so #cycles are used instead of #years
-            A20_replacement_period = refueling_period_yr * np.array([params['A75: Vessel Replacement Period (cycles)'],
+            A20_replacement_period = refueling_period_yr * np.array([params['A75: RPV Replacement Period (cycles)'],
+                                                                     params['A75: Core Barrel Replacement Period (cycles)'],
                                                                      1, # Moderator Block Replacement Period (cycles)
                                                                      params['A75: Reflector Replacement Period (cycles)'],
                                                                      params['A75: Drum Replacement Period (cycles)'],
                                                                      params['A75: Integrated HX Replacement Period (cycles)'],])
             ## Keep the same ordering as `A20_replacement_period`
-            A20_capital_cost = np.array([df.loc[df['Account'].isin([221.12, 221.13]),             estimated_cost_col].values.sum(), 
-                                        df.loc[df['Account'] == 221.33,                           estimated_cost_col].values.sum(),
-                                        df.loc[df['Account'] == 221.31,                           estimated_cost_col].values.sum(),
-                                        df.loc[df['Account'] == 221.2,                            estimated_cost_col].values.sum(),
-                                        df.loc[df['Account'].isin([222.1, 222.2, 222.3, 222.61]), estimated_cost_col].values.sum()])
+            A20_capital_cost = np.array([df.loc[df['Account'] == 221.12, estimated_cost_col].values.sum(), 
+                                         df.loc[df['Account'] == 221.13,  estimated_cost_col].values.sum(), 
+                                         df.loc[df['Account'] == 221.33,  estimated_cost_col].values.sum(),
+                                         df.loc[df['Account'] == 221.31,  estimated_cost_col].values.sum(),
+                                         df.loc[df['Account'] == 221.2,   estimated_cost_col].values.sum(),
+                                         df.loc[df['Account'].isin([222.1, 222.2, 222.3, 222.61]), estimated_cost_col].values.sum()])
             annualized_replacement_cost = (A20_capital_cost*_crf(params['Interest Rate'], A20_replacement_period))
             A20_other_cost = df.loc[df['Account'] == 20, estimated_cost_col].values[0] - A20_capital_cost.sum()
             annualized_other_cost = A20_other_cost * params['Mainenance to Direct Cost Ratio']
@@ -64,6 +66,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
             df.loc[df['Account'] == 753, estimated_cost_col] = annualized_replacement_cost[2]
             df.loc[df['Account'] == 754, estimated_cost_col] = annualized_replacement_cost[3]
             df.loc[df['Account'] == 755, estimated_cost_col] = annualized_replacement_cost[4]
+            df.loc[df['Account'] == 756, estimated_cost_col] = annualized_replacement_cost[5]
             df.loc[df['Account'] == 759, estimated_cost_col] = annualized_other_cost
         else:
             # If no A75's specified in `params`, rely on

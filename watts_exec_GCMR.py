@@ -226,7 +226,8 @@ params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purificati
 ## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
-params['A75: Vessel Replacement Period (cycles)']        = np.floor(10/total_refueling_period_yr)*total_refueling_period_yr
+params['A75: RPV Replacement Period (cycles)']           = np.floor(15/total_refueling_period_yr)
+params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(15/total_refueling_period_yr)
 params['A75: Reflector Replacement Period (cycles)']     = 1
 params['A75: Drum Replacement Period (cycles)']          = 1
 params['A75: Integrated HX Replacement Period (cycles)'] = 1
@@ -297,7 +298,8 @@ update_params({
     'Interest Rate': 0.085,
     'Construction Duration': 12,  # months
     'Debt To Equity Ratio': 0.5,
-    'Annual Return': 0.0475  # Annual return on decommissioning costs
+    'Annual Return': 0.0475,  # Annual return on decommissioning costs
+    'NOAK Unit Number': 100,
 })
 
 # **************************************************************************************************************************
