@@ -127,7 +127,8 @@ def FOAK_to_NOAK(df, params):
                             'Factory Primary Structure', 
                             'Factory Other', 
                             'Factory Be',
-                            'Factory BeO']:
+                            'Factory BeO',
+                            'Non-nuclear off-the-shelf']:
         params[f"{multiplier_type} Cost Multiplier"] = learning_rate_multiplier(params[f'{multiplier_type}'], 
                                                                                 params['NOAK Unit Number'])
     params['Onsite Learning Cost Multiplier'] = learning_rate_multiplier(params['Onsite Learning'], 
@@ -141,7 +142,8 @@ def FOAK_to_NOAK(df, params):
                                'Factory Other', 
                                'Factory Be',
                                'Factory BeO',
-                               'Onsite Learning']:
+                               'Onsite Learning',
+                               'Non-nuclear off-the-shelf']:
             return params[f"{multiplier_type} Cost Multiplier"]
         else:
             return np.nan
