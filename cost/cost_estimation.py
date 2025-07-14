@@ -103,19 +103,46 @@ def transform_dataframe(df):
 
 
 
-def learning_rate_muliplier(learning_rate, number_of_units):
-    return pow(1 -learning_rate ,np.log2(number_of_units))
+def learning_rate_multiplier(learning_rate, number_of_units):
+    # Assumes that learning plateau's after 100th unit! - Jack
+    # This is an arbitrary stopping point.
+    return pow(1-learning_rate, np.log2(min(100, number_of_units)))
 
 
 
 def FOAK_to_NOAK(df, params):
+    # Additional Cost Scaling Based on Assumed Learning Rate
+    # Learning Rate and Cost multiplier is based on 
+    # DOI: 10.1080/00295450.2023.2206779
+    # Cost Multiplier is capped after the 100th Unit for any component
+    if 'NOAK Unit Number' not in params.keys():
+        # Assume the default value if no `NOAK Unit Number` is specified.
+        params['NOAK Unit Number'] = 10
+        # Custom Check to see if input specifies which Nth-of-a-Kind
+        # Default is ~10th with 20(2*10)-units assumed for Onsite Learning
+    params['Assumed Number Of Units For Onsite Learning'] = params['NOAK Unit Number'] * 2
+    
+    for multiplier_type in ['No Learning', 
+                            'Licensing Learning', 
+                            'Factory Primary Structure', 
+                            'Factory Other', 
+                            'Factory Be',
+                            'Factory BeO']:
+        params[f"{multiplier_type} Cost Multiplier"] = learning_rate_multiplier(params[f'{multiplier_type}'], 
+                                                                                params['NOAK Unit Number'])
+    params['Onsite Learning Cost Multiplier'] = learning_rate_multiplier(params['Onsite Learning'], 
+                                                                         params['Assumed Number Of Units For Onsite Learning'])
+
     # Function to map the multiplier type to the respective value
     def get_multiplier(multiplier_type):
-        if multiplier_type in ['No Learning', 'Licensing Learning', 'Factory Primary Structure', 'Factory Drums', 'Factory Other']:
-            return params[multiplier_type]
-        elif multiplier_type == 'Onsite Learning' :
-            multiplier =  learning_rate_muliplier(params['Assumed Onsite Learning Rate'], params['Assumed Number Of Units For Onsite Learning'])
-            return multiplier
+        if multiplier_type in ['No Learning', 
+                               'Licensing Learning', 
+                               'Factory Primary Structure', 
+                               'Factory Other', 
+                               'Factory Be',
+                               'Factory BeO',
+                               'Onsite Learning']:
+            return params[f"{multiplier_type} Cost Multiplier"]
         else:
             return np.nan
     
@@ -123,7 +150,7 @@ def FOAK_to_NOAK(df, params):
     df['Multiplier'] = df['FOAK to NOAK Multiplier Type'].apply(get_multiplier)
     foak_col = get_estimated_cost_column(df, 'F')
     noak_column = foak_col.replace("FOAK", "NOAK")
-    df[noak_column ] = df['Multiplier'] * df[foak_col ]
+    df[noak_column] = df['Multiplier'] * df[foak_col]
     return df
 
 
@@ -171,7 +198,7 @@ def bottom_up_cost_estimate(cost_database_filename, params):
         Final_COA = energy_cost_levelized(params, updated_accounts_70_80)
         FOAK_column = get_estimated_cost_column(Final_COA, 'F')
         NOAK_column = get_estimated_cost_column(Final_COA, 'N')
-        Final_COA = Final_COA[['Account', 'Account Title',  FOAK_column  ,NOAK_column  ]]
+        Final_COA = Final_COA[['Account', 'Account Title',  FOAK_column  ,NOAK_column]]
         
         COA_list.append(Final_COA)
     
