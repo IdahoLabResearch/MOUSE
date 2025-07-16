@@ -7,7 +7,7 @@ The rising interest in nuclear microreactors has highlighted the need for compre
 MOUSE leverages the [OpenMC](https://github.com/openmc-dev/openmc) Monte Carlo Particle Transport Code to perform detailed core simulations for various microreactor designs, including Liquid Metal Thermal Microreactors (LMTR), Gas-Cooled TRISO-Fueled Microreactors (GCMR), and Heat Pipe Microreactors. It includes simplified balance of plant and shielding calculations. Economically, MOUSE provides bottom-up cost estimates, encompassing preconstruction, direct, indirect, training, financial, O&M, and fuel costs. It calculates total capital costs and the levelized cost of energy (LCOE) for both first-of-a-kind and nth-of-a-kind microreactors using data from the MARVEL project and additional literature.
 
 ## MOUSE Tool Structure
-<img src="./assets/mouse_diagram.png""/>
+<img src="./assets/mouse_diagram.png" />
 
 ### User-Defined Inputs
 
