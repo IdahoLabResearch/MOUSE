@@ -109,15 +109,8 @@ params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 # ************************************************************************************************************************** 
 
 heat_flux_monitor = monitor_heat_flux(params)
-# run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
-params['Fuel Lifetime'] =1305 # days
-params['Mass U235'] = 61975 # grams
-params['Mass U238'] = 263372.87  # grams
-params['Uranium Mass'] = 325347.87/1000 # Kg
-
+run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
-
-
 # **************************************************************************************************************************
 #                                         Sec. 6: Primary Loop + Balance of Plant
 # ************************************************************************************************************************** 
