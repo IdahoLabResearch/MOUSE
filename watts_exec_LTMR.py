@@ -68,7 +68,8 @@ update_params({
     "Pin Gap Distance": 0.1,  # cm
     'Pins Arrangement': LTMR_pins_arrangement,
     'Number of Rings per Assembly': 12,
-    'Reflector Thickness': 14  # cm
+    'Reflector Thickness': 14,  # cm
+    'Axial Reflector Thickness': 0 #cm
 })
 
 params['Lattice Radius'] = calculate_lattice_radius(params)
@@ -123,6 +124,13 @@ update_params({
     'Primary Pump Mechanical Power': calculate_pump_mechanical_power(params)[0],
     'Pump Isentropic Efficiency': 0.8
 })
+
+# Update BoP Parameters
+params.update({
+    'BoP Count': 2, # Number of BoP present in plant
+    'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
+    })
+params['BoP Power kWe'] = 1000 * params['Power MWe'] * params['BoP per loop load fraction']
 
 # **************************************************************************************************************************
 #                                           Sec. 7: Shielding

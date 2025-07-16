@@ -68,7 +68,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
         else:
             # If no A75's specified in `params`, rely on
             # `params['Mainenance to Direct Cost Ratio']` * CAPEX annually
-            df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Mainenance to Direct Cost Ratio']
+            df.loc[df['Account'] == 75, estimated_cost_col] = df.loc[df['Account'] == 20, estimated_cost_col].values[0] * params['Maintenance to Direct Cost Ratio']
 
         # A82: Annualized Fuel Cost
         lump_fuel_cost = df.loc[df['Account'] == 25, estimated_cost_col].values[0]
