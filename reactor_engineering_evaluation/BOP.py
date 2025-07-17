@@ -1,12 +1,9 @@
-from tools import *
+from reactor_engineering_evaluation.tools import *
 from math import log
 
-def calculate_heat_exchanger_mass(hx_thermal_load,
-                                  primary_coolant_heat_capacity,
-                                  th_in,
-                                  th_out,
-                                  tc_in,
-                                  tc_out):
+def calculate_heat_exchanger_mass(params):
+
+
     """
       Assuming a printed circuit heat exchanger (PCHE).
       Input for this function are as follows
@@ -16,6 +13,13 @@ def calculate_heat_exchanger_mass(hx_thermal_load,
         - tc_in           : PCHE cold side inlet temperature [K]
         - tc_out          : PCHE cold side outlet temperature [K]
     """
+    hx_thermal_load = params['Power MWt']
+
+    th_in  = params['Primary Loop Inlet Temperature']
+    th_out = params['Primary Loop Outlet Temperature']
+    tc_in  = params['Secondary Loop Inlet Temperature']
+    tc_out = params['Secondary Loop Outlet Temperature']
+
     # Assumption on overall heat transfer coefficient
     U = 500  # [w/m2/K] This is an average value obtained by scanning of literature
 
@@ -26,22 +30,20 @@ def calculate_heat_exchanger_mass(hx_thermal_load,
     hx_void_fraction = 0.6
     hx_channel_thick = 0.003       # [m]
 
-    rho_ss = 7.8   #  density of stainless steel :: ton/3
+    rho_ss = 7850   #  density of stainless steel :: Kg/m^3
 
-    hx_channel_perimeter = pi* hx_channel_diameter/2 + hx_channel_diameter
+    hx_channel_perimeter = 3.14* hx_channel_diameter/2 + hx_channel_diameter
     hx_channel_ht_area = hx_channel_perimeter* hx_channel_length   # assuming a semi circular channel
 
-    delta_t1 = th_in - tc_out
-    delta_t2 = th_out - tc_in
+    delta_t1 = abs(th_in - tc_out)
+    delta_t2 = abs(th_out - tc_in)
 
     LMTD = (delta_t1 - delta_t2)/log(delta_t1/delta_t2)
     ht_area = hx_thermal_load*1e6/(U* LMTD)
     nchannels = ht_area/hx_channel_ht_area
-    hx_alloy_volume = nchannels* hx_channel_pitch* hx_channel_thick - nchannels* pi/8* hx_channel_diameter**2
+    hx_alloy_volume = nchannels* hx_channel_pitch* hx_channel_thick - nchannels* 3.14/8* hx_channel_diameter**2 # m^3
     
     hx_mass = hx_alloy_volume* rho_ss
-
-
     return hx_mass
 
 
@@ -194,4 +196,3 @@ def calculate_radwaste_building_structure_volume(building_char):
 
     radb_slab_roof_vol, radb_basemat_vol, radb_walls_vol = calculate_building_structure_volumes(radwaste_storage_building_dimensions)
     return radb_slab_roof_vol, radb_basemat_vol, radb_walls_vol
-
