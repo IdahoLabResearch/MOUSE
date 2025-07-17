@@ -1,8 +1,6 @@
 from tools import *
 from math import log
 
-
-# This is oversimplified and need to be modified
 def calculate_heat_exchanger_mass(hx_thermal_load,
                                   primary_coolant_heat_capacity,
                                   th_in,
@@ -29,8 +27,6 @@ def calculate_heat_exchanger_mass(hx_thermal_load,
     hx_channel_thick = 0.003       # [m]
 
     rho_ss = 7.8   #  density of stainless steel :: ton/3
-    ss_unit_cost = 100000 # unit cost of material :: $/ton
-    unit_cost_per_energy = 0.1  # [$/W]
 
     hx_channel_perimeter = pi* hx_channel_diameter/2 + hx_channel_diameter
     hx_channel_ht_area = hx_channel_perimeter* hx_channel_length   # assuming a semi circular channel
@@ -49,9 +45,6 @@ def calculate_heat_exchanger_mass(hx_thermal_load,
     return hx_mass
 
 
-
-# This is oversimplified and need to be modified
-
 def calculate_primary_pump_mechanical_power(core_mass_flow_rate, core_active_height):
     """
       Pump electric power [kW] = mdot*g*h / 1000 
@@ -62,6 +55,8 @@ def calculate_primary_pump_mechanical_power(core_mass_flow_rate, core_active_hei
 
     return  mdot* g* h / 1000     # [kWe]
 
+  
+  
 def calculate_secondary_pump_mechanical_power(secondary_mass_flow_rate):
     """
       Pump electric power [kW] = mdot*g*h / 1000
@@ -72,8 +67,7 @@ def calculate_secondary_pump_mechanical_power(secondary_mass_flow_rate):
 
     return mdot* g* h / 1000     # [kWe]
 
-
-
+  
 
 def calculate_building_structure_volumes(building):
     building_name       = building[0]
@@ -106,6 +100,7 @@ def calculate_building_structure_volumes(building):
     return slab_roof_volume, basemat_volume, walls_volume
 
 
+  
 def calculate_reactor_building_structure_volume(building_char):
     """
       * Reactor building considers that the internal walls have the dimensions
@@ -118,6 +113,7 @@ def calculate_reactor_building_structure_volume(building_char):
     return rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol
 
 
+  
 def calculate_energy_conversion_building_structure_volume(building_char):
     """
       * Energy conversion building considers that the internal walls have dimensions 
@@ -141,6 +137,7 @@ def calculate_control_building_structure_volume(building_char):
     return cb_slab_roof_vol, cb_basemat_vol, cb_walls_vol
 
 
+  
 def calculate_refueling_building_strucutre_volume(building_char):
     """
       * Refueling building dimensions are entirely based on assumptions.
@@ -154,6 +151,7 @@ def calculate_refueling_building_strucutre_volume(building_char):
     rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol = calculate_building_structure_volumes(refueling_building_dimensions)
     return rb_slab_roof_vol, rb_basemat_vol, rb_walls_vol
 
+  
 def calculate_spent_fuel_building_structure_volume(building_char):
     """
       * It is expected that spent fuel building will have less equipment compared to refueling area
@@ -175,6 +173,7 @@ def calculate_emergency_building_structure_volume(building_char):
     eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol = calculate_building_structure_volumes(emergency_building_dimensions)
     return eb_slab_roof_vol, eb_basemat_vol, eb_walls_vol
 
+  
 def calculate_storage_building_structure_volume(building_char):
     """
       * Dimensions are solely based on assumptinos
@@ -185,6 +184,7 @@ def calculate_storage_building_structure_volume(building_char):
     sb_slab_roof_vol, sb_basemat_vol, sb_walls_vol = calculate_building_structure_volumes(storage_building_dimensions)
     return sb_slab_roof_vol, sb_basemat_vol, sb_walls_vol
 
+  
 def calculate_radwaste_building_structure_volume(building_char):
     """
       * Dimensions are solely based on dimensions.
@@ -194,3 +194,4 @@ def calculate_radwaste_building_structure_volume(building_char):
 
     radb_slab_roof_vol, radb_basemat_vol, radb_walls_vol = calculate_building_structure_volumes(radwaste_storage_building_dimensions)
     return radb_slab_roof_vol, radb_basemat_vol, radb_walls_vol
+

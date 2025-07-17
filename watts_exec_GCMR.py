@@ -1,378 +1,308 @@
 """
-This example demonstrates a detailed bottom-up cost estimate for a 15 MWe Gas Cooled Triso-Fueled Microreactor (CGMR).
-OpenMC is used for core design calculations.
-Back-of-the-envelope calculations were conducted for other Balance of Plant components.
-Users can modify any of the parameters in the "params" dictionary below.
+This script performs a bottom-up cost estimate for a Gas Cooled Microreactor (GCMR).
+OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
+Users can modify parameters in the "params" dictionary below.
 """
 
-
-# Import necessary libraries
 import numpy as np
-import time
-import warnings
-
-# Import custom modules and functions
-import watts  # Import watts library for simulation workflows for one or multiple codes
-import openmc  # Import OpenMC for nuclear reactor physics simulations
-
-# Import templates and utility functions from the core design module
+import watts  # Simulation workflows for one or multiple codes
 from core_design.openmc_template_GCMR import *
+from core_design.utils import *
 from core_design.drums import *
-
-# # Import engineering evaluation tools and functions
-from reactor_engineering_evaluation.tools import *
-from reactor_engineering_evaluation.operation import *
-from reactor_engineering_evaluation.fuel_calcs import *
-from reactor_engineering_evaluation.vessels_calcs import *
+from reactor_engineering_evaluation.fuel_calcs import fuel_calculations
 from reactor_engineering_evaluation.BOP import *
+from reactor_engineering_evaluation.vessels_calcs import *
+from reactor_engineering_evaluation.tools import *
+from cost.cost_estimation import detailed_bottom_up_cost_estimate
 
-# Import cost estimation functions
-from cost.baseline_costs import *
-from cost.cost_utils import *
-# Suppress warnings
-warnings.filterwarnings("ignore")  # Ignore all warnings
+import warnings
+warnings.filterwarnings("ignore")
 
-# Record the current time (in seconds)
-time_start = time.time()  # Store the current time to track the script's execution duration
+import time
+time_start = time.time()
 
-# Initialize user parameters using the watts library
 params = watts.Parameters()
 
+def update_params(updates):
+    params.update(updates)
 
 # **************************************************************************************************************************
-#                                                Sec. 1 : User Configuration
+#                                                Sec. 0: Settings
 # **************************************************************************************************************************
-
-# Whether the user prefers to display the core design plots. 
-# Note: Plotting is not recommended for sensitivity analysis and parametric studies.
-params['plotting'] = "yes"  # options are "yes" and "no"
-
-# If the user is using OpenMC calculations, the location of the neutron data library must be specified. 
-# For example, data can be obtained from: https://openmc.org/official-data-libraries/
-params['cross_sections_xml_location'] =\
-    '/home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/endfb-viii.0-hdf5/cross_sections.xml'
-
-# If the user is using OpenMC calculations, the location of the depletion chain file must be specified. 
-# For example, data can be obtained from: https://openmc.org/depletion-chains/
-params['simplified_chain_thermal_xml'] =\
-    '/home/hannbn/projects/MARVEL_MRP/Github_repos/openmc_data/simplified_thermal_chain11.xml'
-
+update_params({
+    'plotting': "Y",  # "Y" or "N": Yes or No
+    'cross_sections_xml_location': '/home/hannbn/openmc_data/endfb-viii.0-hdf5/cross_sections.xml',
+    'simplified_chain_thermal_xml': '/home/hannbn/openmc_data/simplified_thermal_chain11.xml'
+})
 
 # **************************************************************************************************************************
-#                                                Sec. 2 : User-Defined Parameters (Materials)
+#                                                Sec. 1: Materials
+# **************************************************************************************************************************
+update_params({
+    'reactor type': "GCMR",  # LTMR or GCMR
+    'TRISO Fueled': "Yes",
+    'Fuel': 'UN',
+    'Enrichment': 0.1975,  # The enrichment is a fraction. It has to be between 0 and 1
+    'UO2 atom fraction': 0.7,  # Mixing UO2 and UC by atom fraction
+    'Reflector': 'Graphite',
+    'Matrix Material': 'Graphite', # matrix material is a background material  within the compact fuel element between the TRISO particles
+    'Moderator': 'Graphite', # The moderator is outside this compact fuel region 
+    'Moderator Booster': 'ZrH',
+    'Coolant': 'Helium',
+    'Common Temperature': 850,  # Kelvins
+    'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
+    'Control Drum Reflector': 'Graphite',  # The reflector material in the control drums
+    'HX Material': 'SS316', 
+})
+# **************************************************************************************************************************
+#                                           Sec. 2: Geometry: Fuel Pins, Moderator Pins, Coolant, Hexagonal Lattice
 # **************************************************************************************************************************  
 
-# The user can change any of the following materials,
-# but the new material has to be included in the materials database at "core_design/openmc_materials_database"
-params['reactor type'] = "GCMR"
-params['TRISO Fueled'] = "Yes" 
-# The fuel and its properties
-params['fuel'] = 'un'
-params['enrichment'] = 0.19 # The enrichment is a fraction. It has to be between 0 and 1
-# Mixing UO2 and UC by atom fraction
-params['UO2 atom fraction'] = 0.7
-params['Reflector'] = 'BeO'
-params['Moderator'] = 'Graphite'
-params['moderator_booster'] = 'YHx' 
-params['Coolant'] = 'Helium'
-
-# Temperature assumed for the OpenMC calculations
-params['common_temperature'] = 850 # Kelvins
-
-params['Control Drum Absorber'] = 'B4C_natural' # The absorber material in the control drums
-params['Control Drum Reflector'] = 'BeO'   # The reflector material in the control drums  
-
-
+update_params({
+    # fuel pin details
+    'Fuel Pin Materials': ['UN', 'buffer_graphite', 'PyC', 'SiC', 'PyC'],
+    'Fuel Pin Radii': [0.025, 0.035, 0.039, 0.0425, 0.047],  # cm
+    'Compact Fuel Radius': 0.6225,  # cm # The radius of the area that is occupied by the TRISO particles (fuel compact/ fuel element)
+    'Packing Factor': 0.3,
+    
+    # Coolant channel and booster dimensions
+    'Coolant Channel Radius': 0.35,  # cm
+    'Moderator Booster Radius': 0.55, # cm
+      'Lattice Pitch'  : 1.85,
+      'Assembly Rings' : 6,
+      'Core Rings' : 5,
+})
+params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
+params['Reflector Thickness'] = 27.393 # cm
+params['Axial Reflector Thickness'] = 40 # cm. Current CAD model only hosts a top axial refl
+params['Core Radius'] = params['Assembly FTF']*params['Core Rings'] +  params['Reflector Thickness']
+params['Active Height'] = 250
 # **************************************************************************************************************************
-#                                           Sec. 3 : User-Defined Parameters (Geometry: Fuel Pins, Moderator Pins, Coolant)
-# **************************************************************************************************************************  
+#                                           Sec. 3: Control Drums
+# ************************************************************************************************************************** 
+update_params({
+    # 'Drum Count': 24, # Automatically calculated in the Reactor Evaluation Side
+    'Drum Radius' : 15, # cm   
+    'Drum Absorber Thickness': 1, # cm
+    'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
+    })
 
-# The reactor core includes fuel pins and moderator pins
-# The fuel pin is assumed to include 5 regions: kernel, buffer, 3 layers of ceramics
-
-# The materials of the 5 regions of the fuel pin
-params['fuel_pin_materials'] = ['un', 'buffer', 'PyC', 'SiC', 'PyC']
-# The outer radii of each of the 5 regions of the fuel pin
-params['fuel_pin_radii'] = [0.025, 0.035, 0.039, 0.0425, 0.047] # cm
-
-
-#A background material that is used anywhere within the lattice but outside a TRISO particle
-# The background material (params['matrix material']) is within the compact region where the TRISO particles are packed.
-# The moderator (params['moderator']) is outside this compact region but within the larger cylindrical fuel region.
-params['matrix material'] = 'graphite'
-# The dimensions of the cylinderical lattice containing TRISO particles
-params['lattice height'] = 4 # cm
-
-# The radius of the area that is occupied by the TRISO particles
-params['lattice radius'] = 0.6225 # cm
-params['lattice_compact_volume'] = cylinder_volume(params['lattice radius'],params['lattice height'])
-params['packing factor'] = 0.3 
-
-params['coolant channel radius'] = 0.35 #cm
-params['booster radius'] =  0.55 # cm
-
-
-# Hexagonal Lattice
-params['hex lattice_radius']  = 1.3 #cm
-# the distance between the centers of adjacent hexagons within the lattice structure
-params['lattice_pitch'] =  params['hex lattice_radius']*np.sqrt(3)
-
-
-
+calculate_drums_volumes_and_masses(params)
+calculate_reflector_mass_GCMR(params)          
+calculate_moderator_mass_GCMR(params) 
 # **************************************************************************************************************************
-#                                           Sec. 4 : User-Defined Parameters (Hexagonal Lattice)
-# **************************************************************************************************************************  
+#                                           Sec. 4: Overall System
+# ************************************************************************************************************************** 
+update_params({
+    'Power MWt': 15,  # MWt
+    'Thermal Efficiency': 0.4,
+    'Heat Flux Criteria': 0.9,  # MW/m^2 (This one needs to be reviewed)
+    'Burnup Steps': [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0,
+                                     30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0]  # MWd_per_Kg
+    })
 
-# The number of rings (pins) along the edge of the hexagonal lattice
-params['assembly_rings'] = 6
-# the height of the hexagonal of one fuel assembly
-params['assembly_ftf'] = params['lattice_pitch']*(params['assembly_rings']-1)*np.sqrt(3)
-
-# #The thickness of the reflector around the lattice
-params['core_rings'] = 5
-# extra thickness for the reflector beyond the control drums
-params['extra_reflector'] = params['assembly_ftf'] / 10 #cm
-params['core_radius'] = params['assembly_ftf']* params['core_rings'] +  params['extra_reflector']
-params['active_height'] = 2 * params['core_radius']
-
-
-
+params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency'] 
+params['Power kWe'] = params['Power MWe'] * 1e3 # kWe
+params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 # **************************************************************************************************************************
-#                                           Sec. 5 : User-Defined Parameters (Control Drums)
+#                                           Sec. 5: Running OpenMC
 # ************************************************************************************************************************** 
 
-params['Drum_Radius'] = 9 #cm  
-
-# # Each of the control drums includes a reflector material (most of the drum) and an absorber material (the outer layer)
-# # The thickness of the absorber layer
-params['drum_Absorber_thickness'] = 1 # cm
-
-# # If there are two drums alone each edge of the hexagonal lattice, the angle between drums pairs will be 60 degrees
-# params['angle_between_drums_pairs'] = 60 # degrees
-
-# # Placement of drums happen by tracing a line through the core apothems
-# # then 2 drums are place around each apothem by deviating from this line
-# # by a deviation angle
-# params["deviation angle between drums"] = 12.86 # degrees
-
-# The radius of the tube of the control drum
-params['drum_tube_radius'] = params['Drum_Radius'] +(params['Drum_Radius']/ 45)  # cm
-
-params['drum_height_to_lattice_height'] = 1.24
-params['drum_height'] = 1 * params['active_height']
-
-params['all_drums_volume'], params['Control Drum Absorber Mass'], params['Control Drum Reflector Mass'], params['Control Drums Mass'] =\
-    calculate_drum_volume(params['Drum_Radius'], params['drum_height'],\
-        params['drum_Absorber_thickness'], params)
-
-params['tot_drum_area_all'] = params['all_drums_volume'] / params['drum_height']
-
-
-params['Reflector Mass'] = calculate_reflector_mass_GCMR(params)          
-params['Moderator Mass'] = calculate_moderator_mass_GCMR(params) 
+heat_flux_monitor = monitor_heat_flux(params)
+run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
+fuel_calculations(params)  # calculate the fuel mass and SWU
 # **************************************************************************************************************************
-#                                           Sec. 6 : User-Defined Parameters (Overall System)
+#                                         Sec. 6: Primary Loop + Balance of Plant
 # ************************************************************************************************************************** 
+params.update({
+    'Primary Loop Purification': False,
+    'Primary HX Mass': calculate_heat_exchanger_mass(params)[0],  # Kg
+    'Secondary HX Mass': 0,
+    'Compressor Pressure Ratio': 4,
+    'Compressor Isentropic Efficiency': 0.8,
+    'Coolant Temperature Difference': 250,  # Coolant Temperature Differnce between the inlet and the outlet (reactor side)
+    'Primary Loop Count': 2, # Number of Primary Coolant Loops present in plant
+    'Primary Loop per loop load fraction': 0.5, # based on assuming that each Primary Loop Handles the total load evenly (1/2)
+    'Primary Loop Outlet Temperature': 550 + 273.15, # K
+    'Primary Loop Pressure Drop': 50e3, # Pa. Assumption based on Enrique's estimate
+})
+# calculate coolant mass flow rate
+mass_flow_rate(params)
+compressor_power(params)
 
-# # The reactor power (thermal) MW
-params['Power MWt'] = 15 # MWt
-params['thermal_efficiency'] = 0.4
-params['Power MWe'] = params['Power MWt'] * params['thermal_efficiency']
-# TEMPRARY: NEED TO CHANGE!!!
+# Update BoP Parameters
+params.update({
+    'BoP Count': 2, # Number of BoP present in plant
+    'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
+    })
+params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
 
-# # The actual heat flux (MW/m^2)
-params['heat_flux'] = 0.8 # calculate_heat_flux(params['fuel_pin_radii'][-1], params['lattice_height'], params['rings'], params['power_MW_th'])
-# # Target Heat Flux : Approximate calculated value for a typical sodium-cooled fast reactor (SFR)
-params['heat_flux_criteria'] = 0.9
-
-# # The burnup steps for depletion calculations
-params['burnup_steps_MWd_per_Kg'] = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0,
-                                     30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0]
-
-
-
-# **************************************************************************************************************************
-#                                           Sec. 7 : Running OpenMC
-# ************************************************************************************************************************** 
-
-# A function that runs OpenMC and the depletion calculations
-# If the heat flux is too high, the code stops running
-# The results such as the heat flux, the fuel lifetime and the mass of the fuel are added to the "params"
-
-try:
-    openmc_plugin = watts.PluginOpenMC(build_openmc_model_GCMR, show_stderr=True)  # running the LTMR Model
-    # monitor_heat_flux(params, openmc_plugin)
-
-
-except Exception as e:
-    # Handle any errors that occur during the simulation
-    print("\n")  # Blank line before
-    print(f"\033[91mAn error occurred while running the OpenMC simulation: {e}\033[0m")
-    print("\n")  # Blank line after
-
-# # ## TEMPORARY  ## DELETE LATER!!!!!!!!!!!!!!!!!!!!
-params['fuel_lifetime_days'] =1305 # days
-params['mass_U235'] = 61975 # grams
-params['mass_U238'] = 263372.87  # grams
-params['Uranium Mass'] = (params['mass_U235'] + params['mass_U238']) / 1000 # Kg
+# Integrated Heat Transfer Vessel
+# Assumed to house the PCHE, Circulator, Pipings, Insulation, Liner
+# This is all housed in a 6cm-thick SA508 Pressure Vessel
+# This is a pressure boundary with primary coolant connections.
+ITH_vessel_thickness = 6 # cm
+# PCHE_volume = params['Primary HX Mass'] / params['HX Material']
+params.update({
+    'Integrated Heat Transfer Vessel Thickness': 6, # cm
+    'Integrated Heat Transfer Vessel Material': 'SA508',
+})
+GCMR_integrated_heat_transfer_vessel(params)
 
 
-
-# **************************************************************************************************************************
-#                                           Sec. 7 : Fuel Calcs
-# ************************************************************************************************************************** 
-
-params['Natural Uranium Mass'], params['fuel_tail_waste_mass_Kg'], params['SWU'] =\
-        fuel_calculations(params)
-
-# **************************************************************************************************************************
-#                                           Sec. 7 : Balance of Plant
-# ************************************************************************************************************************** 
-params['Coolant Mass Flow Rate'] = mass_flow_rate( params['Power MWt'] , params['Coolant Temperature Difference'], params['Coolant'])
-params['Primary HX Mass']  =  calculate_heat_exchanger_mass(params)[0] # Kg
-params['Secondary HX Mass'] = 0
-params['Compressor Pressure Ratio'] = 4 
-params['Compressor Isentropic Efficiency'] = 0.8
-# Coolant Temperature Differnce between the inlet and the outlet (reactor size)
-params['Coolant Temperature Difference'] = 360 #K or C
-# **************************************************************************************************************************
-#                                           Sec. 8 : Shielding
-# ************************************************************************************************************************** 
-
-# #Shielding
-# There is no in-vessel sheilding thickness
-params['in_vessel_shield_thickness'] = 0 #cm
-params['in_vessel_shielding_inner_radius'] = params['core_radius'] 
-params['in_vessel_shielding_outer_radius'] = params['core_radius'] + params['in_vessel_shield_thickness']
-params['In Vessel Shielding Material'] = 'B4C_natural'
-
-
-params['out_of_vessel_shield_thickness'] = 39.37 #cm
-params['Out Of Vessel Shielding Material'] = 'WEP'
-# The out of vessel shield is not fully made of the out of vessel material (e.g. WEP) so we use an effective density factor
-params['out_vessel_shield_effective_density_factor'] = 0.5
+# # **************************************************************************************************************************
+# #                                           Sec. 8 : Shielding
+# # ************************************************************************************************************************** 
+update_params({
+    'In Vessel Shield Thickness': 0,  # cm (no shield in vessel for GCMR)
+    'In Vessel Shield Inner Radius': params['Core Radius'],
+    'In Vessel Shield Material': 'B4C_natural',
+    'Out Of Vessel Shield Thickness': 39.37,  # cm
+    'Out Of Vessel Shield Material': 'WEP',
+    'Out Of Vessel Shield Effective Density Factor': 0.5 # The out of vessel shield is not fully made of the out of vessel material (e.g. WEP) so we use an effective density factor
+})
+params['In Vessel Shield Outer Radius'] =  params['Core Radius'] + params['In Vessel Shield Thickness']
 
 # **************************************************************************************************************************
 #                                           Sec. 9 : Vessels Calculations
 # ************************************************************************************************************************** 
-# # Vessels parameters
-params['vessel_radius'] = params['core_radius'] + params['in_vessel_shield_thickness']   
+update_params({
+    # Assume to be the Core Barrel
+    'Vessel Radius': params['Core Radius'] +  params['In Vessel Shield Thickness'],
+    'Vessel Thickness': 1,  # cm
+    'Vessel Lower Plenum Height': 42.848 - 40,  # cm, based on Reflecting Barrel~RPV Liner (-Reflector Thickness, which is currently missing in CAD)
+    'Vessel Upper Plenum Height': 47.152,       # cm, based on Reflector Ends~RPV Liner distance
+    'Vessel Upper Gas Gap': 0,                  # cm, assumed non-existed for GCMRv1
+    'Vessel Bottom Depth': 32.129,              # cm, bot/top head (ellipsoid): 32.129 cm (not exact match with CAD, estimated to match RPV Height)
+    'Vessel Material': 'stainless_steel',
+    # Assumed to be the RPV instead of the Guard Vessel
+    'Gap Between Vessel And Guard Vessel': 1,  # cm, (not exact match with CAD, estimated to match RPV OD) 
+    'Guard Vessel Thickness': 9,  # cm
+    'Guard Vessel Material': 'low_alloy_steel',
+    
+    'Gap Between Guard Vessel And Cooling Vessel': 5,  # cm
+    'Cooling Vessel Thickness': 0.5,  # cm
+    'Cooling Vessel Material': 'stainless_steel',
+    'Gap Between Cooling Vessel And Intake Vessel': 4,  # cm
+    'Intake Vessel Thickness': 0.5,  # cm
+    'Intake Vessel Material': 'stainless_steel'
+})
 
-params['vessel_thickness'] = 7.6 # cm
-params['vessel_lower_plenum_height'] = 30 # cm
-params['vessel_upper_plenum_height'] = 60 # cm
-params['vessel_upper_gas_gap'] = 10 # cm
-params['vessel_bottom_depth'] = 35  # cm
-params['vessel_material'] ='stainless_steel'
+vessels_specs(params)  # calculate the volumes and masses of the vessels
+calculate_shielding_masses(params)  # calculate the masses of the shieldings
 
-# assuming that no guard vessel 
-params['gap_between_vessel_and_guard_vessel'] = 0 # cm
-params['guard_vessel_thickness'] = 0
-params['guard_vessel_material'] ='stainless_steel'
+# # **************************************************************************************************************************
+# #                                           Sec. 10 : Operation
+# # **************************************************************************************************************************
+update_params({
+    'Operation Mode': "Autonomous", # "Non-Autonomous" or "Autonomous"
+    'Number of Operators': 2,
+    'Levelization Period': 60,  # years
+    'Refueling Period': 7,
+    'Emergency Shutdowns Per Year': 0.2,
+    'Startup Duration after Refueling': 2,
+    'Startup Duration after Emergency Shutdown': 14,
+    'Reactors Monitored Per Operator': 10,
+    'Security Staff Per Shift': 1
+})
 
-params['gap_between_guard_vessel_and_cooling_vessel'] = 5 # cm
-params['cooling_vessel_thickness'] = 0.5 # cm
-params['cooling_vessel_material'] ='stainless_steel'
+# A721: Coolant Refill
+## 20 Tanks total are on-site. 
+## Assuming ~50% are used for fresh coolant, 50% are used for dirty
+## Calculated based on 10 tanks w/ 291 cuft ea @ 2400psi, 30°C
+## Density=24.417 kg/m3, Volume=8.2402 m3
+## Refill Frequency: 1 /yr if purified, 6 /yr if not purified
+params['Onsite Coolant Inventory'] = 10 * 24.417 * 8.2402 # kg
+params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 6
 
-params['gap_between_cooling_vessel_and_intake_vessel'] = 0.3 # cm
-params['intake_vessel_thickness'] = 0.5 # cm
-params['intake_vessel_material'] ='stainless_steel'
+# A75: Annualized Capital Expenditures
+## Input for replacement of large capital equipments. Replacements are made during refueling cycles
+## Components to be replaced:
+## 1. Vessel: every ~10 years 
+## 2. Internals (moderator, reflector, drums, HX, circulators): every refueling cycle
+## If the period is 0, it is assumed to never be replaced throughout Levelization period
+## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
+total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
+total_refueling_period_yr = total_refueling_period/365
+params['A75: Vessel Replacement Period (cycles)']        = np.floor(10/total_refueling_period_yr)*total_refueling_period_yr
+params['A75: Reflector Replacement Period (cycles)']     = 1
+params['A75: Drum Replacement Period (cycles)']          = 1
+params['A75: Integrated HX Replacement Period (cycles)'] = 1
+params['Mainenance to Direct Cost Ratio']                = 0.015
 
-# Calculating the vessels dimensions and masses
-params['vessels_total_radius'], params['vessel_height'] , params['vessels_total_height'],\
-        params['Vessel Mass'], params['Guard Vessel Mass'] ,\
-            params['Cooling Vessel Mass'], params['Intake Vessel Mass'], params['Total Vessels Mass'] = vessels_specs(params)
-
-params['In Vessel Shielding Mass'] = cylinder_annulus_mass(params['in_vessel_shielding_outer_radius'],\
-    params['in_vessel_shielding_inner_radius'], params['vessel_height'], params['In Vessel Shielding Material'] )  
-
-
-params['Out Of Vessel Shielding Mass'] = params['out_vessel_shield_effective_density_factor'] * cylinder_annulus_mass(params['out_of_vessel_shield_thickness']+ params['vessels_total_radius'],\
-        params['out_of_vessel_shield_thickness'], params['vessels_total_height'], params['Out Of Vessel Shielding Material']) 
-params ['Vessel and Guard Vessel Masses'] = params['Vessel Mass'] +  params['Guard Vessel Mass']
-
-# **************************************************************************************************************************
-#                                           Sec. 10 : Operation
-# **************************************************************************************************************************
-
-# # operation
-params['num_people_required_per_refueling'] = 5
-params['num_people_required_per_startup'] = 4
-
-params['levelization_period_years'] = 60 # in years
-params['refueling_period_days'] = 15
-params['number_of_unanticipated_shutdowns_per_year']= 0.8
-
-params['duration_to_startup_after_refueling_days'] = 7
-params['duration_to_startup_after_shutdown_days'] = 14
-params['reactors_monitored_by_one_person'] = 5 
-params['FTEs_for_security_staff'] = 5 
-
-params['people_by_days_refueling_per_year'], params['people_by_days_startup_per_year'],\
-        params['capacity_factor'] = reactor_operation(params)
+# A78: Annualized Decommisioning Cost
+params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
 
 # **************************************************************************************************************************
 #                                           Sec. 11 : Economic Parameters
 # **************************************************************************************************************************
-# preconstruction cost params
+update_params({
+    # A conservative estimate for the land area 
+    # Ref: McDowell, B., and D. Goodman. "Advanced Nuclear Reactor Plant Parameter Envelope and
+    #Guidance." National Reactor Innovation Center (NRIC), NRIC-21-ENG-0001 (2021). 
+    'Land Area': 18,  # acres
+    
+    'Escalation Year': 2023,
+    
+    'Excavation Volume': 412.605,  # m^3
+    'Reactor Building Slab Roof Volume': (9750*6502.4*1500)/1e9,  # m^3
+    'Reactor Building Basement Volume': (9750*6502.4*1500)/1e9,  # m^3
+    'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
+    'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
+    
+    # Connected to the Reactor Building (contains steel liner)
+    'Integrated Heat Exchanger Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
+    'Integrated Heat Exchanger Building Superstructure Area': ((2*7014*3500)+(2*5000*5000))/1e6, # m^2
+    
+    # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+    'Turbine Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Basement Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Exterior Walls Volume': ((12192*2496*200)+(2038*2496*200))*2/1e9,  # m^3
+    
+    # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+    'Control Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
+    'Control Building Basement Volume': (12192*2438*200)/1e9,  # m^3
+    'Control Building Exterior Walls Volume': ((12192*2496*200)+(2038*2496*200))*2/1e9,  # m^3
+    
+    # Manipulator Building
+    'Manipulator Building Slab Roof Volume': (4876.8*2438.4*400)/1e9, # m^3
+    'Manipulator Building Basement Volume': (4876.8*2438.4*1500)/1e9, # m^3
+    'Manipulator Building Exterior Walls Volume': ((4876.8*4445*400)+(2038.4*4445*400*2))/1e9, # m^3
 
-# A conservative estimate for the land area 
-# Ref: McDowell, B., and D. Goodman. "Advanced Nuclear Reactor Plant Parameter Envelope and
-#Guidance." National Reactor Innovation Center (NRIC), NRIC-21-ENG-0001 (2021). 
-
-params['Land Area'] = 18 # acres
-params['escalation_year'] = 2023
-# excavation volume needs to be detailed
-params['Excavation Volume'] = 463.93388 # m3 
-# Financing params
-params['interest_rate'] = 0.06 # 
-
-# Reactor building is dependent on ISO container dimensions
-reactor_building = ['Reactor building', 2.6, 2.6,  11.0, 2, 2, 2]
-RB_slab_roof_volume, RB_basemat_volume, RB_walls_volume = calculate_reactor_building_structure_volume(reactor_building)
-
-
-# Energy conversion building dimensions are dependent on ISO container dimensions
-energy_conversion_building = ['Energy conversion building', 2.6, 6.0,   5.6, 2, 2, 2]
-EB_slab_roof_volume, EB_basemat_volume, EB_walls_volume = calculate_energy_conversion_building_structure_volume(energy_conversion_building)
-
-# control building
-control_building = ['Control building', 2.4, 8.4,   3.0, 2, 2, 2]
-cb_slab_roof_volume, cb_basemat_volume, cb_walls_volume = calculate_control_building_structure_volume(control_building)
-
-# Refueling building 
-refueling_building = ['Refueling area building', 8.0, 9.0  , 5.0 , 2, 2, 2]
-rb_slab_roof_volume, rb_basemat_volume, rb_walls_volume = calculate_refueling_building_structure_volume(refueling_building)
-
-# spent fuel building
-spent_fuel_building = ['Spent fuel building', 6.0, 8.0,   5.6, 2, 2, 2]
-sfb_slab_roof_volume, sfb_basemat_volume, sfb_walls_volume = calculate_spent_fuel_building_structure_volume(spent_fuel_building)
-
-# emergency building
-emergency_building = ['Emergency and startup power system building', 4.0, 4.0,   5.6, 2, 2, 2]
-eb_slab_roof_volume, eb_basemat_volume, eb_walls_volume = calculate_emergency_building_structure_volume(emergency_building)
-
-# storage building
-storage_building = ['Storage and warehouse building', 6.0, 6.0,   5.6, 2, 2, 2]
-sb_slab_roof_volume, sb_basemat_volume, sb_walls_volume = calculate_emergency_building_structure_volume(storage_building)
-
-# radwaste building
-radwaste_storage_building = ['Radwaste building', 6.0, 6.0,   5.6, 2, 2, 2]
-radb_slab_rood_volume, radb_basemat_volume, radb_walls_volume = calculate_radwaste_building_structure_volume(radwaste_storage_building)
-
+    'Refueling Building Slab Roof Volume': 0,  # m^3
+    'Refueling Building Basement Volume': 0,  # m^3
+    'Refueling Building Exterior Walls Volume': 0,  # m^3
+    
+    'Spent Fuel Building Slab Roof Volume': 0,  # m^3
+    'Spent Fuel Building Basement Volume': 0,  # m^3
+    'Spent Fuel Building Exterior Walls Volume': 0,  # m^3
+    
+    'Emergency Building Slab Roof Volume': 0,  # m^3
+    'Emergency Building Basement Volume': 0,  # m^3
+    'Emergency Building Exterior Walls Volume': 0,  # m^3
+    
+    # Building to host operational spares (CO2, He, filters, etc.)
+    'Storage Building Slab Roof Volume': (8400*3500*400)/1e9, # m^3
+    'Storage Building Basement Volume': (8400*3500*400)/1e9, # m^3
+    'Storage Building Exterior Walls Volume': ((8400*2700*400)+(3100*2700*400*2))/1e9, # m^3
+    
+    'Radwaste Building Slab Roof Volume': 0,  # m^3
+    'Radwaste Building Basement Volume': 0,  # m^3
+    'Radwaste Building Exterior Walls Volume': 0,  # m^3,
+    
+    'Interest Rate': 0.085,
+    'Construction Duration': 12,  # months
+    'Debt To Equity Ratio': 0.5,
+    'Annual Return': 0.0475  # Annual return on decommissioning costs
+})
 
 # **************************************************************************************************************************
-#                                           Sec. 12 : Cost
+#                                           Sec. 13: Post Processing
 # **************************************************************************************************************************
-Cost_estimate = bottom_up_cost_estimate('cost/Cost_Database.xlsx', params) 
-print(Cost_estimate.to_string(index=False))
-
-# **************************************************************************************************************************
-#                                           Sec. 13 : Post Processing
-# **************************************************************************************************************************
-
-# params.show_summary(show_metadata=True, sort_by='time') # print all the parameters
-
-# #Calculate the code execution time
-elapsed_time = (time.time() - time_start) / 60
+params['Number of Samples'] = 100 # Accounting for cost uncertainties
+# Estimate costs using the cost database file and save the output to an Excel file
+estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
+elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 2), 'minutes')
