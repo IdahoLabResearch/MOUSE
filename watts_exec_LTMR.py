@@ -51,7 +51,8 @@ update_params({
     'Reflector': 'BeO',
     'Control Drum Absorber': 'B4C_natural',
     'Control Drum Reflector': 'BeO',
-    'Common Temperature': 600  # Kelvins
+    'Common Temperature': 600,  # Kelvins
+    'HX Material': 'SS316'
 })
 
 # **************************************************************************************************************************
@@ -113,24 +114,30 @@ run_openmc(build_openmc_model_LTMR, heat_flux_monitor, params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # **************************************************************************************************************************
-#                                           Sec. 6: Balance of Plant
+#                                           Sec. 6: Primary Loop + Balance of Plant
 # ************************************************************************************************************************** 
 
 update_params({
-    'Primary HX Mass': calculate_heat_exchanger_mass(params)[0],  # Kg
     'Secondary HX Mass': 0,
     'Primary Pump': 'Yes',
     'Secondary Pump': 'No',
-    'Primary Pump Mechanical Power': calculate_pump_mechanical_power(params)[0],
-    'Pump Isentropic Efficiency': 0.8
+    'Pump Isentropic Efficiency': 0.8,
+    'Primary Loop Inlet Temperature': 430 + 273.15, # K
+    'Primary Loop Outlet Temperature': 520 + 273.15, # K
+    'Secondary Loop Inlet Temperature': 395 + 273.15, # K
+    'Secondary Loop Outlet Temperature': 495 + 273.15, # K,
 })
 
+params['Primary HX Mass'] = calculate_heat_exchanger_mass(params)  # Kg
 # Update BoP Parameters
 params.update({
     'BoP Count': 2, # Number of BoP present in plant
     'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
 params['BoP Power kWe'] = 1000 * params['Power MWe'] * params['BoP per loop load fraction']
+# calculate coolant mass flow rate
+mass_flow_rate(params)
+calculate_primary_pump_mechanical_power(params)
 
 # **************************************************************************************************************************
 #                                           Sec. 7: Shielding
@@ -188,7 +195,16 @@ update_params({
     'Reactors Monitored Per Operator': 10,
     'Security Staff Per Shift': 1
 })
+## Calculated based on 1 tanks
+## Density=855  kg/m3, Volume=8.2402 m3 (standard tank size?)
+params['Onsite Coolant Inventory'] = 1 * 855 * 8.2402 # kg
+params['Annual Coolant Supply Frequency'] = 0.1 # LTMR should not require frequent refilling
 
+total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
+total_refueling_period_yr = total_refueling_period/365
+params['A75: Vessel Replacement Period (cycles)']        = np.floor(30/total_refueling_period_yr)*total_refueling_period_yr
+params['A75: Reflector Replacement Period (cycles)']     = 2
+params['A75: Drum Replacement Period (cycles)']          = 2
 # **************************************************************************************************************************
 #                                           Sec. 12: Buildings & Economic Parameters
 # **************************************************************************************************************************
@@ -201,7 +217,17 @@ update_params({
     'Reactor Building Slab Roof Volume': 87.12,  # m^3
     'Reactor Building Basement Volume': 87.12,  # m^3
     'Reactor Building Exterior Walls Volume': 228.8,  # m^3
+
+    'Integrated Heat Exchanger Building Slab Roof Volume': 0,  # m^3
+    'Integrated Heat Exchanger Building Basement Volume': 0,  # m^3
+    'Integrated Heat Exchanger Building Exterior Walls Volume': 0,  # m^3
+    'Integrated Heat Exchanger Building Superstructure Area': 0, # m^2
     
+        # Manipulator Building
+    'Manipulator Building Slab Roof Volume':0, # m^3
+    'Manipulator Building Basement Volume': 0, # m^3
+    'Manipulator Building Exterior Walls Volume': 0, # m^3
+
     'Turbine Building Slab Roof Volume': 132,  # m^3
     'Turbine Building Basement Volume': 132,  # m^3
     'Turbine Building Exterior Walls Volume': 192.64,  # m^3
@@ -239,7 +265,7 @@ update_params({
 # **************************************************************************************************************************
 #                                           Sec. 13: Post Processing
 # **************************************************************************************************************************
-params['Number of Samples'] = 100 # Accounting for cost uncertainties
+params['Number of Samples'] = 10 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
 detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_LTMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time

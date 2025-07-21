@@ -107,7 +107,6 @@ params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 # **************************************************************************************************************************
 #                                           Sec. 5: Running OpenMC
 # ************************************************************************************************************************** 
-
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
@@ -212,7 +211,7 @@ update_params({
 ## 20 Tanks total are on-site. 
 ## Assuming ~50% are used for fresh coolant, 50% are used for dirty
 ## Calculated based on 10 tanks w/ 291 cuft ea @ 2400psi, 30°C
-## Density=24.417 kg/m3, Volume=8.2402 m3
+## Density=24.417 kg/m3, Volume=8.2402 m3 (standard tank size?)
 ## Refill Frequency: 1 /yr if purified, 6 /yr if not purified
 params['Onsite Coolant Inventory'] = 10 * 24.417 * 8.2402 # kg
 params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 6
@@ -251,12 +250,6 @@ update_params({
     'Reactor Building Basement Volume': (9750*6502.4*1500)/1e9,  # m^3
     'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
     'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
-    
-    # Connected to the Reactor Building (contains steel liner)
-    'Integrated Heat Exchanger Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Integrated Heat Exchanger Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Integrated Heat Exchanger Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
-    'Integrated Heat Exchanger Building Superstructure Area': ((2*7014*3500)+(2*5000*5000))/1e6, # m^2
     
     # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
     'Turbine Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3

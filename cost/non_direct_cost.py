@@ -47,7 +47,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
                                                                      1, # Moderator Block Replacement Period (cycles)
                                                                      params['A75: Reflector Replacement Period (cycles)'],
                                                                      params['A75: Drum Replacement Period (cycles)'],
-                                                                     params['A75: Integrated HX Replacement Period (cycles)'],])
+                                                                     params.get('A75: Integrated HX Replacement Period (cycles)', 0),])
             ## Keep the same ordering as `A20_replacement_period`
             A20_capital_cost = np.array([df.loc[df['Account'].isin([221.12, 221.13]),             estimated_cost_col].values.sum(), 
                                         df.loc[df['Account'] == 221.33,                           estimated_cost_col].values.sum(),
@@ -56,7 +56,7 @@ def calculate_accounts_31_32_75_82_cost( df, params):
                                         df.loc[df['Account'].isin([222.1, 222.2, 222.3, 222.61]), estimated_cost_col].values.sum()])
             annualized_replacement_cost = (A20_capital_cost*_crf(params['Interest Rate'], A20_replacement_period))
             A20_other_cost = df.loc[df['Account'] == 20, estimated_cost_col].values[0] - A20_capital_cost.sum()
-            annualized_other_cost = A20_other_cost * params['Mainenance to Direct Cost Ratio']
+            annualized_other_cost = A20_other_cost * params['Maintenance to Direct Cost Ratio']
             # For non-specified CAPEX components, use the old method of saving 
             # `params['Mainenance to Direct Cost Ratio']` * CAPEX annually
             df.loc[df['Account'] == 751, estimated_cost_col] = annualized_replacement_cost[0]

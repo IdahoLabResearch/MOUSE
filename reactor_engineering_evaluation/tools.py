@@ -22,7 +22,8 @@ def materials_densities(material):
 
 def material_specific_heat(material):
     material_cp= {
-    "Helium": 5193      # J/(Kg.K)
+    "Helium": 5193 ,     # J/(Kg.K)
+    "NaK" : 982.    # J/(Kg.K)
 
     }
     return material_cp[material] # in gram/cm^3    

@@ -47,15 +47,17 @@ def calculate_heat_exchanger_mass(params):
     return hx_mass
 
 
-def calculate_primary_pump_mechanical_power(core_mass_flow_rate, core_active_height):
+def calculate_primary_pump_mechanical_power(params):
     """
       Pump electric power [kW] = mdot*g*h / 1000 
     """
+    core_mass_flow_rate = params['Primary Loop Mass Flow Rate']
+    core_active_height  = params['Active Height']
     g    = 9.81                               # [m/s^2]
     h    = core_active_height                 # [m] 
     mdot = core_mass_flow_rate                # [kg/s]
+    params['Primary Pump Mechanical Power'] =  mdot* g* h / 1000 # kWe
 
-    return  mdot* g* h / 1000     # [kWe]
 
   
   
