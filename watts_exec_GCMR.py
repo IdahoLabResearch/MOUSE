@@ -251,6 +251,12 @@ update_params({
     'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
     'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
     
+    # Connected to the Reactor Building (contains steel liner)
+    'Integrated Heat Exchanger Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
+    'Integrated Heat Exchanger Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
+    'Integrated Heat Exchanger Building Superstructure Area': ((2*7014*3500)+(2*5000*5000))/1e6, # m^2
+    
     # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
     'Turbine Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
     'Turbine Building Basement Volume': (12192*2438*200)/1e9,  # m^3
@@ -300,4 +306,4 @@ params['Number of Samples'] = 100 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
 estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
-print('Execution time:', np.round(elapsed_time, 2), 'minutes')
+print('Execution time:', np.round(elapsed_time, 1), 'minutes')
