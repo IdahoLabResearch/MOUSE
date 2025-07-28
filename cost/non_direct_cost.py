@@ -43,8 +43,8 @@ def calculate_accounts_31_32_75_82_cost( df, params):
         if params_df.loc[params_df['keys'].str.contains('replacement', case=False), 'keys'].size > 0:
             # Input Case includes period replacement of internals (e.g. GCMS)
             # Replacements are assumed to match with refueling so #cycles are used instead of #years
-            A20_replacement_period = refueling_period_yr * np.array([params['A75: RPV Replacement Period (cycles)'],
-                                                                     params['A75: Core Barrel Replacement Period (cycles)'],
+            A20_replacement_period = refueling_period_yr * np.array([params['A75: Vessel Replacement Period (cycles)'],
+                                                                    params['A75: Core Barrel Replacement Period (cycles)'],
                                                                      1, # Moderator Block Replacement Period (cycles)
                                                                      params['A75: Reflector Replacement Period (cycles)'],
                                                                      params['A75: Drum Replacement Period (cycles)'],
