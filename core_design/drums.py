@@ -20,6 +20,8 @@ def calculate_drums_volumes_and_masses(params):
         else:
             number_of_drums = 6 * (params['Core Rings']-1) 
             params['Drum Count'] = number_of_drums
+    elif params['reactor type'] == "HPMR":
+    number_of_drums = 12 
 
     all_drums_volume = drum_volume * number_of_drums
     
@@ -84,7 +86,11 @@ def calculate_moderator_mass_GCMR(params):
     tot_booster_mass   = tot_number_assemblies * area_moderator_booster_per_hex * params['Active Height'] * materials_database[params['Moderator Booster']].density / 1000 # Kg
     params['Moderator Booster Mass'] = tot_booster_mass
 
-
+def calculate_reflector_mass_HPMR(params):
+    materials_database = collect_materials_data(params)
+    tot_number_assemblies = calculate_number_of_rings(params['Number of Rings per Core'])
+    reflector_volume = (circle_area(params['Core Radius']) -\
+       tot_number_assemblies * hexagonal_area_from_ftf(params['Assembly FTF']) - params['All Drums Area']) * params['Active Height']    
 
 def calculate_moderator_mass(params): 
     # for the moderator pins
