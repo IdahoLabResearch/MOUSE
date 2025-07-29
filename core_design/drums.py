@@ -21,7 +21,7 @@ def calculate_drums_volumes_and_masses(params):
             number_of_drums = 6 * (params['Core Rings']-1) 
             params['Drum Count'] = number_of_drums
     elif params['reactor type'] == "HPMR":
-    number_of_drums = 12 
+            number_of_drums = 12 
 
     all_drums_volume = drum_volume * number_of_drums
     
