@@ -408,7 +408,7 @@ def build_openmc_model_GCMR(params):
 
     batches = 100
     inactive = 10
-    particles = 500
+    particles = 1000
 
     settings_file = openmc.Settings()
     settings_file.batches = batches
