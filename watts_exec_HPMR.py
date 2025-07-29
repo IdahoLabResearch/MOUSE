@@ -108,4 +108,4 @@ params['Heat Flux'] =  calculate_heat_flux(params)
 
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_HPMR, heat_flux_monitor, params)
-#fuel_calculations(params)  # calculate the fuel mass and SWU
+fuel_calculations(params)  # calculate the fuel mass and SWU
