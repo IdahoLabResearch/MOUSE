@@ -110,7 +110,10 @@ def create_universe_plot(materials_database, universe, plot_width, num_pixels, f
         'SiC': 'teal',
         'Graphite': 'coral',
         'buffer_graphite': 'gold',
-        'PyC': 'salmon'
+        'PyC': 'salmon',
+        'homog_TRISO': 'maroon',
+        'homog_hp': 'seashell',
+        'graphite2': 'blue'
     }
     
     # Check for materials in the database that do not have a color specified
