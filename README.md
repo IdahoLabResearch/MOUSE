@@ -44,9 +44,9 @@ The user can specifiy the reactor design specs and/or the economics parameters f
 
 A complete detailed bottom up cost estimation is obtained by running commands such as
 ```
-python watts_exec_LTMR.py
+python -m examples.watts_exec_LTMR
 ```
 or 
 ```
-python watts_exec_GCMR.py
+python -m examples.watts_exec_GCMR_v1
 ```

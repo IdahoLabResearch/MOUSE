@@ -68,7 +68,7 @@ update_params({
     # Coolant channel and booster dimensions
     'Coolant Channel Radius': 0.35,  # cm
     'Moderator Booster Radius': 0.55, # cm
-      'Lattice Pitch'  : 1.85,
+      'Lattice Pitch'  : 2.25,
       'Assembly Rings' : 6,
       'Core Rings' : 5,
 })
@@ -76,13 +76,12 @@ params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np
 params['Reflector Thickness'] = 27.393 # cm
 params['Axial Reflector Thickness'] = 40 # cm. Current CAD model only hosts a top axial refl
 params['Core Radius'] = params['Assembly FTF']*params['Core Rings'] +  params['Reflector Thickness']
-params['Active Height'] = 250
+params['Active Height'] = 250 #2 * params['Core Radius']
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 update_params({
-    # 'Drum Count': 24, # Automatically calculated in the Reactor Evaluation Side
-    'Drum Radius' : 15, # cm   
+    'Drum Radius' : 9, # cm   
     'Drum Absorber Thickness': 1, # cm
     'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
     })
@@ -114,7 +113,7 @@ fuel_calculations(params)  # calculate the fuel mass and SWU
 #                                         Sec. 6: Primary Loop + Balance of Plant
 # ************************************************************************************************************************** 
 params.update({
-    'Primary Loop Purification': False,
+    'Primary Loop Purification': True,
     'Secondary HX Mass': 0,
     'Compressor Pressure Ratio': 4,
     'Compressor Isentropic Efficiency': 0.8,
@@ -139,17 +138,13 @@ params.update({
 params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
 
 # Integrated Heat Transfer Vessel
-# Assumed to house the PCHE, Circulator, Pipings, Insulation, Liner
-# This is all housed in a 6cm-thick SA508 Pressure Vessel
-# This is a pressure boundary with primary coolant connections.
-ITH_vessel_thickness = 6 # cm
-# PCHE_volume = params['Primary HX Mass'] / params['HX Material']
+# Assumed no Integrated Heat Transfer Vessel in this design
+
 params.update({
-    'Integrated Heat Transfer Vessel Thickness': 6, # cm
+    'Integrated Heat Transfer Vessel Thickness': 0, # cm
     'Integrated Heat Transfer Vessel Material': 'SA508',
 })
 GCMR_integrated_heat_transfer_vessel(params)
-
 
 # # **************************************************************************************************************************
 # #                                           Sec. 8 : Shielding
@@ -176,9 +171,9 @@ update_params({
     'Vessel Upper Gas Gap': 0,                  # cm, assumed non-existed for GCMRv1
     'Vessel Bottom Depth': 32.129,              # cm, bot/top head (ellipsoid): 32.129 cm (not exact match with CAD, estimated to match RPV Height)
     'Vessel Material': 'stainless_steel',
-    # Assumed to be the RPV instead of the Guard Vessel
-    'Gap Between Vessel And Guard Vessel': 1,  # cm, (not exact match with CAD, estimated to match RPV OD) 
-    'Guard Vessel Thickness': 9,  # cm
+    # Assumed no guard vessel
+    'Gap Between Vessel And Guard Vessel': 0,  
+    'Guard Vessel Thickness': 0,  # cm
     'Guard Vessel Material': 'low_alloy_steel',
     
     'Gap Between Guard Vessel And Cooling Vessel': 5,  # cm
@@ -244,7 +239,7 @@ update_params({
     #Guidance." National Reactor Innovation Center (NRIC), NRIC-21-ENG-0001 (2021). 
     'Land Area': 18,  # acres
     
-    'Escalation Year': 2023,
+    'Escalation Year': 2024,
     
     'Excavation Volume': 412.605,  # m^3
     'Reactor Building Slab Roof Volume': (9750*6502.4*1500)/1e9,  # m^3
@@ -253,10 +248,10 @@ update_params({
     'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
     
     # Connected to the Reactor Building (contains steel liner)
-    'Integrated Heat Exchanger Building Slab Roof Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Integrated Heat Exchanger Building Basement Volume': (8514*6502.4*750)/1e9,  # m^3
-    'Integrated Heat Exchanger Building Exterior Walls Volume': ((2*8514*5000*750)+(2*5002.4*5000*750))/1e9,  # m^3
-    'Integrated Heat Exchanger Building Superstructure Area': ((2*7014*3500)+(2*5000*5000))/1e6, # m^2
+    'Integrated Heat Exchanger Building Slab Roof Volume': 0,  # m^3
+    'Integrated Heat Exchanger Building Basement Volume': 0,  # m^3
+    'Integrated Heat Exchanger Building Exterior Walls Volume': 0,  # m^3
+    'Integrated Heat Exchanger Building Superstructure Area': 0, # m^2
     
     # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
     'Turbine Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
@@ -306,6 +301,6 @@ update_params({
 # **************************************************************************************************************************
 params['Number of Samples'] = 100 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
-estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
+estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "examples/output_GCMR_v1.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')

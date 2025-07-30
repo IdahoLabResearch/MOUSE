@@ -142,7 +142,7 @@ params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fracti
 # Assumed to house the PCHE, Circulator, Pipings, Insulation, Liner
 # This is all housed in a 6cm-thick SA508 Pressure Vessel
 # This is a pressure boundary with primary coolant connections.
-ITH_vessel_thickness = 6 # cm
+
 # PCHE_volume = params['Primary HX Mass'] / params['HX Material']
 params.update({
     'Integrated Heat Transfer Vessel Thickness': 6, # cm
@@ -306,6 +306,6 @@ update_params({
 # **************************************************************************************************************************
 params['Number of Samples'] = 100 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
-estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_GCMR.xlsx")
+estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "examples/output_GCMR_v2.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')

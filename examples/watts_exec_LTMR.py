@@ -49,7 +49,7 @@ update_params({
     'U_met_wo': 0.3,  # Weight ratio of Uranium to total fuel weight (less than 1)
     'Coolant': 'NaK',
     'Reflector': 'BeO',
-    'Control Drum Absorber': 'B4C_natural',
+    'Control Drum Absorber': 'B4C_enriched',
     'Control Drum Reflector': 'BeO',
     'Common Temperature': 600,  # Kelvins
     'HX Material': 'SS316'
@@ -269,6 +269,6 @@ update_params({
 # **************************************************************************************************************************
 params['Number of Samples'] = 10 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
-detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "output_LTMR.xlsx")
+estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "examples/output_LTMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')
