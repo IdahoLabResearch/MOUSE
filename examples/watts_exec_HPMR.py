@@ -101,7 +101,9 @@ update_params({
     'Power MWt': 5, 
     'Thermal Efficiency': 0.36,
     'Heat Flux Criteria': 0.9,  # MW/m^2 
-    'Burnup Steps': [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0, 140.0]  # MWd_per_Kg
+    #'Burnup Steps': [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0, 140.0]  # MWd_per_Kg
+    'Time Steps': [0.01*tf,   0.99*tf,   3.00*tf,   6.00*tf,  20.00*tf,  70.00*tf, 100.00*tf, 165.00*tf, 365.00*tf, 365.00*tf, 365.00*tf],
+    'Power': [5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06],
 })
 params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency']
 params['Heat Flux'] =  calculate_heat_flux(params)
