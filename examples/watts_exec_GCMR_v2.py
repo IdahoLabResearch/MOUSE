@@ -201,10 +201,10 @@ update_params({
     'Operation Mode': "Autonomous", # "Non-Autonomous" or "Autonomous"
     'Number of Operators': 2,
     'Levelization Period': 60,  # years
-    'Refueling Period': 7,
+    'Refueling Period': 7+14+9.5, # Cooldown + Tranportation (back/forth) + Refuel
     'Emergency Shutdowns Per Year': 0.2,
-    'Startup Duration after Refueling': 2,
-    'Startup Duration after Emergency Shutdown': 14,
+    'Startup Duration after Refueling': 4, # Connection / Rise-to-Power Test
+    'Startup Duration after Emergency Shutdown': 7+14+9.5+4,
     'Reactors Monitored Per Operator': 10,
     'Security Staff Per Shift': 1
 })
