@@ -51,7 +51,7 @@ update_params({
     'Moderator': 'Graphite', # The moderator is outside this compact fuel region 
     'Moderator Booster': 'ZrH',
     'Coolant': 'Helium',
-    'Common Temperature': 850,  # Kelvins
+    'Common Temperature': 750,  # Kelvins
     'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
     'Control Drum Reflector': 'Graphite',  # The reflector material in the control drums
     'HX Material': 'SS316', 
