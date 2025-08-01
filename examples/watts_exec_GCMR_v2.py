@@ -2,6 +2,8 @@
 This script performs a bottom-up cost estimate for a Gas Cooled Microreactor (GCMR).
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
+
+This input models an aspirational 2nd Generation Microreactor (e.g. low power testing on Factory).
 """
 
 import numpy as np
