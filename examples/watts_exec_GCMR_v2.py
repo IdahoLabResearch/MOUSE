@@ -227,8 +227,8 @@ params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purificati
 ## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
-params['A75: Vessel Replacement Period (cycles)']        = np.floor(15/total_refueling_period_yr)
-params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(15/total_refueling_period_yr)
+params['A75: Vessel Replacement Period (cycles)']        = np.floor(16/total_refueling_period_yr)
+params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(16/total_refueling_period_yr)
 params['A75: Reflector Replacement Period (cycles)']     = 1
 params['A75: Drum Replacement Period (cycles)']          = 1
 params['A75: Integrated HX Replacement Period (cycles)'] = 1
@@ -306,8 +306,8 @@ update_params({
 # **************************************************************************************************************************
 #                                           Sec. 13: Post Processing
 # **************************************************************************************************************************
-params['Number of Samples'] = 100 # Accounting for cost uncertainties
+params['Number of Samples'] = 1 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
-estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "examples/output_GCMR_v2.xlsx")
+estimate = detailed_bottom_up_cost_estimate('./cost/Cost_Database.xlsx', params, "examples/output_GCMR_v2.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')
