@@ -9,38 +9,6 @@ from core_design.utils import create_universe_plot, circle_area, create_cells
 #                                                Sec. 0 : Helper Functions
 # **************************************************************************************************************************
 
-
-#def create_materials(params):
-#    materials_database = collect_materials_data(params)
-#    # Check for duplicate material names and IDs
-#    material_ids = set()
-#    for key in ['Fuel', 'Coolant', 'Reflector', 'Moderator', 'Gap', 'Control Drum Absorber', 'Control Drum Reflector']:
-#        material = materials_database[params[key]]
-#        if material.id in material_ids:
-#            raise ValueError(f"Duplicate material ID found: {material.id} for material {params[key]}")
-#        material_ids.add(material.id)
-    
-#    materials = {
-#        'fuel': materials_database[params['Fuel']],
-#        'coolant': materials_database[params['Coolant']],
-#        'reflector': materials_database[params['Reflector']],
-#        'moderator': materials_database[params['Moderator']],
-#        'gap': materials_database[params['Gap']],
-#        'Control Drum Absorber': materials_database[params['Control Drum Absorber']],
-#        'Control Drum Reflector': materials_database[params['Control Drum Reflector']]
-#    }
-
-#    return materials
-#materials_database = collect_materials_data(params)
-
-#fuel = materials_database[params['Fuel']]
-#coolant = materials_database[params['Coolant']]
-#reflector = materials_database[params['Reflector']]
-#moderator = materials_database[params['Moderator']]
-#gap = materials_database[params['Gap']]
-#Control Drum Absorber = materials_database[params['Control Drum Absorber']]
-#Control Drum Reflector = materials_database[params['Control Drum Reflector']]
-
 def create_pin_regions(params,pin_type):
     if pin_type == 'fuel':
         pin_radii = {'fuel_meat': params['Fuel Pin Radii'][0],
@@ -81,7 +49,6 @@ def create_fuel_pin(params, materials_database):
     fuel_materials = [materials_database[mat] for mat in params['Fuel Pin Materials']]
 
     # Append the moderator to the list of fuel pin materials
-    #fuel_materials.append(materials['moderator'])
     fuel_materials.append(materials_database[params['Moderator']])
     # creating the fuel pin universe
     fuel_cells = create_cells(fuel_pin_regions, fuel_materials)
@@ -91,14 +58,12 @@ def create_fuel_pin(params, materials_database):
 
 
 def create_htpipe_pin(params, materials_database):
-    #materials_database = collect_materials_data(params)
     htpipe_pin_regions = create_pin_regions(params, 'heat pipe')
 
     # Creating heat pipe pin materials
     htpipe_materials = [materials_database[mat] for mat in params['Heat Pipe Materials']]
 
     # Append the moderator to the list of heat pipe materials
-    #htpipe_materials.append(materials['moderator'])
     htpipe_materials.append(materials_database[params['Moderator']])
     # creating the heat pipe pin universe
     htpipe_cells = create_cells(htpipe_pin_regions, htpipe_materials)
@@ -146,8 +111,6 @@ def create_assembly(params, fuel_pin_universe, htpipe_universe, materials_databa
     assembly_gap_12.region  = (-r_left | +r_right | +r_upper_right | +r_upper_left | -r_lower_right | -r_lower_left) & +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left 
 
     # Define the assembly gap filling and graphite cell filling
-    #assembly_gap_12.fill    = materials['moderator']
-    #graphite_cell.fill  = materials['moderator']
     assembly_gap_12.fill    = materials_database[params['Moderator']]
     graphite_cell.fill  = materials_database[params['Moderator']]
     # Define the graphite universe
@@ -199,7 +162,6 @@ def create_assembly(params, fuel_pin_universe, htpipe_universe, materials_databa
     grp_cc_cnt.region = +g_left & -g_right & -g_upper_right & -g_upper_left & +g_lower_right & +g_lower_left 
 
     # Define the graphite assembly filling
-    #grp_cc_cnt.fill = materials['moderator']
     grp_cc_cnt.fill = materials_database[params['Moderator']]
     # Define the graphite assembly universe
     graphite_assembly = openmc.Universe(cells=[grp_cc_cnt])
@@ -274,10 +236,8 @@ def create_hex_core_geometry(params, fuel_assembly, graphite_assembly, graphite_
     core_reg.fill = core_hex
 
     # Filling of hex core gap
-    #core_reg_out.fill = materials['gap']
-    core_reg_out.fill = materials_database[params['Gap']]
-    # Create hex core universe              
-    #hex_core_universe = openmc.Universe(cells=[core_reg, core_reg_out])
+    core_reg_out.fill = materials_database[params['Gap']]             
+
 
     return core_reg, core_reg_out   
 
@@ -357,12 +317,6 @@ def create_control_drums(params, materials_database):
     cr_refl.region =  (-cr_in | -cr_bot | +cr_top) & -cr_out 
     cr_gpp.region  =  +cr_out & -cr_gap 
     cr_ass.region  =  +cr_gap 
-
-    # Define the control drums filling
-    #cr_drum.fill            = materials['Control Drum Absorber']
-    #cr_refl.fill            = materials['Control Drum Reflector']
-    #cr_gpp.fill             = materials['gap']
-    #cr_ass.fill             = materials['reflector']
 
     cr_drum.fill            = materials_database[params['Control Drum Absorber']]
     cr_refl.fill            = materials_database[params['Control Drum Reflector']]
@@ -550,9 +504,9 @@ def build_openmc_model_HPMR(params):
     #find where the fuel is in the fuel pin
     fuel_index = params['Fuel Pin Materials'].index(params['Fuel'])
 
-    fissile_area = circle_area(params['Fuel Pin Radii'][fuel_index] )\
-        - circle_area(params['Fuel Pin Radii'][fuel_index - 1])
-    fuel.volume = fissile_area *params['Active Height'] * params['Fuel Pin Count']
+    fissile_area = np.pi * 1 **2
+    fuel.volume = fissile_area * round(params['Active Height'],0) * params['Fuel Pin Count']
+
    
     all_materials = fuel_materials +\
         htpipe_materials + [coolant, reflector, moderator, gap, control_drum_absorber, control_drum_reflector]
@@ -563,70 +517,30 @@ def build_openmc_model_HPMR(params):
    
     openmc.Materials.cross_sections = params['cross_sections_xml_location']
     materials.export_to_xml()
-   #find where the fuel is in the fuel pin                     
-   #fuel_index = params['Fuel Pin Materials'].index(params['Fuel'])
+         #=================================================================================================
+    #                                     tallies.xml File
+    #=================================================================================================
+    tallies_file = openmc.Tallies()
 
-    #fissile_area = circle_area(params['Fuel Pin Radii'][fuel_index] )\
-    #    - circle_area(params['Fuel Pin Radii'][fuel_index - 1])
+    group_edges = params[Energy Groups]  # Three energy groups
+    groups = openmc.mgxs.EnergyGroups(group_edges)
 
-    #fuel = materials['fuel']
-    #fuel.volume = fissile_area *params['Active Height'] * params['Fuel Pin Count']
+    mgxs_lib = openmc.mgxs.Library(core_geometry)
+    mgxs_lib.energy_groups = groups
+    mgxs_lib.legendre_order     = 1
+    mgxs_lib.mgxs_types = ['absorption', 'diffusion-coefficient', 'transport', 'scatter matrix', 'total', 'scatter']
+    mgxs_lib.domain_type = 'universe'
+    mgxs_lib.domains = [core]
+    mgxs_lib.build_library()
+    mgxs_lib.add_to_tallies_file(tallies_file, merge=False)
+    tallies_file.export_to_xml()
 
-    #all_materials = fuel_materials + \
-    #             htpipe_materials + \
-    #             [materials['reflector'], 
-    #              materials['moderator'], 
-    #              materials['gap'], 
-    #              materials['Control Drum Absorber'], 
-    #              materials['Control Drum Reflector']]
-
-    #materials = openmc.Materials(list(set(all_materials)))
-
-    #openmc.Materials.cross_sections = params['cross_sections_xml_location']
-    #materials.export_to_xml()
-
-    # Step 1: Create materials from the parameters
-    #materials = create_materials(params)
-
-    # Step 2: Find the index of the fuel material
-    #fuel_index = params['Fuel Pin Materials'].index(params['Fuel'])
-
-    # Step 3: Calculate the fissile area
-    #fissile_area = circle_area(params['Fuel Pin Radii'][fuel_index]) \
-    #           - circle_area(params['Fuel Pin Radii'][fuel_index - 1])
-
-    # Step 4: Assign the volume to the fuel material
-    #fuel_material = materials['fuel']
-    #fuel_material.volume = fissile_area * params['Active Height'] * params['Fuel Pin Count']
-
-    # Prepare materials for export
-    #all_materials = [
-    #fuel_material,
-    #materials['coolant'],
-    #materials['reflector'],
-    #materials['moderator'],
-    #materials['gap'],
-    #materials['Control Drum Absorber'],
-    #materials['Control Drum Reflector']
-   # ]
-
-    # Create an OpenMC Materials object
-    #openmc_materials = openmc.Materials(all_materials)
-
-    # Set cross sections
-    #openmc_materials.cross_sections = params['cross_sections_xml_location']
-
-    # Export materials to XML
-    #openmc_materials.export_to_xml()
 
     # # **************************************************************************************************************************
     # #                                                Sec. 1.5 : SIMULATION
     # # **************************************************************************************************************************
-        
-    point = openmc.stats.Point((0, 0, 0))
-    source = openmc.Source(space=point)
+  
     settings = openmc.Settings()
-    settings.source = source
     settings.batches = 100
     settings.inactive = 20
     settings.particles = 1000

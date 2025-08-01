@@ -107,6 +107,7 @@ def collect_materials_data(params):
         U238_frac = (1 - params['Enrichment']) * U_total
         homog_TRISO = openmc.Material(name='homog_TRISO')
         homog_TRISO.set_density('atom/b-cm', density)
+        homog_TRISO.temperature = params['Common Temperature']
         homog_TRISO.add_nuclide('U235', U235_frac, 'ao')
         homog_TRISO.add_nuclide('U238', U238_frac, 'ao')
         homog_TRISO.add_nuclide('O16', 2.59371545E-03, 'ao')
@@ -159,6 +160,7 @@ def collect_materials_data(params):
 
     Helium = openmc.Material(name='Helium')
     Helium.set_density('g/cm3', 0.000166)
+    Helium.temperature = params['Common Temperature']
     Helium.add_element('He', 1.0)
     
     materials.extend([NaK, Helium])
@@ -172,7 +174,7 @@ def collect_materials_data(params):
     Be.add_s_alpha_beta("c_Be")
     Be.set_density("g/cm3", 1.84)
     Be.temperature =  params['Common Temperature']
-
+    Be.add_s_alpha_beta('c_Be')
     BeO = openmc.Material(name="BeO", temperature= params['Common Temperature'])
     BeO.set_density("g/cm3", 3.01)
     BeO.add_element("beryllium", 1.0)
@@ -271,6 +273,7 @@ def collect_materials_data(params):
     # homogenized heat pipe
     homog_hp = openmc.Material(name='homog_hp')
     homog_hp.set_density('atom/b-cm', 2.74917E-02)
+    homog_hp.temperature = params['Common Temperature']
     homog_hp.add_nuclide('Si28',  1.49701E-02, 'ao')
     homog_hp.add_nuclide('Si29',  7.60143E-04, 'ao')
     homog_hp.add_nuclide('Si30',  5.01090E-04, 'ao')
@@ -303,13 +306,14 @@ def collect_materials_data(params):
     # Monolith
     graphite2 = openmc.Material(name='monolith')
     graphite2.set_density('g/cm3', 1.63)
+    graphite2.temperature = params['Common Temperature']
     graphite2.add_nuclide('C12' , 0.9893, 'ao')
     graphite2.add_nuclide('C13' , 0.0107, 'ao')
     graphite2.add_s_alpha_beta('c_Graphite')
     materials.append(graphite2)
     materials_database.update({'graphite2': graphite2})
     
-    #materials.export_to_xml()
+    
     
     return materials_database ##
 
