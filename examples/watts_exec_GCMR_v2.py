@@ -210,12 +210,15 @@ update_params({
 })
 
 # A721: Coolant Refill
-## 20 Tanks total are on-site. 
-## Assuming ~50% are used for fresh coolant, 50% are used for dirty
-## Calculated based on 10 tanks w/ 291 cuft ea @ 2400psi, 30°C
+## 10 Tanks total are on-site. 
+## Calculated based on 1 tanks w/ 291 cuft ea @ 2400psi, 30°C
 ## Density=24.417 kg/m3, Volume=8.2402 m3 (standard tank size?)
+## Calculated based on 9 tanks w/ 291 cuft ea @ 1015bar, 30°C
+## Density=11.114 kg/m3, Volume=8.2402 m3 (standard tank size?)
 ## Refill Frequency: 1 /yr if purified, 6 /yr if not purified
-params['Onsite Coolant Inventory'] = 10 * 24.417 * 8.2402 # kg
+## Assumes replacement of ~25% of the total inventory (280kg / rx) based on consultation
+params['Onsite Coolant Inventory'] = (1*24.417 + 9*11.114) * 8.2402 # kg
+params['Replacement Coolant Inventory'] = params['Onsite Coolant Inventory'] * 0.25
 params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 6
 
 # A75: Annualized Capital Expenditures
