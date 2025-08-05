@@ -5,7 +5,7 @@ import watts
 import traceback # tracing errors
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
+from core_design.correction_factor import corrected_keff_2d
 
 
 
@@ -164,28 +164,34 @@ def openmc_depletion(params, lattice_geometry, settings):
     operator = openmc.deplete.CoupledOperator(openmc.Model(geometry=lattice_geometry, 
             settings=settings),
             chain_file= params['simplified_chain_thermal_xml'])
-    burnup_steps_list_MWd_per_Kg = params['Burnup Steps']
     
-    #MWd/kg (MW-day of energy deposited per kilogram of initial heavy metal)
-    burnup_step = np.array(burnup_steps_list_MWd_per_Kg)     #np.array([0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0, 140.0]) 
-    burnup = np.diff (burnup_step, prepend =0.0 )
+    if params['Burnup Steps']:
+        burnup_steps_list_MWd_per_Kg = params['Burnup Steps']
     
-    # Deplete using a first-order predictor algorithm.
-    integrator = openmc.deplete.PredictorIntegrator(operator, burnup,
+        #MWd/kg (MW-day of energy deposited per kilogram of initial heavy metal)
+        burnup_step = np.array(burnup_steps_list_MWd_per_Kg)     #np.array([0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0, 140.0]) 
+        burnup = np.diff (burnup_step, prepend =0.0 )
+        
+        # Deplete using a first-order predictor algorithm.
+        integrator = openmc.deplete.PredictorIntegrator(operator, burnup,
                                                     1000000 * params['Power MWt'] , timestep_units='MWd/kg')
+    elif params['Time Steps']:
+        time_steps_list = params['Time Steps'] 
+        power_list = params['Power']
+
+        integrator = openmc.deplete.PredictorIntegrator(operator, time_steps_list, power_list)
+
     print("Start Depletion")
     integrator.integrate()
     print("End Depletion")
-    results = openmc.deplete.Results("./depletion_results.h5")
-    time, k = results.get_keff()
 
-    time /= (24 * 60 * 60)  # convert back to days from second
-    for j, ki in enumerate(k):
-        if ki[0] < 1.0:
-            i = j-1
-            break
-    fuel_lifetime_days = (time[i])   
-    orig_material = results.export_to_materials(0)
+    depletion_2d_results_file = openmc.deplete.Results("./depletion_results.h5")  # Example file path
+ 
+    fuel_lifetime_days = corrected_keff_2d(depletion_2d_results_file, params['Total Height'])
+    params['Fuel Lifetime Days'] = fuel_lifetime_days
+    print("Fuel Cycle Length", fuel_lifetime_days)
+
+    orig_material = depletion_2d_results_file.export_to_materials(0)
     mass_U235 = orig_material[0].get_mass('U235')
     mass_U238 = orig_material[0].get_mass('U238')
     return fuel_lifetime_days, mass_U235, mass_U238

@@ -394,9 +394,28 @@ def build_openmc_model_GCMR(params):
    
     openmc.Materials.cross_sections = params['cross_sections_xml_location']
     materials.export_to_xml()
-    full_core_geometry = openmc.Geometry([active_core_cell])
-    full_core_geometry.export_to_xml()
+    core = openmc.Universe(cells=[active_core_cell])
+    core_geometry = openmc.Geometry(core)
+    core_geometry.export_to_xml()
+    
+    # # **************************************************************************************************************************
+    # #                                                Sec. 1.7 : TALLIES
+    # # **************************************************************************************************************************
 
+    tallies_file = openmc.Tallies()
+
+    group_edges = params['Energy Groups'] # 11 energy groups from HPMR report table no.5 in ev
+    groups = openmc.mgxs.EnergyGroups(group_edges)
+
+    mgxs_lib = openmc.mgxs.Library(core_geometry)
+    mgxs_lib.energy_groups = groups
+    mgxs_lib.legendre_order     = 1
+    mgxs_lib.mgxs_types = ['absorption', 'diffusion-coefficient', 'transport', 'scatter matrix', 'total', 'scatter']
+    mgxs_lib.domain_type = 'universe'
+    mgxs_lib.domains = [core]
+    mgxs_lib.build_library()
+    mgxs_lib.add_to_tallies_file(tallies_file, merge=False)
+    tallies_file.export_to_xml()
     # **************************************************************************************************************************
     #                                                Sec. 7 : SIMULATION
     # **************************************************************************************************************************
