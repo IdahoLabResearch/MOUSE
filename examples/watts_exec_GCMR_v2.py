@@ -2,6 +2,8 @@
 This script performs a bottom-up cost estimate for a Gas Cooled Microreactor (GCMR).
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
+
+This input models an aspirational 2nd Generation Microreactor (e.g. low power testing on Factory).
 """
 
 import numpy as np
@@ -49,7 +51,7 @@ update_params({
     'Moderator': 'Graphite', # The moderator is outside this compact fuel region 
     'Moderator Booster': 'ZrH',
     'Coolant': 'Helium',
-    'Common Temperature': 850,  # Kelvins
+    'Common Temperature': 750,  # Kelvins
     'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
     'Control Drum Reflector': 'Graphite',  # The reflector material in the control drums
     'HX Material': 'SS316', 
@@ -199,21 +201,24 @@ update_params({
     'Operation Mode': "Autonomous", # "Non-Autonomous" or "Autonomous"
     'Number of Operators': 2,
     'Levelization Period': 60,  # years
-    'Refueling Period': 7,
+    'Refueling Period': 14+14+9.5, # Cooldown + Tranportation (back/forth) + Refuel
     'Emergency Shutdowns Per Year': 0.2,
-    'Startup Duration after Refueling': 2,
-    'Startup Duration after Emergency Shutdown': 14,
+    'Startup Duration after Refueling': 5, # Connection / Rise-to-Power Test
+    'Startup Duration after Emergency Shutdown': 14+14+9.5+4,
     'Reactors Monitored Per Operator': 10,
     'Security Staff Per Shift': 1
 })
 
 # A721: Coolant Refill
-## 20 Tanks total are on-site. 
-## Assuming ~50% are used for fresh coolant, 50% are used for dirty
-## Calculated based on 10 tanks w/ 291 cuft ea @ 2400psi, 30°C
+## 10 Tanks total are on-site. 
+## Calculated based on 1 tanks w/ 291 cuft ea @ 2400psi, 30°C
 ## Density=24.417 kg/m3, Volume=8.2402 m3 (standard tank size?)
+## Calculated based on 9 tanks w/ 291 cuft ea @ 1015bar, 30°C
+## Density=11.114 kg/m3, Volume=8.2402 m3 (standard tank size?)
 ## Refill Frequency: 1 /yr if purified, 6 /yr if not purified
-params['Onsite Coolant Inventory'] = 10 * 24.417 * 8.2402 # kg
+## Assumes replacement of ~25% of the total inventory (280kg / rx) based on consultation
+params['Onsite Coolant Inventory'] = (1*24.417 + 9*11.114) * 8.2402 # kg
+params['Replacement Coolant Inventory'] = params['Onsite Coolant Inventory'] * 0.25
 params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 6
 
 # A75: Annualized Capital Expenditures
@@ -225,8 +230,8 @@ params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purificati
 ## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
-params['A75: Vessel Replacement Period (cycles)']        = np.floor(15/total_refueling_period_yr)
-params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(15/total_refueling_period_yr)
+params['A75: Vessel Replacement Period (cycles)']        = np.floor(16/total_refueling_period_yr)
+params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(16/total_refueling_period_yr)
 params['A75: Reflector Replacement Period (cycles)']     = 1
 params['A75: Drum Replacement Period (cycles)']          = 1
 params['A75: Integrated HX Replacement Period (cycles)'] = 1
@@ -304,8 +309,8 @@ update_params({
 # **************************************************************************************************************************
 #                                           Sec. 13: Post Processing
 # **************************************************************************************************************************
-params['Number of Samples'] = 100 # Accounting for cost uncertainties
+params['Number of Samples'] = 1 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
-estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "examples/output_GCMR_v2.xlsx")
+estimate = detailed_bottom_up_cost_estimate('./cost/Cost_Database.xlsx', params, "examples/output_GCMR_v2.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')
