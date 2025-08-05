@@ -424,7 +424,7 @@ def create_core_geometry(core_reg, core_reg_out, cr_01, cr_02, cr_03, cr_04, cr_
    core = openmc.Universe(cells=[core_reg, core_reg_out, cr_01, cr_02, cr_03, cr_04, cr_05, cr_06, cr_07, cr_08, cr_09, cr_10, cr_11, cr_12])
    core_geometry = openmc.Geometry(core)
 
-   return core_geometry
+   return core_geometry , core 
 
 
 # **************************************************************************************************************************
@@ -478,7 +478,7 @@ def build_openmc_model_HPMR(params):
     cr_01, cr_02, cr_03, cr_04, cr_05, cr_06, cr_07, cr_08, cr_09, cr_10, cr_11, cr_12 = create_control_drums(params, materials_database)
 
     # Create the whole core geometry
-    core_geometry = create_core_geometry(core_reg, core_reg_out, cr_01, cr_02, cr_03, cr_04, cr_05, cr_06, cr_07, cr_08, cr_09, cr_10, cr_11, cr_12)
+    core_geometry, core = create_core_geometry(core_reg, core_reg_out, cr_01, cr_02, cr_03, cr_04, cr_05, cr_06, cr_07, cr_08, cr_09, cr_10, cr_11, cr_12)
 
     # Export the geometry to .xml file
     core_geometry.export_to_xml()
@@ -522,7 +522,7 @@ def build_openmc_model_HPMR(params):
     #=================================================================================================
     tallies_file = openmc.Tallies()
 
-    group_edges = params[Energy Groups]  # Three energy groups
+    group_edges = params['Energy Groups']  # Three energy groups
     groups = openmc.mgxs.EnergyGroups(group_edges)
 
     mgxs_lib = openmc.mgxs.Library(core_geometry)
