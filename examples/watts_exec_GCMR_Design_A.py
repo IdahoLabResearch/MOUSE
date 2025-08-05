@@ -73,10 +73,10 @@ update_params({
       'Core Rings' : 5,
 })
 params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
-params['Reflector Thickness'] = 27.393 # cm
-params['Axial Reflector Thickness'] = 40 # cm. Current CAD model only hosts a top axial refl
+params['Reflector Thickness'] = 27.393 # cm # radial reflector
+params['Axial Reflector Thickness'] = params['Reflector Thickness'] # cm
 params['Core Radius'] = params['Assembly FTF']*params['Core Rings'] +  params['Reflector Thickness']
-params['Active Height'] = 250 #2 * params['Core Radius']
+params['Active Height'] = 250 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
@@ -101,7 +101,6 @@ update_params({
     })
 
 params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency'] 
-params['Power kWe'] = params['Power MWe'] * 1e3 # kWe
 params['Heat Flux'] =  calculate_heat_flux_TRISO(params) # MW/m^2
 # **************************************************************************************************************************
 #                                           Sec. 5: Running OpenMC
@@ -135,7 +134,7 @@ params.update({
     'BoP Count': 2, # Number of BoP present in plant
     'BoP per loop load fraction': 0.5, # based on assuming that each BoP Handles the total load evenly (1/2)
     })
-params['BoP Power kWe'] = params['Power kWe'] * params['BoP per loop load fraction']
+params['BoP Power kWe'] = 1000 * params['Power MWe'] * params['BoP per loop load fraction']
 
 # Integrated Heat Transfer Vessel
 # Assumed no Integrated Heat Transfer Vessel in this design
@@ -209,22 +208,19 @@ update_params({
 ## Density=24.417 kg/m3, Volume=8.2402 m3 (standard tank size?)
 ## Refill Frequency: 1 /yr if purified, 6 /yr if not purified
 params['Onsite Coolant Inventory'] = 10 * 24.417 * 8.2402 # kg
+params['Replacement Coolant Inventory'] = params['Onsite Coolant Inventory'] / 4
 params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 6
 
 # A75: Annualized Capital Expenditures
 ## Input for replacement of large capital equipments. Replacements are made during refueling cycles
 ## Components to be replaced:
-## 1. Vessel: every ~10 years 
-## 2. Internals (moderator, reflector, drums, HX, circulators): every refueling cycle
 ## If the period is 0, it is assumed to never be replaced throughout Levelization period
-## For the Vessel, the replacement is performed to the closest int*refueling_period_yr to 10 yrs.
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
-params['A75: Vessel Replacement Period (cycles)']        = np.floor(15/total_refueling_period_yr)
-params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(15/total_refueling_period_yr)
-params['A75: Reflector Replacement Period (cycles)']     = 1
-params['A75: Drum Replacement Period (cycles)']          = 1
-params['A75: Integrated HX Replacement Period (cycles)'] = 1
+params['A75: Vessel Replacement Period (cycles)']        = np.floor(10/total_refueling_period_yr) # change each 10 years similar to the ATR
+params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(10/total_refueling_period_yr)
+params['A75: Reflector Replacement Period (cycles)']     = np.floor(10/total_refueling_period_yr)
+params['A75: Drum Replacement Period (cycles)']          = np.floor(10/total_refueling_period_yr)
 params['Mainenance to Direct Cost Ratio']                = 0.015
 
 # A78: Annualized Decommisioning Cost
@@ -238,9 +234,7 @@ update_params({
     # Ref: McDowell, B., and D. Goodman. "Advanced Nuclear Reactor Plant Parameter Envelope and
     #Guidance." National Reactor Innovation Center (NRIC), NRIC-21-ENG-0001 (2021). 
     'Land Area': 18,  # acres
-    
     'Escalation Year': 2024,
-    
     'Excavation Volume': 412.605,  # m^3
     'Reactor Building Slab Roof Volume': (9750*6502.4*1500)/1e9,  # m^3
     'Reactor Building Basement Volume': (9750*6502.4*1500)/1e9,  # m^3
@@ -289,7 +283,7 @@ update_params({
     'Radwaste Building Basement Volume': 0,  # m^3
     'Radwaste Building Exterior Walls Volume': 0,  # m^3,
     
-    'Interest Rate': 0.085,
+    'Interest Rate': 0.07,
     'Construction Duration': 12,  # months
     'Debt To Equity Ratio': 0.5,
     'Annual Return': 0.0475,  # Annual return on decommissioning costs
