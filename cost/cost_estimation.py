@@ -84,21 +84,11 @@ def transform_dataframe(df):
 
     # Select all numerical columns
     numerical_columns = df.select_dtypes(include=[np.number]).columns
+    # Convert all values in the numerical columns to integers
+    df[numerical_columns] = df[numerical_columns].astype(int)
 
-    for column_name in numerical_columns:
-    
-        # Dividing all the elements in 'column_name' by a million, except the last two rows
-        df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)] / 1000000
-        
-        # Rounding to one non-zero digit after the decimal point
-        df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)].apply(lambda x: round(x, -int(np.floor(np.log10(abs(x)))) + 1) if x != 0 else 0)
-        
-        # Appending 'M' to the modified values (millions)
-        df.iloc[:-2, df.columns.get_loc(column_name)] = df.iloc[:-2, df.columns.get_loc(column_name)].astype(str) + ' M'
-        
-        # Converting the last two rows to integers
-        df.iloc[-2:, df.columns.get_loc(column_name)] = df.iloc[-2:, df.columns.get_loc(column_name)].astype(int)
-    
+    # Remove rows where all values in numerical columns are zero
+    df = df.loc[~(df[numerical_columns] == 0).all(axis=1)]
     return df
 
 
