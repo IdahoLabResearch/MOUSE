@@ -63,7 +63,7 @@ update_params({
     'Fuel Pin Materials': ['UN', 'buffer_graphite', 'PyC', 'SiC', 'PyC'],
     'Fuel Pin Radii': [0.025, 0.035, 0.039, 0.0425, 0.047],  # cm
     'Compact Fuel Radius': 0.6225,  # cm # The radius of the area that is occupied by the TRISO particles (fuel compact/ fuel element)
-    'Packing Factor': 0.3,
+    'Packing Fraction': 0.3,
     
     # Coolant channel and booster dimensions
     'Coolant Channel Radius': 0.35,  # cm

@@ -73,7 +73,7 @@ def calculate_moderator_mass_GCMR(params):
     # area occuplied by the fuel in one hexagonal lattice (assembly)
     num_fuel_regions_per_hex = calculate_number_of_rings( params['Assembly Rings'] - 1 )
 
-    area_fuel_per_hex = params['Packing Factor'] * circle_area(params['Compact Fuel Radius']) * num_fuel_regions_per_hex
+    area_fuel_per_hex = params['Packing Fraction'] * circle_area(params['Compact Fuel Radius']) * num_fuel_regions_per_hex
     area_coolant_per_hex = 2 * num_fuel_regions_per_hex * circle_area(params['Coolant Channel Radius'])
     area_moderator_booster_per_hex =  0.5 * 6 * (params['Assembly Rings'] - 1) * circle_area(params['Moderator Booster Radius'] )
 

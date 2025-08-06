@@ -49,7 +49,7 @@ def build_openmc_model_GCMR(params):
 
         compact_region = -compact_surf & -active_core_maxz & +active_core_minz
 
-        packed_shells = openmc.model.pack_spheres(radius= params['Fuel Pin Radii'][-1], region=compact_region, pf= params['Packing Factor'])
+        packed_shells = openmc.model.pack_spheres(radius= params['Fuel Pin Radii'][-1], region=compact_region, pf= params['Packing Fraction'])
 
         compact_triso_particles = [openmc.model.TRISO(params['Fuel Pin Radii'][-1], fill=triso_universe, center=c) for c in packed_shells]
         compact_triso_particles_number = len(compact_triso_particles)
@@ -449,15 +449,3 @@ def build_openmc_model_GCMR(params):
     settings_file.source = src
 
     settings_file.export_to_xml()
-
-
-
-
-
-
-
-
-
-
-
-
