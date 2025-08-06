@@ -137,5 +137,5 @@ def corrected_keff_2d(depletion_2d_results_file, total_height):
     else:
         print("k = 1.0 not reached within the given time steps.")
 
-return round_cycle_length         
+    return round_cycle_length         
 

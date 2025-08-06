@@ -32,7 +32,7 @@ def update_params(updates):
 #                                                Sec. 0: Settings
 # **************************************************************************************************************************
 update_params({
-    'plotting': "Y",  # "Y" or "N": Yes or No
+    'plotting': "N",  # "Y" or "N": Yes or No
     'cross_sections_xml_location': '/projects/MRP_MOUSE/openmc_data/endfb-viii.0-hdf5/cross_sections.xml', # on INL HPC
     'simplified_chain_thermal_xml': '/projects/MRP_MOUSE/openmc_data/simplified_thermal_chain11.xml'       # on INL HPC
 })
@@ -88,7 +88,6 @@ update_params({
     'Drum Absorber Thickness': 1, # cm
     'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
     })
-
 calculate_drums_volumes_and_masses(params)
 calculate_reflector_mass_GCMR(params)          
 calculate_moderator_mass_GCMR(params) 
@@ -154,7 +153,7 @@ GCMR_integrated_heat_transfer_vessel(params)
 
 
 # # **************************************************************************************************************************
-# #                                           Sec. 8 : Shielding
+# #                                           Sec. 7 : Shielding
 # # ************************************************************************************************************************** 
 update_params({
     'In Vessel Shield Thickness': 0,  # cm (no shield in vessel for GCMR)
@@ -167,7 +166,7 @@ update_params({
 params['In Vessel Shield Outer Radius'] =  params['Core Radius'] + params['In Vessel Shield Thickness']
 
 # **************************************************************************************************************************
-#                                           Sec. 9 : Vessels Calculations
+#                                           Sec. 8 : Vessels Calculations
 # ************************************************************************************************************************** 
 update_params({
     # Assume to be the Core Barrel
@@ -195,7 +194,7 @@ vessels_specs(params)  # calculate the volumes and masses of the vessels
 calculate_shielding_masses(params)  # calculate the masses of the shieldings
 
 # # **************************************************************************************************************************
-# #                                           Sec. 10 : Operation
+# #                                           Sec. 9 : Operation
 # # **************************************************************************************************************************
 update_params({
     'Operation Mode': "Autonomous", # "Non-Autonomous" or "Autonomous"
@@ -241,7 +240,7 @@ params['Mainenance to Direct Cost Ratio']                = 0.015
 params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
 
 # **************************************************************************************************************************
-#                                           Sec. 11 : Economic Parameters
+#                                           Sec. 10 : Economic Parameters
 # **************************************************************************************************************************
 update_params({
     # A conservative estimate for the land area 
@@ -307,10 +306,10 @@ update_params({
 })
 
 # **************************************************************************************************************************
-#                                           Sec. 13: Post Processing
+#                                           Sec. 11: Post Processing
 # **************************************************************************************************************************
 params['Number of Samples'] = 1 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
-estimate = detailed_bottom_up_cost_estimate('./cost/Cost_Database.xlsx', params, "examples/output_GCMR_v2.xlsx")
+estimate = detailed_bottom_up_cost_estimate('./cost/Cost_Database.xlsx', params, "examples/output_GCMR_B.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')

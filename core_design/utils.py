@@ -188,10 +188,7 @@ def openmc_depletion(params, lattice_geometry, settings):
 
     depletion_2d_results_file = openmc.deplete.Results("./depletion_results.h5")  # Example file path
  
-    fuel_lifetime_days = corrected_keff_2d(depletion_2d_results_file, params['Total Height'])
-    params['Fuel Lifetime Days'] = fuel_lifetime_days
-    print("Fuel Cycle Length", fuel_lifetime_days)
-
+    fuel_lifetime_days = corrected_keff_2d(depletion_2d_results_file, params['Active Height'] + 2 * params['Axial Reflector Thickness'])
     orig_material = depletion_2d_results_file.export_to_materials(0)
     mass_U235 = orig_material[0].get_mass('U235')
     mass_U238 = orig_material[0].get_mass('U238')
