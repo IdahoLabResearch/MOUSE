@@ -61,7 +61,7 @@ update_params({
 # **************************************************************************************************************************  
 
 update_params({
-    'Fuel Pin Materials': ['Zr', None, 'TRIGA_fuel', None, 'SS304'],
+    'Fuel Pin Materials': ['Zr', None, params['Fuel'], None, 'SS304'],
     'Fuel Pin Radii': [0.28575, 0.3175, 1.5113, 1.5367, 1.5875],  # cm
     'Moderator Pin Materials': ['ZrH', 'SS304'],  
     'Moderator Pin Inner Radius': 1.5367,  # cm
