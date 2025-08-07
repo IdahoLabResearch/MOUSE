@@ -6,17 +6,28 @@ def remove_irrelevant_account(df, params):
     
     # Iterate over the rows and print the "Optional Variable" if it's not NaN
     for index, row in df.iterrows():
+        # Check for 'Optional Variable'
         if not pd.isna(row['Optional Variable']):
             if row['Optional Variable'] in params and params[row['Optional Variable']] == row['Optional Value']:
-                    print("\n")
-                    print(f"For the cost of the Account {row['Account']}: {row['Account Name']}, the {row['Optional Variable']} is selected to be {row['Optional Value']}")
+                print("\n")
+                print(f"For the cost of the Account {row['Account']}: {row['Account Name']}, the {row['Optional Variable']} is selected to be {row['Optional Value']}")
             else:
-                indices_to_drop.append(index)   
+                indices_to_drop.append(index)
+                continue  # Skip further checks for this row
+        
+        # Check for 'Sec Optional Variable'
+        if not pd.isna(row['Sec Optional Variable']):
+            if row['Sec Optional Variable'] in params and params[row['Sec Optional Variable']] == row['Sec Optional Value']:
+                print("\n")
+                print(f"For the cost of the Account {row['Account']}: {row['Account Name']}, the {row['Sec Optional Variable']} is selected to be {row['Sec Optional Value']}")
+            else:
+                indices_to_drop.append(index)
+                continue  # Skip further checks for this row
     
     # Drop the rows with collected indices (irrelevant accounts)
     df.drop(indices_to_drop, inplace=True)
 
-    return df 
+    return df
 
 
 

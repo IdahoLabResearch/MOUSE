@@ -48,9 +48,10 @@ update_params({
     "H_Zr_ratio": 1.6,  # Proportion of hydrogen to zirconium atoms
     'U_met_wo': 0.3,  # Weight ratio of Uranium to total fuel weight (less than 1)
     'Coolant': 'NaK',
-    'Reflector': 'BeO',
+    'Reflector': 'Graphite',
+    'Moderator': 'ZrH',
     'Control Drum Absorber': 'B4C_enriched',
-    'Control Drum Reflector': 'BeO',
+    'Control Drum Reflector': 'Graphite',
     'Common Temperature': 600,  # Kelvins
     'HX Material': 'SS316'
 })
@@ -62,32 +63,31 @@ update_params({
 update_params({
     'Fuel Pin Materials': ['Zr', None, 'TRIGA_fuel', None, 'SS304'],
     'Fuel Pin Radii': [0.28575, 0.3175, 1.5113, 1.5367, 1.5875],  # cm
-    'Moderator Pin Materials': ['ZrH', 'SS304'],
-    'Moderator': 'ZrH',  # params['Moderator Pin Materials'][0]
+    'Moderator Pin Materials': ['ZrH', 'SS304'],  
     'Moderator Pin Inner Radius': 1.5367,  # cm
     'Moderator Pin Radii': [1.5367, 1.5875],  # [params['Moderator Pin Inner Radius'], params['Fuel Pin Radii'][-1]]
     "Pin Gap Distance": 0.1,  # cm
     'Pins Arrangement': LTMR_pins_arrangement,
-    'Number of Rings per Assembly': 12,
+    'Number of Rings per Assembly': 12, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
     'Reflector Thickness': 14,  # cm
-    'Axial Reflector Thickness': 0 #cm
 })
 
 params['Lattice Radius'] = calculate_lattice_radius(params)
-params['Active Height']  = 2 * params['Lattice Radius']
+params['Active Height']  =   78.4  # Or it is 2 * params['Lattice Radius']
+params['Axial Reflector Thickness'] = params['Reflector Thickness'] # cm
 params['Fuel Pin Count'] = calculate_pins_in_assembly(params, "FUEL")
 params['Moderator Pin Count'] =  calculate_pins_in_assembly(params, "MODERATOR")
 params['Moderator Mass'] = calculate_moderator_mass(params)
-params['Core Radius'] = params['Lattice Radius'] + 14  # params['Reflector Thickness']
+params['Core Radius'] = params['Lattice Radius'] + params['Reflector Thickness']
 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 
 update_params({
-    'Drum Radius': 0.23 * params['Lattice Radius'],  # cm
+    'Drum Radius': 9.016, # or it is 0.23 * params['Lattice Radius'],  # cm
     'Drum Absorber Thickness': 1,  # cm
-    'Drum Height': params['Active Height']
+    'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness']
 })
 
 calculate_drums_volumes_and_masses(params)
@@ -160,11 +160,11 @@ params['In Vessel Shield Outer Radius'] =  params['Core Radius'] + params['In Ve
 
 update_params({
     'Vessel Radius': params['Core Radius'] +  params['In Vessel Shield Thickness'],
-    'Vessel Thickness': 2,  # cm
-    'Vessel Lower Plenum Height': 30,  # cm
-    'Vessel Upper Plenum Height': 60,  # cm
-    'Vessel Upper Gas Gap': 10,  # cm
-    'Vessel Bottom Depth': 35,  # cm
+    'Vessel Thickness': 1,  # cm
+    'Vessel Lower Plenum Height': 42.848 - 40,  # cm, based on Reflecting Barrel~RPV Liner (-Reflector Thickness, which is currently missing in CAD),  # cm
+    'Vessel Upper Plenum Height': 47.152,  # cm
+    'Vessel Upper Gas Gap': 0, 
+    'Vessel Bottom Depth': 32.129,
     'Vessel Material': 'stainless_steel',
     'Gap Between Vessel And Guard Vessel': 2,  # cm
     'Guard Vessel Thickness': 0.5,  # cm
@@ -196,68 +196,77 @@ update_params({
     'Security Staff Per Shift': 1
 })
 ## Calculated based on 1 tanks
-## Density=855  kg/m3, Volume=8.2402 m3 (standard tank size?)
+## Density of NaK=855  kg/m3, Volume=8.2402 m3 (standard tank size)
 params['Onsite Coolant Inventory'] = 1 * 855 * 8.2402 # kg
-params['Annual Coolant Supply Frequency'] = 0.1 # LTMR should not require frequent refilling
+params['Replacement Coolant Inventory'] = 0 # assume that NaK does not need to be replaced.
+# params['Annual Coolant Supply Frequency']  # LTMR should not require frequent refilling
 
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
-params['A75: Vessel Replacement Period (cycles)']        = np.floor(30/total_refueling_period_yr)
-params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(15/total_refueling_period_yr)
-params['A75: Reflector Replacement Period (cycles)']     = 2
-params['A75: Drum Replacement Period (cycles)']          = 2
+params['A75: Vessel Replacement Period (cycles)']        = np.floor(10/total_refueling_period_yr) # change each 10 years similar to the ATR
+params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(10/total_refueling_period_yr)
+params['A75: Reflector Replacement Period (cycles)']     = np.floor(10/total_refueling_period_yr)
+params['A75: Drum Replacement Period (cycles)']          = np.floor(10/total_refueling_period_yr)
+params['Mainenance to Direct Cost Ratio']                = 0.015
+# A78: Annualized Decommisioning Cost
+params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
 # **************************************************************************************************************************
 #                                           Sec. 12: Buildings & Economic Parameters
 # **************************************************************************************************************************
 
 update_params({
     'Land Area': 18,  # acres
-    'Escalation Year': 2023,
-    
-    'Excavation Volume': 412.605,  # m^3
-    'Reactor Building Slab Roof Volume': 87.12,  # m^3
-    'Reactor Building Basement Volume': 87.12,  # m^3
-    'Reactor Building Exterior Walls Volume': 228.8,  # m^3
+    'Escalation Year': 2024,
 
+    'Excavation Volume': 412.605,  # m^3
+    'Reactor Building Slab Roof Volume': (9750*6502.4*1500)/1e9,  # m^3
+    'Reactor Building Basement Volume': (9750*6502.4*1500)/1e9,  # m^3
+    'Reactor Building Exterior Walls Volume': ((2*9750*3500*1500)+(3502.4*3500*(1500+750)))/1e9,  # m^3
+    'Reactor Building Superstructure Area': ((2*3500*3500)+(2*7500*3500))/1e6, # m^2
+    
+    # Connected to the Reactor Building (contains steel liner)
     'Integrated Heat Exchanger Building Slab Roof Volume': 0,  # m^3
     'Integrated Heat Exchanger Building Basement Volume': 0,  # m^3
     'Integrated Heat Exchanger Building Exterior Walls Volume': 0,  # m^3
     'Integrated Heat Exchanger Building Superstructure Area': 0, # m^2
     
-        # Manipulator Building
-    'Manipulator Building Slab Roof Volume':0, # m^3
-    'Manipulator Building Basement Volume': 0, # m^3
-    'Manipulator Building Exterior Walls Volume': 0, # m^3
+    # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+    'Turbine Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Basement Volume': (12192*2438*200)/1e9,  # m^3
+    'Turbine Building Exterior Walls Volume': ((12192*2496*200)+(2038*2496*200))*2/1e9,  # m^3
+    
+    # Assumed to be High 40' CONEX Container with 20 cm wall thickness (including conex wall)
+    'Control Building Slab Roof Volume': (12192*2438*200)/1e9,  # m^3
+    'Control Building Basement Volume': (12192*2438*200)/1e9,  # m^3
+    'Control Building Exterior Walls Volume': ((12192*2496*200)+(2038*2496*200))*2/1e9,  # m^3
+    
+    # Manipulator Building
+    'Manipulator Building Slab Roof Volume': (4876.8*2438.4*400)/1e9, # m^3
+    'Manipulator Building Basement Volume': (4876.8*2438.4*1500)/1e9, # m^3
+    'Manipulator Building Exterior Walls Volume': ((4876.8*4445*400)+(2038.4*4445*400*2))/1e9, # m^3
 
-    'Turbine Building Slab Roof Volume': 132,  # m^3
-    'Turbine Building Basement Volume': 132,  # m^3
-    'Turbine Building Exterior Walls Volume': 192.64,  # m^3
+    'Refueling Building Slab Roof Volume': 0,  # m^3
+    'Refueling Building Basement Volume': 0,  # m^3
+    'Refueling Building Exterior Walls Volume': 0,  # m^3
     
-    'Control Building Slab Roof Volume': 8.1,  # m^3
-    'Control Building Basement Volume': 27,  # m^3
-    'Control Building Exterior Walls Volume': 19.44,  # m^3
+    'Spent Fuel Building Slab Roof Volume': 0,  # m^3
+    'Spent Fuel Building Basement Volume': 0,  # m^3
+    'Spent Fuel Building Exterior Walls Volume': 0,  # m^3
     
-    'Refueling Building Slab Roof Volume': 312,  # m^3
-    'Refueling Building Basement Volume': 312,  # m^3
-    'Refueling Building Exterior Walls Volume': 340,  # m^3
+    'Emergency Building Slab Roof Volume': 0,  # m^3
+    'Emergency Building Basement Volume': 0,  # m^3
+    'Emergency Building Exterior Walls Volume': 0,  # m^3
     
-    'Spent Fuel Building Slab Roof Volume': 240,  # m^3
-    'Spent Fuel Building Basement Volume': 240,  # m^3
-    'Spent Fuel Building Exterior Walls Volume': 313.6,  # m^3
+    # Building to host operational spares (CO2, He, filters, etc.)
+    'Storage Building Slab Roof Volume': (8400*3500*400)/1e9, # m^3
+    'Storage Building Basement Volume': (8400*3500*400)/1e9, # m^3
+    'Storage Building Exterior Walls Volume': ((8400*2700*400)+(3100*2700*400*2))/1e9, # m^3
     
-    'Emergency Building Slab Roof Volume': 128,  # m^3
-    'Emergency Building Basement Volume': 128,  # m^3
-    'Emergency Building Exterior Walls Volume': 180,  # m^3
+    'Radwaste Building Slab Roof Volume': 0,  # m^3
+    'Radwaste Building Basement Volume': 0,  # m^3
+    'Radwaste Building Exterior Walls Volume': 0,  # m^3,
     
-    'Storage Building Slab Roof Volume': 200,  # m^3
-    'Storage Building Basement Volume': 200,  # m^3
-    'Storage Building Exterior Walls Volume': 268.8,  # m^3
-    
-    'Radwaste Building Slab Roof Volume': 200,  # m^3
-    'Radwaste Building Basement Volume': 200,  # m^3
-    'Radwaste Building Exterior Walls Volume': 268.8,  # m^3,
-    
-    'Interest Rate': 0.065,
+    'Interest Rate': 0.07,
     'Construction Duration': 12,  # months
     'Debt To Equity Ratio': 0.5,
     'Annual Return': 0.0475,  # Annual return on decommissioning costs
@@ -267,7 +276,7 @@ update_params({
 # **************************************************************************************************************************
 #                                           Sec. 13: Post Processing
 # **************************************************************************************************************************
-params['Number of Samples'] = 10 # Accounting for cost uncertainties
+params['Number of Samples'] = 100 # Accounting for cost uncertainties
 # Estimate costs using the cost database file and save the output to an Excel file
 estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx', params, "examples/output_LTMR.xlsx")
 elapsed_time = (time.time() - time_start) / 60  # Calculate execution time
