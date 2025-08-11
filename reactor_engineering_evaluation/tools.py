@@ -93,8 +93,11 @@ def GCMR_integrated_heat_transfer_vessel(params):
     vessel_density = materials_densities(params['Integrated Heat Transfer Vessel Material'])*1e3
     params['Integrated Heat Transfer Vessel Outer Volume'] = vessel_outer_volume
     params['Integrated Heat Transfer Vessel Mass'] = vessel_volume * vessel_density
+    
+    if params['Integrated Heat Transfer Vessel Thickness'] == 0:
+        params['Integrated Heat Transfer Vessel Outer Volume'] = 0
+        params['Integrated Heat Transfer Vessel Mass'] = 0
 
     # Rough Estimate of the mass held by the Support Structure
     # Primary HX + Integrated Heat Transfer Vessel + Compressure + Valves/Fittings/Bolts/etc.
     # params['Integrated Heat Transfer System Mass'] = params['Primary HX Mass'] + (vessel_volume * vessel_density) + compressor_volume*8000
-    return 
