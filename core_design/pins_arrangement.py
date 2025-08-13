@@ -1,3 +1,4 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 # Define placeholders for the variables
 fuel_pin = 'FUEL'
 moderator_pin = 'MODERATOR'

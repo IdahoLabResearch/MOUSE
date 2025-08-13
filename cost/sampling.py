@@ -1,3 +1,5 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
+
 import numpy as np
 
 def create_lognormal_sampler(low_cost, high_cost, class3_cost):

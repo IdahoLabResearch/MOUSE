@@ -1,3 +1,5 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np 

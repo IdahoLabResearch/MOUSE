@@ -1,3 +1,4 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 import numpy as np
 import openmc
 import openmc.deplete

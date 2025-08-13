@@ -1,3 +1,5 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
+
 """
 This script performs a bottom-up cost estimate for a heat pipe Microreactor.
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
@@ -99,8 +101,8 @@ update_params({
     'Power MWt': 5, 
     'Thermal Efficiency': 0.36,
     'Heat Flux Criteria': 0.9,  # MW/m^2 
-    'Time Steps': [0.01*tf,   0.99*tf,   3.00*tf,   6.00*tf,  20.00*tf,  70.00*tf, 100.00*tf, 165.00*tf, 365.00*tf, 365.00*tf, 365.00*tf],
-    'Power': [5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06]
+    'Time Steps': [0.01*tf,   0.99*tf,   3.00*tf,   6.00*tf,  20.00*tf,  70.00*tf, 100.00*tf, 165.00*tf, 365.00*tf, 365.00*tf, 365.00*tf,365.00*tf, 365.00*tf, 365.00*tf, 365.00*tf],
+    'Power': [5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06, 5.0e+06 ]
 })
 params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency']
 params['Heat Flux'] =  calculate_heat_flux(params)

@@ -1,3 +1,5 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
+
 import numpy as np
 import pandas as pd
 from cost.code_of_account_processing import get_estimated_cost_column

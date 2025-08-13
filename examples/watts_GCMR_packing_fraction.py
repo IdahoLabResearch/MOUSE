@@ -1,3 +1,5 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
+
 """
 This script performs a bottom-up cost estimate for a Gas Cooled Microreactor (GCMR).
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.

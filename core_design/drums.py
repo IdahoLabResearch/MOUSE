@@ -1,3 +1,4 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 import math
 from core_design.openmc_materials_database import *
 from core_design.utils import *

@@ -1,3 +1,4 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 import numpy as np 
 
 def ellipsoid_shell(a, b, c):

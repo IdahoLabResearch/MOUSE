@@ -1,3 +1,4 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 # Importing libraries
 import numpy as np
 import openmc

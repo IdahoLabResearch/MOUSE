@@ -1,3 +1,4 @@
+# Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 import pandas as pd
 
 def remove_irrelevant_account(df, params):
