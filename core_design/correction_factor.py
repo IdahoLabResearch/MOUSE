@@ -28,7 +28,6 @@ def corrected_keff_2d(depletion_2d_results_file, total_height):
 
     # Find all state point files generated during depletion
     statepoint_files = sorted(glob.glob('openmc_simulation_n*.h5'), key=natural_sort_key)
-
     # Initialize lists to store time steps and keff_3D values
     time_steps = []
     keff_2d_corrected_values = []
@@ -49,8 +48,12 @@ def corrected_keff_2d(depletion_2d_results_file, total_height):
         for idx, sp_file in enumerate(statepoint_files):
             # Load the state point
             sp = openmc.StatePoint(sp_file)
-            mgxs_lib.load_from_statepoint(sp)
-        
+            try:
+                mgxs_lib.load_from_statepoint(sp)
+            except LookupError as e: # If the tallies are not retreived from one of the statepoint files
+                print(f"Error loading MGXS from statepoint: {e}")
+                continue
+
             keff_2d = sp.keff.nominal_value
             keff_2d_uncertainty = sp.keff.std_dev
             abs_xs_mg = mgxs_lib.get_mgxs(root_universe, 'absorption')

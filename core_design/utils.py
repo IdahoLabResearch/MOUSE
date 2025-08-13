@@ -165,18 +165,16 @@ def openmc_depletion(params, lattice_geometry, settings):
             settings=settings),
             chain_file= params['simplified_chain_thermal_xml'])
     if 'Burnup Steps' in params:
-    #if params['Burnup Steps']:
         burnup_steps_list_MWd_per_Kg = params['Burnup Steps']
     
         #MWd/kg (MW-day of energy deposited per kilogram of initial heavy metal)
-        burnup_step = np.array(burnup_steps_list_MWd_per_Kg)     #np.array([0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0, 140.0]) 
+        burnup_step = np.array(burnup_steps_list_MWd_per_Kg)      
         burnup = np.diff (burnup_step, prepend =0.0 )
         
         # Deplete using a first-order predictor algorithm.
         integrator = openmc.deplete.PredictorIntegrator(operator, burnup,
                                                     1000000 * params['Power MWt'] , timestep_units='MWd/kg')
     elif 'Time Steps' in params:                                               
-    #elif params['Time Steps']:
         time_steps_list = params['Time Steps'] 
         power_list = params['Power']
 

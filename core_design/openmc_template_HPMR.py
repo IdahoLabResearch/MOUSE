@@ -522,7 +522,7 @@ def build_openmc_model_HPMR(params):
     #=================================================================================================
     tallies_file = openmc.Tallies()
 
-    group_edges = params['Energy Groups']  # Three energy groups
+    group_edges = np.array([1e-5, 6.7e-2, 3.2e-1, 1, 4, 9.88, 4.81e1, 4.54e2, 4.9e4, 1.83e5, 8.21e5, 4e7])# 11 energy groups from HPMR report table no.5 in ev
     groups = openmc.mgxs.EnergyGroups(group_edges)
 
     mgxs_lib = openmc.mgxs.Library(core_geometry)
