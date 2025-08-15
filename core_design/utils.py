@@ -178,8 +178,7 @@ def openmc_depletion(params, lattice_geometry, settings):
     elif 'Time Steps' in params:                                               
         time_steps_list = params['Time Steps'] 
         power_list = params['Power']
-
-        integrator = openmc.deplete.PredictorIntegrator(operator, time_steps_list, power_list)
+        integrator = openmc.deplete.CECMIntegrator(operator, time_steps_list, power_list)
 
     print("Start Depletion")
     integrator.integrate()

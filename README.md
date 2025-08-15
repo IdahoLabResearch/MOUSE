@@ -4,31 +4,22 @@ The rising interest in nuclear microreactors has highlighted the need for compre
 
 ## Description
 
-MOUSE leverages the [OpenMC](https://github.com/openmc-dev/openmc) Monte Carlo Particle Transport Code to perform detailed core simulations for various microreactor designs, including Liquid Metal Thermal Microreactors (LMTR), Gas-Cooled TRISO-Fueled Microreactors (GCMR), and Heat Pipe Microreactors. It includes simplified balance of plant and shielding calculations. Economically, MOUSE provides bottom-up cost estimates, encompassing preconstruction, direct, indirect, training, financial, O&M, and fuel costs. It calculates total capital costs and the levelized cost of energy (LCOE) for both first-of-a-kind and nth-of-a-kind microreactors using data from the MARVEL project and additional literature.
+MOUSE leverages the [OpenMC](https://github.com/openmc-dev/openmc) Monte Carlo Particle Transport Code to perform detailed core simulations for various microreactor designs, including Liquid Metal Thermal Microreactors (LMTR), Gas-Cooled TRISO-Fueled Microreactors (GCMR), and Heat Pipe Microreactors. It includes simplified calculations for balance of plant and operational performance. Economically, MOUSE provides bottom-up cost estimates covering preconstruction, direct, indirect, training, financial, O&M, and fuel costs. It calculates total capital costs and the levelized cost of energy (LCOE) for both first-of-a-kind and nth-of-a-kind microreactors using data from the MARVEL project and other literature.
 
 ## MOUSE Tool Structure
 <img src="./assets/mouse_diagram.png" />
 
 ### User-Defined Inputs
-The inputs that the user can modify include:
-
-- Overall System: Reactor Power (MWt), Thermal Efficiency (%), Heat Flux Criteria, Reactor Burnup Steps
-
-- Geometry: Fuel Pin Radii, TRISO Packing Fraction, Coolant Channel Radius, Moderator Booster Radius, Lattice Pitch, Number of Rings per Assembly, Number of Assemblies per Core, Core Active Height, Reflector Thickness, Control Drum Radius, Control Drum Height, Control Drum Absorber Layer Thickness
-
-- Materials: Fuel, Enrichment, Coolant, Reflector, Matrix Material, Moderator, Moderator Booster, Control Drum Absorber, Control Drum Reflector, Fuel Pin Materials
-
-- Shielding: In Vessel Shield Thickness, In Vessel Shield Inner Radius, In Vessel Shield Material, Out Of Vessel Shield Thickness, Out Of Vessel Shield Material
-
-- Vessels: Vessel Radius, Vessel Thickness, Vessel Lower Plenum Height, Vessel Upper Plenum Height, Vessel Upper Gas Gap, Vessel Bottom Depth, Vessel Material, Gap Between Vessel And Guard Vessel, Guard Vessel Thickness, Guard Vessel Material, Gap Between Guard Vessel And Cooling Vessel, Cooling Vessel Thickness, Cooling Vessel Material, Gap Between Cooling Vessel And Intake Vessel, Intake Vessel Material, Intake Vessel Thickness
-
-- Balance of Plant: Coolant Inlet and Outlet Temperatures, Thermal Efficiency (%), Compressor Pressure Ratio, Pump Efficiency
-
-- Operation: Operation Mode (autonomous or not), Number of Operators, Plant Lifetime, Refueling Period, Number of Emergency Shutdowns Per Year, Startup Duration after Refueling, Startup Duration after Emergency Shutdown, Number of Reactors Monitored Per Operator, Number of Security Staff Per Shift
-
-- Buildings: Dimensions of Reactor Building, Dimensions of Turbine Building, Dimensions of Control Building, Dimensions of Refueling Building, Dimensions of Spent Fuel Building, Dimensions of Emergency Building, Dimensions of Storage Building, Dimensions of Radioactive Waste Building
-
-- Economic Parameters: Interest Rate, Escalation Year, Construction Duration, Debt to Equity Ratio, Annual Return
+Users can modify design inputs or economic inputs ruch as:
+- Overall System: Reactor Power (MWt), Thermal Efficiency (%), Heat Flux Criteria
+- Geometry: Fuel Pin Radii, TRISO Packing Fraction, Coolant Channel Radius, Moderator Booster Radius, Lattice Pitch, Rings per Assembly, Assemblies per Core, Core Active Height, Reflector Thickness, Control Drum Dimensions
+- Materials: Fuel, Enrichment, Coolant, Reflector, Matrix Material, Moderator, Moderator Booster, Control Drum Absorber/Reflector, Fuel Pin Materials
+- Shielding: In/Out Vessel Shield Thickness, Material, Dimensions
+- Vessels: Vessel Radius, Thickness, Materials, Gaps Between Vessels
+- Balance of Plant: Coolant Inlet/Outlet Temperatures, Compressor Pressure Ratio, Pump Efficiency
+- Operation: Operation Mode, Number of Operators, Plant Lifetime, Refueling Period, Number of Emergency Shutdowns per Year, Startup Durations
+- Buildings: Dimensions of Reactor, Turbine, Control, Refueling, Spent Fuel, Emergency, Storage, Radioactive Waste Buildings
+- Economic Parameters: Interest Rate, Dollar Escalation Year, Construction Duration, Debt to Equity Ratio
 
 MOUSE is powered by the Workflow and Template Toolkit for Simulation ([WATTS](https://github.com/watts-dev/watts)), developed by ANL, which facilitates parametric studies by integrating various code components.
 
@@ -45,8 +36,4 @@ The user can specifiy the reactor design specs and/or the economics parameters f
 A complete detailed bottom up cost estimation is obtained by running commands such as
 ```
 python -m examples.watts_exec_LTMR
-```
-or 
-```
-python -m examples.watts_exec_GCMR_v1
 ```
