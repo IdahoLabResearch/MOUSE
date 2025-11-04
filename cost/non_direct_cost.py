@@ -179,6 +179,10 @@ def energy_cost_levelized(params, df):
     df = df._append({'Account': 'AC per MWh','Account Title' : 'Annualized Cost per MWh'}, ignore_index=True)
     df = df._append({'Account': 'LCOE','Account Title' : 'Levelized Cost Of Energy ($/MWh)'}, ignore_index=True)
   
+    df = df._append({'Account': 'LCOE_cap','Account Title' : 'Levelized Cost Of Energy (capital) ($/MWh)'}, ignore_index=True)
+    df = df._append({'Account': 'LCOE_oandm','Account Title' : 'Levelized Cost Of Energy (O&M) ($/MWh)'}, ignore_index=True)
+    df = df._append({'Account': 'LCOE_fuel','Account Title' : 'Levelized Cost Of Energy (Fuel) ($/MWh)'}, ignore_index=True)
+  
     
     plant_lifetime_years = params['Levelization Period']
     discount_rate = params['Interest Rate']
@@ -196,7 +200,9 @@ def energy_cost_levelized(params, df):
         df.loc[df['Account'] == 'AC per MWh', estimated_cost_col] = levelized_ann_cost
         sum_cost = 0 # initialization 
         sum_elec = 0
-        
+        cap_lcoe = 0
+        oandm_lcoe = 0
+        fuel_lcoe = 0
         for i in range(  1 + plant_lifetime_years) :
             
             if i == 0:
@@ -209,9 +215,25 @@ def energy_cost_levelized(params, df):
                 cap_cost_per_year  = 0
                 annual_cost = ann_cost
                 elec_gen = power_MWe *capacity_factor * 365 * 24       # MW hour. 
+                oandm_lcoe += (df.loc[df['Account'] == 70, estimated_cost_col].values[0])/ ((1+ discount_rate)**i)
+                fuel_lcoe +=(df.loc[df['Account'] == 80, estimated_cost_col].values[0])/ ((1+ discount_rate)**i)
+            cap_lcoe += cap_cost_per_year/ ((1+ discount_rate)**i)
             sum_cost +=  (cap_cost_per_year + annual_cost)/ ((1+ discount_rate)**i) 
             sum_elec += elec_gen/ ((1 + discount_rate)**i) 
         lcoe =  sum_cost/ sum_elec
-        
-        df.loc[df['Account'] == 'LCOE', estimated_cost_col] = lcoe    
+        cap_lcoe /= sum_elec
+        oandm_lcoe /=sum_elec
+        fuel_lcoe /=sum_elec
+
+        #cap_lcoe = np.round(cap_lcoe,1)
+        #oandm_lcoe =np.round(oandm_lcoe,1)
+        #fuel_lcoe =np.round(fuel_lcoe,1)
+        #print('cap cost',cap_cost)
+        #assert lcoe == cap_lcoe+oandm_lcoe+fuel_lcoe, '---error: Sum of LCOEs {} do not match the total {}.'.format(cap_lcoe+oandm_lcoe+fuel_lcoe,lcoe)
+        #print('---error: Sum of LCOEs {} do not match the total {}.'.format(cap_lcoe+oandm_lcoe+fuel_lcoe,lcoe))
+        df.loc[df['Account'] == 'LCOE', estimated_cost_col] = lcoe  
+
+        df.loc[df['Account'] == 'LCOE_cap', estimated_cost_col] = cap_lcoe  
+        df.loc[df['Account'] == 'LCOE_oandm', estimated_cost_col] = oandm_lcoe  
+        df.loc[df['Account'] == 'LCOE_fuel', estimated_cost_col] = fuel_lcoe    
     return df
