@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from core_design.correction_factor import corrected_keff_2d
 
-
+import pandas
 
 def circle_area(r):
     return (np.pi) * r **2
@@ -182,10 +182,18 @@ def openmc_depletion(params, lattice_geometry, settings):
 
     depletion_2d_results_file = openmc.deplete.Results("./depletion_results.h5")  # Example file path
  
-    fuel_lifetime_days = corrected_keff_2d(depletion_2d_results_file, params['Active Height'] + 2 * params['Axial Reflector Thickness'])
+    fuel_lifetime_days,keff_2d_values,keff_2d_values_corrected = corrected_keff_2d(depletion_2d_results_file, params['Active Height'] + 2 * params['Axial Reflector Thickness'])
     orig_material = depletion_2d_results_file.export_to_materials(0)
     mass_U235 = orig_material[0].get_mass('U235')
     mass_U238 = orig_material[0].get_mass('U238')
+    data_k = pandas.DataFrame()
+    data_k['keff 2D'] = keff_2d_values
+    data_k['keff 3D (2D corrected)'] = keff_2d_values_corrected
+    data_k.to_csv('./objectives_keff.csv',index_label='time')
+
+    params['keff 2D'] = keff_2d_values
+    params['keff 3D (2D corrected)'] = keff_2d_values_corrected
+    
     return fuel_lifetime_days, mass_U235, mass_U238
 
 
