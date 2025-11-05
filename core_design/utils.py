@@ -224,9 +224,22 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
     else:    
         try:
             print(f"\n\nThe results/plots are saved at: {watts.Database().path}\n\n")
-            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)  # running the LTMR Model
-            openmc_plugin(params, function=lambda: run_depletion_analysis(params)) 
-
+            #openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)  # running the LTMR Model
+            #openmc_plugin(params, function=lambda: run_depletion_analysis(params)) 
+            if params['SD Margin Calc']:
+                openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)  # running the LTMR Model
+                openmc_plugin(params, function=lambda: run_depletion_analysis(params)) 
+                params['keff 2D ARI'] = params['keff 2D']
+                params['keff 3D (2D corrected) ARI'] = params['keff 3D (2D corrected)']
+                params['SD Margin Calc'] = False
+                openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)  # running the LTMR Model
+                openmc_plugin(params, function=lambda: run_depletion_analysis(params)) 
+                params['SDM 2D'] = [(y - x)*1e5 for x,y in zip(params['keff 2D'],params['keff 2D ARI'])]
+                params['SDM 3D (2D corrected)'] =  [(y - x)*1e5 for x,y in zip(params['keff 3D (2D corrected)'],params['keff 3D (2D corrected) ARI'])]#(params['keff 3D (2D corrected)'] - params['keff 3D (2D corrected) ARI'])*1e5
+            else:
+                openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)  # running the LTMR Model
+                openmc_plugin(params, function=lambda: run_depletion_analysis(params)) 
+            
         except Exception as e:
             print("\n\n\033[91mAn error occurred while running the OpenMC simulation:\033[0m\n\n")
             traceback.print_exc()

@@ -341,6 +341,10 @@ def create_control_drums(params, materials_database):
 
     # Adjust the control drums rotation
     rotation_angle          = 0
+    if params['SD Margin Calc']:
+        rotation_angle = 180
+    else:
+        rotation_angle = 0
     cr_000.rotation         = [0,  0,    0 + rotation_angle]
     cr_330.rotation         = [0,  0,    0 + rotation_angle]
     cr_030.rotation         = [0,  0,   60 + rotation_angle]

@@ -128,7 +128,10 @@ def build_openmc_model_GCMR(params):
         absorber_arc = np.pi/3
         REFERENCE_ANGLE = 240 # This angle is a constant that puts the drum in the correct orientation in reference to the lattice geometry
         rotation_angle = 0
-
+        if params['SD Margin Calc']:
+            rotation_angle = 180
+        else:
+            rotation_angle = 0
 
         cd_inner_shell = openmc.ZCylinder(r= drum_radius - absorber_thickness)
         cd_outer_shell = openmc.ZCylinder(r= drum_radius)
