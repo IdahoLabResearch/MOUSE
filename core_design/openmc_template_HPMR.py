@@ -566,5 +566,10 @@ def build_openmc_model_HPMR(params):
         settings.particles = int(params['Particles'])#1000
     else:
         settings.particles = 1000 
-    settings.temperature   = {'method': 'interpolation'}
+    if params['Isothermal Temperature Coefficients']:
+        settings.temperature = {'default': params['Common Temperature'],
+                                 'method': 'interpolation',
+                                 'tolerance': 50.0}
+    else:
+        settings.temperature   = {'method': 'interpolation'}
     settings.export_to_xml()
