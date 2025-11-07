@@ -140,6 +140,7 @@ def corrected_keff_2d(depletion_2d_results_file, total_height):
         round_cycle_length = round(cycle_length, 0)
         print(f"Estimated fuel cycle length: {round_cycle_length} days")
     else:
+        round_cycle_length = 0
         print("k = 1.0 not reached within the given time steps.")
 
     return round_cycle_length,keff_2d_values,keff_2d_corrected_values      
