@@ -182,8 +182,10 @@ def energy_cost_levelized(params, df):
     df = df._append({'Account': 'LCOE_cap','Account Title' : 'Levelized Cost Of Energy (capital) ($/MWh)'}, ignore_index=True)
     df = df._append({'Account': 'LCOE_oandm','Account Title' : 'Levelized Cost Of Energy (O&M) ($/MWh)'}, ignore_index=True)
     df = df._append({'Account': 'LCOE_fuel','Account Title' : 'Levelized Cost Of Energy (Fuel) ($/MWh)'}, ignore_index=True)
-  
     
+    if 'PTC credit value' in params.keys():
+        df = df._append({'Account': 'LCOE with PTC','Account Title' : 'Levelized Cost Of Energy with PTC ($/MWh)'}, ignore_index=True)
+
     plant_lifetime_years = params['Levelization Period']
     discount_rate = params['Interest Rate']
     power_MWe = params['Power MWe']
@@ -236,4 +238,30 @@ def energy_cost_levelized(params, df):
         df.loc[df['Account'] == 'LCOE_cap', estimated_cost_col] = cap_lcoe  
         df.loc[df['Account'] == 'LCOE_oandm', estimated_cost_col] = oandm_lcoe  
         df.loc[df['Account'] == 'LCOE_fuel', estimated_cost_col] = fuel_lcoe    
+    
+        if 'PTC credit value' in params.keys():
+            # Equivalent to calculating : params['PTC credit value'] * bonus_multiplier * _crf(params['Interest Rate'],plant_lifetime_years) * ((1+params['Interest Rate'])**int(params['PTC credit period']) - 1) / (params['Interest Rate']*(1+params['Interest Rate'])**int(params['PTC credit period']))
+            sum_elec = 0
+            sum_ptc = 0
+            assert 'PTC credit period' in params.keys(),'error: If a PTC drecit value is provided , a corresponding PTC credit period must be given as well.'
+            try:
+                bonus_multiplier = 1.0 + params['domestic_content_bonus'] + params['energy_community_bonus'] # Meets prevailing wage/apprenticeship, domestic content, and is in an energy community.
+            except:
+                print('--- warning: Assume no extra percentage on the credit')
+                bonus_multiplier= 1.0
+            for i in range(  1 + plant_lifetime_years) :
+                if i == 0:# year+1 since first cash flow is in year 1
+                    elec_gen = 0
+                    ptc_gen = 0#power_MWe *capacity_factor * 365 * 24 * params['PTC credit value']*bonus_multiplier
+                elif i >0:
+                    elec_gen = power_MWe *capacity_factor * 365 * 24       # MW hour. 
+                    if i > params['PTC credit period']:
+                        ptc_gen = 0
+                    else:
+                        ptc_gen = elec_gen * params['PTC credit value']*bonus_multiplier
+
+                sum_ptc +=  (ptc_gen)/ ((1+ discount_rate)**i) 
+                sum_elec += elec_gen/ ((1 + discount_rate)**i)
+            estimated_ptc = sum_ptc/sum_elec#params['PTC credit value'] * _crf(params['Interest Rate'],plant_lifetime_years) * ((1+params['Interest Rate'])**int(params['PTC credit period']) - 1) / (params['Interest Rate']*(1+params['Interest Rate'])**int(params['PTC credit period']))
+            df.loc[df['Account'] == 'LCOE with PTC', estimated_cost_col] = lcoe - estimated_ptc  
     return df
