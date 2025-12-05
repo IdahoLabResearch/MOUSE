@@ -138,11 +138,11 @@ def calculate_reflector_and_moderator_mass_HPMR_vtb(params):
     big_hex_FTF = params['Number of Rings per Core'] *  assembly_long_diag  + (params['Number of Rings per Core'] - 1) * assembly_side_length
     big_hex_area = hexagonal_area_from_ftf(big_hex_FTF)
     reflector_volume = (circle_area(params['Core Radius']) - big_hex_area ) * params['Active Height']
-    reflector_density = materials_database[params['Reflector']].density
+    reflector_density = materials_database[params['Radial Reflector']].density
     reflector_mass    = reflector_density * reflector_volume  / 1000 # Kg
     params['Reflector Mass'] = reflector_mass
     # mass of two axial reflectors
-    params['Axial Reflector Mass'] = 2 * (1/1000) * reflector_density * cylinder_volume(params['Core Radius'], params['Axial Reflector Thickness'])
+    params['Axial Reflector Mass'] = 2 * (1/1000) * materials_database[params['Axial Reflector']].density * cylinder_volume(params['Core Radius'], params['Axial Reflector Thickness'])
 
     # moderator = big hex minus the fuel and heatpipes
     fuel_area     =  params['Fuel Pin Count']  * circle_area(params['Fuel Pin Radii'][-1])
