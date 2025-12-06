@@ -158,6 +158,9 @@ def calculate_TCI(df, params):
     df = df._append({'Account': 'TCI','Account Title' : 'Total Capital Investment'}, ignore_index=True)
     df = df._append({'Account': 'TCI per kW','Account Title' : 'Total Capital Investment per kW'}, ignore_index=True)
 
+    if 'ITC credit level' in params.keys():
+        df = df._append({'Account': 'TCI with ITC','Account Title' : 'Total Capital Investment with ITC'}, ignore_index=True)
+        ITC_cost_reduction_factor = ITC_reduction_factor(params['ITC credit level'])
     # List of accounts to sum
     accounts_to_sum = ['OCC', 60]
     # Find the column that starts with "Estimated Cost"
@@ -169,9 +172,20 @@ def calculate_TCI(df, params):
         # Update the existing account "OCC" with the new total cost
         df.loc[df['Account'] == 'TCI', cost_column] = tci_cost
         df.loc[df['Account'] == 'TCI per kW', cost_column] = tci_cost/power_kWe
+        if 'ITC credit level' in params.keys():
+            ITC_cost_reduction_factor = ITC_reduction_factor(params['ITC credit level'])
+            OCC_cost_reduction_due_to_TCI = df.loc[df['Account'] == 'OCC', cost_column].values[0] * (ITC_cost_reduction_factor)
+            tci_cost = df.loc[df['Account'] == 60, cost_column].values[0] + OCC_cost_reduction_due_to_TCI
+            df.loc[df['Account'] == 'TCI with ITC', cost_column] = tci_cost
+            
 
     return df
 
+# itc_level is either 6 or 30 or 40 of 50% depending on several factors
+def ITC_reduction_factor(itc_level): # here is a factor that you calculate
+    itc_values = [0, 0.06, 0.3, 0.4, 0.5]
+    ITC_reduction_factor = [1, 0.95, 0.73, 0.63, 0.53 ]
+    return np.interp(itc_level, itc_values, ITC_reduction_factor)
 
 def energy_cost_levelized(params, df):
 
@@ -186,6 +200,11 @@ def energy_cost_levelized(params, df):
     if 'PTC credit value' in params.keys():
         df = df._append({'Account': 'LCOE with PTC','Account Title' : 'Levelized Cost Of Energy with PTC ($/MWh)'}, ignore_index=True)
 
+    if 'ITC credit level' in params.keys():
+        assert 'PTC credit value' not in params.keys(),'--error: Only PTC or ITC or None must be selected not both.'
+        df = df._append({'Account': 'LCOE with ITC','Account Title' : 'Levelized Cost Of Energy with ITC ($/MWh)'}, ignore_index=True)
+        df = df._append({'Account': 'LCOE_cap_withitc','Account Title' : 'Levelized Cost Of Energy (capital) with ITC ($/MWh)'}, ignore_index=True)
+    
     plant_lifetime_years = params['Levelization Period']
     discount_rate = params['Interest Rate']
     power_MWe = params['Power MWe']
@@ -264,4 +283,36 @@ def energy_cost_levelized(params, df):
                 sum_elec += elec_gen/ ((1 + discount_rate)**i)
             estimated_ptc = sum_ptc/sum_elec#params['PTC credit value'] * _crf(params['Interest Rate'],plant_lifetime_years) * ((1+params['Interest Rate'])**int(params['PTC credit period']) - 1) / (params['Interest Rate']*(1+params['Interest Rate'])**int(params['PTC credit period']))
             df.loc[df['Account'] == 'LCOE with PTC', estimated_cost_col] = lcoe - estimated_ptc  
+    
+        if 'ITC credit level' in params.keys():
+            cap_cost = df.loc[df['Account'] == 'TCI with ITC', estimated_cost_col].values[0]
+            ann_cost = df.loc[df['Account'] == 70, estimated_cost_col].values[0]  + df.loc[df['Account'] == 80, estimated_cost_col].values[0] 
+            levelized_ann_cost = ann_cost / params['Annual Electricity Production'] 
+            df.loc[df['Account'] == 'AC', estimated_cost_col] = ann_cost
+            df.loc[df['Account'] == 'AC per MWh', estimated_cost_col] = levelized_ann_cost
+            sum_cost = 0 # initialization 
+            sum_elec = 0
+            cap_lcoe = 0
+            oandm_lcoe = 0
+            fuel_lcoe = 0
+            for i in range(  1 + plant_lifetime_years) :
+
+                if i == 0:
+                # assuming that the cap cost is split between the cons years
+                    cap_cost_per_year = cap_cost
+                    annual_cost = 0
+                    elec_gen = 0
+
+                elif i >0:
+                    cap_cost_per_year  = 0
+                    annual_cost = ann_cost
+                    elec_gen = power_MWe *capacity_factor * 365 * 24       # MW hour. 
+                cap_lcoe += cap_cost_per_year/ ((1+ discount_rate)**i)
+                sum_cost +=  (cap_cost_per_year + annual_cost)/ ((1+ discount_rate)**i) 
+                sum_elec += elec_gen/ ((1 + discount_rate)**i) 
+            lcoe =  sum_cost/ sum_elec
+            cap_lcoe /= sum_elec
+            df.loc[df['Account'] == 'LCOE with ITC', estimated_cost_col] = lcoe  
+
+            df.loc[df['Account'] == 'LCOE_cap_withitc', estimated_cost_col] = cap_lcoe
     return df
