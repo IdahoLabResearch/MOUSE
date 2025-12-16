@@ -14,6 +14,7 @@ sys.path.append(os.path.dirname(os.path.abspath('.')))
 #print(os.path.dirname(os.path.abspath('.')),sys.path)
 #
 from OpenMC_GCMR import OpenMC_GCMR
+from OpenMC_HPMR import OpenMC_HPMR
 from OpenMC_LTMR import OpenMC_LTMR
 
 def rstring(length):
@@ -39,6 +40,12 @@ def sample_search_space(params,rundir):
             dummy = gcmr.fitness(gcmr.params,openmc_run=True)
         else:
             dummy = gcmr.fitness(params,openmc_run=True)
+    elif mode == 'HPMR':
+        hpmr = OpenMC_HPMR(working_dir=Path(rundir))
+        if params == None:
+            dummy = hpmr.fitness(hpmr.params,openmc_run=True)
+        else:
+            dummy = hpmr.fitness(params,openmc_run=True)
     elif mode == 'LTMR':
         ltmr = OpenMC_LTMR(working_dir=Path(rundir))
         if params == None:
@@ -53,19 +60,21 @@ if __name__ == "__main__":
     assert study_type in ['reflector','booster','influence_yttrium_hydride','fuel'], '---error: study_type is not valid.'
     if study_type == 'reflector':
         if sys.argv[2] == 'GCMR':
-            reflectors = ['Graphite','BeO','Be']
-            reflector_thickness = [2,5,7.5,10,12.5,15,20,23,27.393,30]
+            reflectors = ['Graphite']#['Graphite','BeO','Be']
+            reflector_thickness = [27.393]#[2,12.5,27.393,30,40]#[2,5,7.5,10,12.5,15,20,23,27.393,30]
             params = list(itertools.product(reflectors,reflector_thickness))
-            enrichment = 0.1975
-            assembly_rings = 6
             for count,_ in enumerate(params):
                 sample_search_space({'Control Drum Reflector':_[0],'Reflector': _[0],'Reflector Thickness':_[1]},rundir=study_type+'_'+sys.argv[2])  
+        elif sys.argv[2] == 'HPMR':
+            reflectors = ['Graphite','BeO','Be']#['Graphite']
+            reflector_thickness = [25]#[30,35,40,45,50,55,60]#[50]
+            params = list(itertools.product(reflectors,reflector_thickness))
+            for count,_ in enumerate(params):
+                sample_search_space({'Control Drum Reflector':_[0],'Reflector': _[0],'Reflector Thickness':_[1]},rundir=study_type+'_'+sys.argv[2])      
         else:
             reflectors = ['Graphite','BeO','Be']
             reflector_thickness = [13,14,20,23,27.393,30,35,40,45,50]
             params = list(itertools.product(reflectors,reflector_thickness))
-            enrichment = 0.1975
-            assembly_rings = 12
             for count,_ in enumerate(params):
                 sample_search_space({'Control Drum Reflector':_[0],'Reflector': _[0],'Reflector Thickness':_[1]},rundir=study_type+'_'+sys.argv[2])  
     elif study_type == 'fuel':
@@ -77,6 +86,14 @@ if __name__ == "__main__":
             params = list(itertools.product(fuel_types,enrichments,power,rings_per_assembly))
             for _ in params:
                 sample_search_space({'Fuel Pin Materials': [_[0], 'buffer_graphite', 'PyC', 'SiC', 'PyC'],'Fuel':_[0],'Enrichment': _[1],'Power MWt':_[2],'Assembly Rings':_[3]},rundir=study_type+'_'+sys.argv[2])
+        elif sys.argv[2] == 'HPMR':
+            enrichments = [0.10,0.125,0.15,0.17]#np.linspace(0.05,0.10,5)
+            power = [5,7,9]
+            rings_per_assembly = [6,8,10]#6
+            reflector = 'Graphite'
+            params = list(itertools.product(enrichments,power,rings_per_assembly))
+            for _ in params:
+                sample_search_space({'Enrichment': _[0],'Control Drum Reflector':reflector,'Reflector':reflector,'Power MWt':_[1],'Number of Rings per Assembly':_[2]},rundir=study_type+'_'+sys.argv[2])
         else:
             fuel_types = ['TRIGA_fuel']
             enrichments = [0.0875,0.10]
