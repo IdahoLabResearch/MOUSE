@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: mouse
+Version: 0.1.0
+License-File: LICENSE
+License-File: NOTICE.txt
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: openpyxl
+Requires-Dist: watts
+Dynamic: license-file

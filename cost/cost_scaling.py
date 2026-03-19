@@ -25,14 +25,21 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
             cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
     
     elif account == 253:
-        if params['Enrichment'] < 0.1:
-            cost_premium = 1
-        elif  0.1 <= params['Enrichment'] < 0.2:
-            cost_premium = 1.15
-        elif 0.2 <= params['Enrichment']:
+        params['Enrichment Category'] = 'HALEU' if params['Enrichment'] >= 0.1 else 'LEU'
+        if params['Enrichment'] >= 0.2:
             print("\033[91m ERROR: Enrichment is too high \033[0m")
             raise ValueError("Enrichment is too high")
-        cost = cost_premium * unit_cost *pow(scaling_variable_value,exponent) 
+        
+        if params['Enrichment Category']== 'LEU':
+            # LEU: standard commercial SWU pricing
+            cost = unit_cost * pow(scaling_variable_value,exponent)   # unit_cost = $184.2/SWU from DB
+        else:
+            # HALEU: premium until sufficient market volume
+            noak_units = params['NOAK Unit Number']
+            haleu_threshold = params.get('HALEU NOAK Threshold', 100)
+            effective_unit_cost = 184.2 if noak_units >= haleu_threshold else unit_cost  # unit_cost = $1000/SWU from DB
+            cost = effective_unit_cost * pow(scaling_variable_value,exponent) 
+
     elif account == 711:
         cost_multiplier = params['FTEs Per Onsite Operator Per Year'] 
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
