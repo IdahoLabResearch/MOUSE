@@ -1,7 +1,6 @@
 import numpy as np
-import pandas as pd
 import watts  # Simulation workflows for one or multiple codes
-from core_design.openmc_template_HPMR import *
+from core_design.openmc_template_HPMR_vtb import build_openmc_model_HPMR_vtb
 from core_design.utils import *
 from core_design.drums import *
 from reactor_engineering_evaluation.fuel_calcs import fuel_calculations
@@ -13,7 +12,6 @@ from cost.cost_estimation import detailed_bottom_up_cost_estimate
 import warnings
 warnings.filterwarnings("ignore")
 
-from pathlib import Path
 import time
 time_start = time.time()
 
@@ -24,9 +22,34 @@ def update_params(updates):
 
 
 # **************************************************************************************************************************
-# Load the external HPMR
+#                                                Sec. 0: Settings
 # **************************************************************************************************************************
-from OpenMC_HPMR import OpenMC_HPMR
+update_params({
+    'plotting': "Y",
+    'cross_sections_xml_location': '/projects/MRP_MOUSE/openmc_data/endfb-viii.0-hdf5/cross_sections.xml',
+    'simplified_chain_thermal_xml': '/projects/MRP_MOUSE/openmc_data/simplified_thermal_chain11.xml',
+    'UO2 atom fraction': 0.7,
+    'Particles': 1000,
+    'Batches': 100,
+    'Inactive': 50,
+})
+
+
+def nominal_vtb_params():
+    return {
+        "compact_radius": 1.00,
+        "moderator_radius": 0.825,
+        "coating_angle": 90.0,
+        "B10_at_frac_B": 0.95,
+        "flake_width": 26.752,
+        "pin_pitch": 2.3,
+        "enrichment": 0.197,
+        "reflector_width": 260.0,
+        "active_fuel_height": 160.0,
+        "axial_reflector_height": 20.0,
+    }
+
+
 def sample_dict():
     xis = np.random.uniform(0, 1, 7)
     parms = {
@@ -45,17 +68,17 @@ def sample_dict():
     return parms
 
 
-def gen_hpmr_mouse(params):
+def gen_hpmr_mouse(vtb_params):
+    update_params(vtb_params)
+
     # **************************************************************************************************************************
     #                                                Sec. 1: Materials
     # **************************************************************************************************************************
     update_params({
         'reactor type': "HPMR",
         'TRISO Fueled': "Yes",
-        # The fuel TRISO particles dispersed in a graphite matrix with a packing fraction of 36%. 
-        # TRISO particles have a UO2 kernels and dimensions typical for fuel used in the AGR-2 campaign (https://inldigitallibrary.inl.gov/sites/sti/sti/Sort_50872.pdf)
-        # TRISO particles are homogenization with the surrounding graphite matrix. 
-        'Fuel': 'homog_TRISO',     
+        'Fuel': 'UCO',
+        'VTB Fuel Material': 'UCO',
         'Secondary Coolant': 'Helium', # gap between the fuel and the moderator OR between heatpipe and moderator is filled with the secondary coolant (e.g. Helium)
         'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
         'Control Drum Reflector': 'Be',#'Graphite',#
@@ -76,7 +99,7 @@ def gen_hpmr_mouse(params):
     #                                           Sec. 2: Geometry: Fuel Pins, Moderator Pins, Coolant, Hexagonal Lattice
     # **************************************************************************************************************************
     update_params({
-        'Fuel Pin Materials': ['homog_TRISO', 'Helium'],
+        'Fuel Pin Materials': ['UCO', 'Helium'],
         'Fuel Pin Radii': [params['compact_radius'], params['compact_radius']], #cm # not sure if have outer
         'Heat Pipe Materials': ['heatpipe', 'Helium'],
         'Heat Pipe Radii': [0.97, 1.05],
@@ -86,7 +109,6 @@ def gen_hpmr_mouse(params):
     })
 
     params['Assembly FTF'] = params['flake_width']#26.752#cm flat to flat width
-    #params['hexagonal Core Edge Length'] = (params['Assembly FTF'] * (params['Number of Rings per Core']-1)) + (params['Assembly FTF']/2) + 6.6  # The edge lenght is 86.6 as in the originial input so 6.6 is added based on this value
     params['Reflector Thickness'] = params['axial_reflector_height']#20#cm 
     params['Core Radius'] = params["reflector_width"] / 2#cm 260 / 2#
     params['Active Height'] =  params['active_fuel_height']#cm was 2*params['Core radius']  
@@ -112,6 +134,11 @@ def gen_hpmr_mouse(params):
         'Number of Rings per Core': 4, # number of assemblies alog the side of the core. 
 
     })
+    params['hexagonal Core Edge Length'] = (
+        params['Assembly FTF'] * (params['Number of Rings per Core'] - 1)
+        + params['Assembly FTF'] / 2
+        + 6.6
+    )
     calculate_drums_volumes_and_masses(params)
     calculate_reflector_and_moderator_mass_HPMR_vtb(params)#TODO calculate the volume of reflector differently. Not exactly similar geometry.
 
@@ -122,7 +149,7 @@ def gen_hpmr_mouse(params):
         'Power MWt': 2, 
         'Thermal Efficiency': 0.36,
         'Heat Flux Criteria': 0.9,  # MW/m^2 
-        #'Time Steps': [t * 86400 for t in [0.01,   0.99,   3,   6,  20,  70, 100, 165, 365, 365, 365, 365, 365, 365, 365.00] ] # seconds
+        'Time Steps': [t * 86400 for t in [0.1, 740, 740, 740, 740]],
     })
     params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency']
     params['Heat Flux'] =  calculate_heat_flux(params)
@@ -130,19 +157,16 @@ def gen_hpmr_mouse(params):
     # **************************************************************************************************************************
     #                                           Sec. 5: Running OpenMC
     # ************************************************************************************************************************** 
-    heat_flux_monitor = monitor_heat_flux(params)
     params['Packing Fraction'] = 0.40
-    #density assumed 11.25 g/cm3#TODO preprocess from data 'materials.xml'
-    params['Mass U235'] = params['enrichment'] * params['Fuel Pin Count']  * circle_area(params['Fuel Pin Radii'][0]) * params['Active Height'] * params['Packing Fraction'] * 11.25 * (2.125/4.275)**3
-    params['Mass U238'] = (1 - params['enrichment']) * params['Fuel Pin Count']  * circle_area(params['Fuel Pin Radii'][0]) * params['Active Height'] * params['Packing Fraction'] * 11.25 * (2.125/4.275)**3
-    params['Uranium Mass'] = (params['Mass U235'] + params['Mass U238']) / 1000 #kg
-    fuel_calculations(params)  # calculate the fuel mass and SWU
-    # Get fuel lifetime
-    # ---
+    params['VTB Axial Divisions'] = 11
+    params['VTB Drum Rotation'] = 180.0
+    params['VTB Tally Mesh Dimension'] = (200, 200, 20)
+    params['VTB Low Packing Fraction'] = False
+    params['Shutdown Margin Calc'] = False
 
-    params['Fuel Lifetime'] = params['lifetime']*365.25#6.9920*365.25#days params['fuel_lifetime']
-    #params['Mass U235'] =  83823.9690312275
-    #params['Mass U238'] = 339469.567038636
+    heat_flux_monitor = monitor_heat_flux(params)
+    run_openmc_3d(build_openmc_model_HPMR_vtb, heat_flux_monitor, params)
+    fuel_calculations(params)  # calculate the fuel mass and SWU
 
     # **************************************************************************************************************************
     #                                        Sec. 6: Primary Loop + Balance of Plant
@@ -330,38 +354,5 @@ def evaluate_cost(params):
     #print('Execution time:', np.round(elapsed_time, 1), 'minutes')
 
 if __name__ == "__main__":
-    data = pd.read_csv('./data/postproc_2_all.csv',)
-    model_inputs = list(data.columns[1:11].values) + ['lifetime']
-    cost_names = ['FOAK Estimated Cost ($2024)','NOAK Estimated Cost ($2024)','FOAK Estimated Cost std ($2024)',\
-    'NOAK Estimated Cost std ($2024)']
-    
-    # Instantiate an HPMR reactor
-    # ---
-    data_econ = pd.DataFrame(np.zeros((data.shape[0], len(model_inputs)+4)), index = data.iloc[:,0], columns = model_inputs + cost_names)
-    t = OpenMC_HPMR()
-    params = t.nominal_parms#
-    params['lifetime'] = 9#6.992
-    gen_hpmr_mouse(params)
+    gen_hpmr_mouse(nominal_vtb_params())
     evaluate_cost(params)
-    sys.exit()
-    s=','
-    with open('./postproc_econ.csv','w') as infile:
-        infile.writelines(s.join(['ID'] + model_inputs + cost_names)+'\n')
-    for i in range(data.shape[0]):
-        nametags = data.iloc[i,0]
-        for reactor_input in model_inputs:
-            params[reactor_input] = data.loc[i,reactor_input]
-        data_econ.loc[nametags,model_inputs] = data.loc[i,model_inputs]
-        gen_hpmr_mouse(params)
-        evaluate_cost(params)
-        cost = pd.read_excel('./examples/output_HPMR_seed.xlsx',sheet_name='cost estimate')
-        data_econ.loc[nametags,cost_names] = cost.loc[np.where(cost['Account'] == 'LCOE')[0],cost_names].values
-        print(nametags)
-        with open('./postproc_econ.csv','a') as infile:
-            data_to_write = [nametags] + list(data.loc[i,model_inputs].values)+ list(data_econ.loc[nametags,cost_names].values)
-            infile.writelines(s.join([str(x) for x in data_to_write])+'\n')
-    
-    data_econ.to_csv(Path("./postproc_all_econ.csv"))
-
-
-

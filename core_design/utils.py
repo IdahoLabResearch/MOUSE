@@ -365,6 +365,97 @@ def run_depletion_analysis(params):
     params['Uranium Mass'] = (mass_U235 + mass_U238) / 1000
 
 
+def _sum_nuclide_mass(materials, nuclide):
+    total_mass = 0.0
+    for material in materials:
+        try:
+            total_mass += material.get_mass(nuclide)
+        except Exception:
+            pass
+    return total_mass
+
+
+def _estimate_keff_crossing_time_days(time_days, keff_values):
+    if len(time_days) != len(keff_values):
+        raise ValueError("time_days and keff_values must have the same length.")
+    if len(time_days) < 2:
+        raise ValueError("At least two depletion points are required to estimate fuel lifetime.")
+
+    for idx in range(1, len(keff_values)):
+        k1 = keff_values[idx - 1]
+        k2 = keff_values[idx]
+        if (k1 - 1.0) * (k2 - 1.0) <= 0.0:
+            if k2 == k1:
+                return time_days[idx]
+            return time_days[idx - 1] + (1.0 - k1) * (time_days[idx] - time_days[idx - 1]) / (k2 - k1)
+
+    k1 = keff_values[-2]
+    k2 = keff_values[-1]
+    if k2 == k1:
+        raise ValueError("Cannot extrapolate fuel lifetime because the last two keff values are identical.")
+    return time_days[-1] + (1.0 - k2) * (time_days[-1] - time_days[-2]) / (k2 - k1)
+
+
+def openmc_depletion_3d(params, lattice_geometry, settings):
+    openmc.config['cross_sections'] = params['cross_sections_xml_location']
+
+    operator = openmc.deplete.CoupledOperator(
+        openmc.Model(geometry=lattice_geometry, settings=settings),
+        chain_file=params['simplified_chain_thermal_xml']
+    )
+
+    if 'Burnup Steps' in params:
+        burnup_steps_list_MWd_per_Kg = params['Burnup Steps']
+        burnup_step = np.array(burnup_steps_list_MWd_per_Kg)
+        burnup = np.diff(burnup_step, prepend=0.0)
+
+        integrator = openmc.deplete.PredictorIntegrator(
+            operator,
+            burnup,
+            1000000 * params['Power MWt'],
+            timestep_units='MWd/kg'
+        )
+    elif 'Time Steps' in params:
+        time_steps_list = params['Time Steps']
+        power_list = [params['Power MWt'] * 1e6] * len(time_steps_list)
+        integrator = openmc.deplete.CECMIntegrator(operator, time_steps_list, power_list)
+    else:
+        raise ValueError("3D depletion requires either 'Burnup Steps' or 'Time Steps'.")
+
+    print("Starting 3D depletion")
+    integrator.integrate()
+    print("3D depletion complete")
+
+    depletion_3d_results_file = openmc.deplete.Results("./depletion_results.h5")
+    time, keff = depletion_3d_results_file.get_keff()
+    time_days = [float(t) / 86400.0 for t in time]
+    keff_3d_values = [float(k) for k in keff[:, 0]]
+
+    fuel_lifetime_days = _estimate_keff_crossing_time_days(time_days, keff_3d_values)
+
+    original_materials = depletion_3d_results_file.export_to_materials(0)
+    mass_U235 = _sum_nuclide_mass(original_materials, 'U235')
+    mass_U238 = _sum_nuclide_mass(original_materials, 'U238')
+
+    params['keff 3D'] = keff_3d_values
+    params['Depletion Time Steps'] = time_days
+
+    return fuel_lifetime_days, mass_U235, mass_U238
+
+
+def run_depletion_analysis_3d(params):
+    openmc.run()
+    lattice_geometry = openmc.Geometry.from_xml()
+    settings = openmc.Settings.from_xml()
+    fuel_lifetime_days, mass_U235, mass_U238 = \
+        openmc_depletion_3d(params, lattice_geometry, settings)
+
+    params['Fuel Lifetime'] = fuel_lifetime_days
+    params['Mass U235'] = mass_U235
+    params['Mass U238'] = mass_U238
+    params['Uranium Mass'] = (mass_U235 + mass_U238) / 1000
+
+
 def monitor_heat_flux(params):
     if params['Heat Flux'] <= params['Heat Flux Criteria']:
         print("\n")
@@ -503,6 +594,60 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
     finally:
         params['Shutdown Margin Calc'] = original_shutdown_margin_calc
         params['Isothermal Temperature Coefficients'] = original_isothermal_temperature_coefficients
+        params['Common Temperature'] = original_common_temperature
+
+
+def run_openmc_3d(build_openmc_model, heat_flux_monitor, params):
+    params.setdefault('Shutdown Margin Calc', False)
+    params.setdefault('Isothermal Temperature Coefficients', False)
+    params.setdefault('Cold Shutdown Temperature', 300)
+
+    original_shutdown_margin_calc = params['Shutdown Margin Calc']
+    original_common_temperature = params['Common Temperature']
+
+    try:
+        print(f"\n\nThe results/plots are saved at: {watts.Database().path}\n\n")
+
+        if params['Isothermal Temperature Coefficients']:
+            print("[3D] WARNING: Isothermal Temperature Coefficients are not implemented for run_openmc_3d yet.")
+            params['Temp Coeff 3D'] = np.nan
+        else:
+            params['Temp Coeff 3D'] = np.nan
+
+        if params['Shutdown Margin Calc']:
+            params['Common Temperature'] = params['Cold Shutdown Temperature']
+            params['Shutdown Margin Calc'] = True
+            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
+            openmc_plugin(params, function=lambda: run_depletion_analysis_3d(params))
+            params['keff 3D ARI'] = params['keff 3D']
+
+            params['Common Temperature'] = original_common_temperature
+            params['Shutdown Margin Calc'] = False
+            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
+            openmc_plugin(params, function=lambda: run_depletion_analysis_3d(params))
+            params['keff 3D ARO'] = params['keff 3D']
+
+            sdm_3d_per_step = [
+                ((1.0 - k_s) / k_s) * 1e5
+                for k_s in params['keff 3D ARI']
+            ]
+            params['Most Limiting Shutdown Margin 3D'] = np.min(sdm_3d_per_step)
+            params['Maximum Shutdown Margin 3D'] = np.max(sdm_3d_per_step)
+        else:
+            params['Most Limiting Shutdown Margin 3D'] = np.nan
+            params['Maximum Shutdown Margin 3D'] = np.nan
+
+            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
+            openmc_plugin(params, function=lambda: run_depletion_analysis_3d(params))
+            params['keff 3D ARO'] = params['keff 3D']
+
+    except Exception:
+        print("\n\n\033[91mAn error occurred while running the 3D OpenMC simulation:\033[0m\n\n")
+        traceback.print_exc()
+        raise
+
+    finally:
+        params['Shutdown Margin Calc'] = original_shutdown_margin_calc
         params['Common Temperature'] = original_common_temperature
 
 
