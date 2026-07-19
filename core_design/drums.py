@@ -340,6 +340,16 @@ def calculate_reflector_mass_LTMR(params):
 
     # Assumes all drums lie fully inside the reflector region.
     area_reflector = np.pi * core_radius * core_radius - hex_area - area_of_all_drums  # cm^2
+    if area_reflector < 0:
+        raise ValueError(
+            "LTMR radial reflector area is negative. "
+            f"Core Radius ({core_radius:.4f} cm) is too small for the active "
+            f"hex area ({hex_area:.4f} cm^2) and drum area "
+            f"({area_of_all_drums:.4f} cm^2). "
+            "Update the LTMR reflector geometry from the drum layout before "
+            "calculating reflector mass, or increase Radial Reflector Thickness."
+        )
+
     vol_reflector = area_reflector * drum_height  # cm^3
 
     materials_database = collect_materials_data(params)

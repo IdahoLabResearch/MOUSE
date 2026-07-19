@@ -223,6 +223,13 @@ class EstimateServiceTest(unittest.TestCase):
                 self.assertGreater(float(foak_lcoe.sum()), 0.0)
                 self.assertGreater(float(noak_lcoe.sum()), 0.0)
 
+    def test_reflector_masses_are_positive(self):
+        for reactor_type, result in self.results.items():
+            with self.subTest(reactor_type=reactor_type):
+                params = result.params
+                self.assertGreater(params['Radial Reflector Mass'], 0.0)
+                self.assertGreater(params['Axial Reflector Mass'], 0.0)
+
     def test_noak_lcoe_anchor_returns_diagnostics(self):
         anchor = run_lcoe_at_noak_unit(LcoeAtNoakInputs(
             **BASE_INPUTS,

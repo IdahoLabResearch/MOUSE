@@ -94,9 +94,9 @@ for params['Fuel'] in ['TRIGA_fuel', 'UO2']:
         #'Drum Radius': 9.016,  # cm
         'Drum Absorber Thickness': 1,  # cm
         'Drum Absorber Arc Degrees': 120,
-        'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness']
     })
 
+    update_ltmr_reflector_geometry_from_drums(params)
     calculate_drums_volumes_and_masses(params)
     calculate_reflector_mass_LTMR(params)
 
