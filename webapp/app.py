@@ -4651,10 +4651,16 @@ with streamlit_analytics.track():
         '<strong>How to read this:</strong> the three columns below '
         '(Road, Rail, Sea) each list standard shipping limits used in '
         'that mode. Each card compares your reactor module\'s outer '
-        'dimensions and mass to one limit. A green <strong>&#x2713; '
-        'fits</strong> means the geometry could fit; a red '
-        '<strong>&#x2717; exceeds</strong> tells you which dimension '
-        'is the problem (width, height, length, or weight).'
+        'dimensions and mass to one limit. Both upright and horizontal '
+        'orientations are checked. The road summary uses green for no '
+        'permit, yellow for a permitted overweight/oversize shipment, and '
+        'orange for a superload above the MOUSE 150,000 lb screening '
+        'threshold. The rail summary uses green for an ISO-container '
+        'intermodal shipment, yellow for a dimensional shipment requiring '
+        'railroad clearance, and orange for specialized railcar or '
+        'special-train planning. The sea summary uses green for a standard '
+        'ISO-container shipment and yellow when breakbulk or heavy-lift '
+        'service is required.'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -4747,28 +4753,38 @@ with streamlit_analytics.track():
             ),
         },
         'us_no_permit': {
-            'name': 'US road (no permits needed)',
+            'name': 'US road transport category',
             'width_m': 2.59,
             'height_m': 4.11,
-            'height_note': '(planning)',
+            'height_note': '(loaded vehicle planning limit)',
             'length_m': None,
-            # payload_t = None -> weight fit-check skipped (weight is not
-            # a single-number constraint here; depends on truck setup
-            # and bridge ratings along the route).
             'payload_t': None,
+            'road_category': True,
+            # MOUSE screening assumptions. The legal 80,000 lb threshold
+            # applies to gross vehicle weight, not reactor-module mass.
+            'tractor_trailer_tare_lb': 32000.0,
+            'deck_height_m': 1.52,
+            'no_permit_gvw_lb': 80000.0,
+            'superload_gvw_lb': 150000.0,
             'help_text': (
-                'Maximum truck size on US roads without needing special '
-                'permits or escort vehicles. Wider, taller, or heavier '
-                'loads still ship by road but require state permits, '
-                'multiple axle trailers, and route surveys. The 4.11 m '
-                'height is a planning value (older bridges can be '
-                'lower). Weight depends on truck setup and bridges '
-                'along the route, not a single number.'
+                'Classifies the assembled reactor module for US road '
+                'transport. Green means the estimated gross vehicle '
+                'weight is at or below 80,000 lb and the oriented package '
+                'is within the no-permit width and loaded-height limits. '
+                'Yellow means an overweight or oversize permit is needed. '
+                'Orange means the estimated gross vehicle weight exceeds '
+                'the MOUSE 150,000 lb superload screening threshold. '
+                'Actual permit and superload rules vary by state and route.'
             ),
             'cite_html': (
-                'Source: <a href="https://www.law.cornell.edu/uscode/text/23/127" '
-                'target="_blank" style="color:#1B4F8C;">US federal '
-                'trucking size and weight law (23 USC § 127)</a>'
+                'Sources: <a href="https://www.law.cornell.edu/uscode/text/23/127" '
+                'target="_blank" style="color:#1B4F8C;">23 USC § 127 '
+                '(federal weight limits)</a>; '
+                '<a href="https://www.ecfr.gov/current/title-23/chapter-I/'
+                'subchapter-G/part-658/section-658.15" target="_blank" '
+                'style="color:#1B4F8C;">23 CFR § 658.15 (width)</a>. '
+                'The 4.11 m loaded-height value and 150,000 lb superload '
+                'threshold are MOUSE planning assumptions.'
             ),
         },
         'aar_plate_f': {
@@ -4779,19 +4795,22 @@ with streamlit_analytics.track():
             'length_m': None,
             'payload_t': None,
             'help_text': (
-                'For cargo too big for a standard container, ship on '
-                'an open rail flatcar. The shape narrows higher up: '
-                '3.25 m wide at the bottom, less at the top. The '
-                '5.18 m height includes the flatcar deck (~1 m), so '
-                'usable cargo height above the deck is closer to 4 m. '
-                'Weight limits depend on the route and are typically '
-                '100+ t.'
+                'Preliminary dimensional-envelope check for an open rail '
+                'flatcar. A geometric fit does not mean the shipment is '
+                'approved. Dimensional rail loads require railroad '
+                'clearance, and final acceptance depends on the complete '
+                'loaded-car profile, axle and wheel loading, center of '
+                'gravity, securement, route obstructions, interchange '
+                'railroads, and loading/unloading tracks. The simplified '
+                'MOUSE check does not yet apply a route-specific mass or '
+                'length limit and does not model the narrowing upper '
+                'corners of the loading gauge.'
             ),
             'cite_html': (
-                'Source: '
-                '<a href="https://en.wikipedia.org/wiki/Loading_gauge#North_American_loading_gauges" '
-                'target="_blank" style="color:#1B4F8C;">North American '
-                'rail loading gauges</a>'
+                'Screening envelope; clearance requirements: '
+                '<a href="https://www.up.com/shipping/machinery/seven-steps" '
+                'target="_blank" style="color:#1B4F8C;">Union Pacific '
+                'dimensional-load process</a>'
             ),
         },
     }
@@ -4812,27 +4831,349 @@ with streamlit_analytics.track():
                        + _gv_mass_kg + _rvacs_mass_kg)
     _badge_total_t = _badge_total_kg / 1000.0
 
-    def _render_envelope_card(env, mode_name=''):
-        # Fit-check uses payload_t (realistic cargo capacity) for the
-        # weight comparison; the displayed number is gross_t (standard
-        # rating for ISOs, GVW for US road). When payload_t is None
-        # the weight fit-check is SKIPPED and the badge reflects
-        # only width/height/length (e.g. US road no-permit, AAR Plate F).
-        _w_ok = _rvacs_dia_m <= env['width_m']
-        _h_ok = _rvacs_h_m <= env['height_m']
-        _len_ok = (env['length_m'] is None) or (_rvacs_h_m <= env['length_m'])
-        _wt_ok = (env.get('payload_t') is None) or (_badge_total_t <= env['payload_t'])
-        _fits = _w_ok and _h_ok and _len_ok and _wt_ok
-        _bc = ('#15803d', '#dcfce7', '#bbf7d0') if _fits else ('#b91c1c', '#fee2e2', '#fecaca')
-        if _fits:
-            _badge_text = '✓ fits'
+    def _module_fits_envelope(env):
+        """Return a preliminary mass-and-envelope fit for a module.
+
+        The same upright/horizontal assumptions used by the detailed cards
+        are applied here so the rail and sea summary categories remain
+        consistent with the individual fit checks.
+        """
+        _orientations = {
+            'upright': {
+                'width_m': _rvacs_dia_m,
+                'height_m': _rvacs_h_m,
+                'length_m': _rvacs_dia_m,
+            },
+            'horizontal': {
+                'width_m': _rvacs_dia_m,
+                'height_m': _rvacs_dia_m,
+                'length_m': _rvacs_h_m,
+            },
+        }
+        _geometry_ok = any(
+            dims['width_m'] <= env['width_m']
+            and dims['height_m'] <= env['height_m']
+            and (
+                env['length_m'] is None
+                or dims['length_m'] <= env['length_m']
+            )
+            for dims in _orientations.values()
+        )
+        _weight_ok = (
+            env.get('payload_t') is None
+            or _badge_total_t <= env['payload_t']
+        )
+        return _geometry_ok and _weight_ok
+
+    def _render_rail_sea_category_card(mode_name):
+        """Render mode-level logistics categories for rail and sea.
+
+        These colors describe logistics complexity, not a statutory permit
+        ladder. Detailed carrier, route, port, vessel, and securement review
+        remains necessary for an actual shipment.
+        """
+        _iso_keys = ('iso20', 'iso40', 'iso40hc')
+        _fitting_isos = [
+            _envelopes[key]['name']
+            for key in _iso_keys
+            if _module_fits_envelope(_envelopes[key])
+        ]
+
+        if mode_name == 'Rail':
+            _title = 'Rail transport category'
+            _help_text = (
+                'This is a preliminary logistics-complexity classification, '
+                'not a permit determination. Green means at least one ISO '
+                'container fit check passes, allowing a standard intermodal '
+                'concept. Yellow means no ISO container fits but the '
+                'simplified rail-flatcar envelope fits; a dimensional-load '
+                'clearance proposal is required. Orange means the simplified '
+                'flatcar envelope also fails, so specialized equipment such '
+                'as a heavy-duty or Schnabel car and possibly special-train '
+                'planning may be needed. Even a green result still requires '
+                'carrier acceptance, route and interchange review, loading '
+                'and unloading track approval, axle-loading and center-of-'
+                'gravity checks, securement design, and a commercial quote.'
+            )
+            if _fitting_isos:
+                _badge_text = '✓ Rail (standard ISO-container/intermodal shipment)'
+                _bc = ('#15803d', '#dcfce7', '#bbf7d0')
+                _reason = (
+                    'At least one ISO-container check passes: '
+                    + ', '.join(_fitting_isos) + '.'
+                )
+            elif _module_fits_envelope(_envelopes['aar_plate_f']):
+                _badge_text = '⚠ Rail (dimensional shipment — clearance required)'
+                _bc = ('#a16207', '#fef9c3', '#fde047')
+                _reason = (
+                    'No ISO container fits, but the simplified rail-flatcar '
+                    'envelope check passes. Railroad clearance is still required.'
+                )
+            else:
+                _badge_text = '⚠ Rail (specialized railcar or special-train planning required)'
+                _bc = ('#c2410c', '#ffedd5', '#fdba74')
+                _reason = (
+                    'Neither an ISO container nor the simplified rail-flatcar '
+                    'envelope fits. A project-specific rail concept is required.'
+                )
+            _source_html = (
+                'Clearance process: <a href="https://www.up.com/shipping/'
+                'machinery/seven-steps" target="_blank" '
+                'style="color:#1B4F8C;">Union Pacific dimensional loads</a>'
+            )
+        elif mode_name == 'Sea':
+            _title = 'Sea transport category'
+            _help_text = (
+                'This is a preliminary logistics-complexity classification, '
+                'not a maritime permit determination. Green means at least '
+                'one ISO-container fit check passes. Yellow means no ISO '
+                'container fits and the module would require a breakbulk, '
+                'multipurpose, or heavy-lift shipping concept. A yellow '
+                'result requires vessel and port suitability checks, lift '
+                'planning, stowage and securing design, and confirmation of '
+                'terminal handling and inland road or rail legs. MOUSE does '
+                'not yet model crane capacity, hatch and deck limits, port '
+                'access, or shipment-specific handling costs.'
+            )
+            if _fitting_isos:
+                _badge_text = '✓ Sea (standard ISO-container shipment)'
+                _bc = ('#15803d', '#dcfce7', '#bbf7d0')
+                _reason = (
+                    'At least one ISO-container check passes: '
+                    + ', '.join(_fitting_isos) + '.'
+                )
+            else:
+                _badge_text = '⚠ Sea (breakbulk or heavy-lift shipment required)'
+                _bc = ('#a16207', '#fef9c3', '#fde047')
+                _reason = (
+                    'No ISO container fits. A project-specific breakbulk or '
+                    'heavy-lift shipping concept is required.'
+                )
+            _source_html = (
+                'Cargo planning and securing: '
+                '<a href="https://www.imo.org/en/ourwork/safety/pages/'
+                'css-code.aspx" target="_blank" style="color:#1B4F8C;">'
+                'IMO CSS Code</a>'
+            )
         else:
-            _fails = []
-            if not _w_ok:   _fails.append('width')
-            if not _h_ok:   _fails.append('height')
-            if not _len_ok: _fails.append('length')
-            if not _wt_ok:  _fails.append('weight')
-            _badge_text = '✗ exceeds ' + ', '.join(_fails)
+            return ''
+
+        return (
+            '<div style="background:#ffffff;border:1px solid #bfdbfe;'
+            'border-radius:8px;padding:0.7rem 0.85rem;margin-bottom:0.6rem;'
+            'color:#0a2540;">'
+            f'<div style="font-weight:600;font-size:0.85rem;color:#0a2540;'
+            f'margin-bottom:0.35rem;">{_title}'
+            f'{_help_icon(_help_text)}</div>'
+            f'<div style="display:inline-block;background:{_bc[1]};'
+            f'border:1px solid {_bc[2]};color:{_bc[0]};font-size:0.85rem;'
+            f'font-weight:600;padding:0.15rem 0.5rem;border-radius:8px;'
+            f'margin-bottom:0.4rem;max-width:100%;white-space:normal;'
+            f'line-height:1.3;">{_badge_text}</div>'
+            f'<div style="font-size:0.82rem;color:#64748b;line-height:1.35;'
+            f'margin-bottom:0.25rem;">{_reason}</div>'
+            f'<div style="font-size:0.82rem;color:#64748b;line-height:1.35;'
+            f'margin-bottom:0.25rem;">Screening classification only; '
+            f'carrier and route-specific approval is not modeled.</div>'
+            f'<div style="font-size:0.85rem;color:#64748b;line-height:1.4;">'
+            f'{_source_html}</div>'
+            '</div>'
+        )
+
+    def _render_road_category_card(env):
+        """Render the three-level US road screening classification.
+
+        The legal 80,000 lb threshold is gross vehicle weight (GVW). MOUSE
+        estimates GVW as the assembled reactor-module mass plus a planning
+        tractor/trailer tare. Shipping-frame or cradle mass is not yet
+        available and is therefore reported as excluded.
+        """
+        _tare_lb = float(env['tractor_trailer_tare_lb'])
+        _deck_m = float(env['deck_height_m'])
+        _gross_lb = _badge_total_kg * 2.2046226218 + _tare_lb
+
+        _orientations = {
+            'upright': {
+                'width_m': _rvacs_dia_m,
+                'package_height_m': _rvacs_h_m,
+            },
+            'horizontal': {
+                'width_m': _rvacs_dia_m,
+                'package_height_m': _rvacs_dia_m,
+            },
+        }
+        _results = {}
+        for _name, _dims in _orientations.items():
+            _loaded_height_m = _dims['package_height_m'] + _deck_m
+            _width_ok = _dims['width_m'] <= env['width_m']
+            _height_ok = _loaded_height_m <= env['height_m']
+            _results[_name] = {
+                **_dims,
+                'loaded_height_m': _loaded_height_m,
+                'width_ok': _width_ok,
+                'height_ok': _height_ok,
+                'geometry_ok': _width_ok and _height_ok,
+            }
+
+        _valid = [name for name, result in _results.items()
+                  if result['geometry_ok']]
+        _selected = _valid[0] if _valid else min(
+            _results,
+            key=lambda name: (
+                max(0.0, _results[name]['width_m'] - env['width_m'])
+                + max(0.0, _results[name]['loaded_height_m'] - env['height_m'])
+            ),
+        )
+        _sel = _results[_selected]
+
+        if _gross_lb > env['superload_gvw_lb']:
+            _badge_text = '⚠ US road (superload)'
+            _bc = ('#c2410c', '#ffedd5', '#fdba74')
+            _reason = (
+                f'Estimated GVW {_gross_lb:,.0f} lb exceeds the '
+                f'{env["superload_gvw_lb"]:,.0f} lb MOUSE superload '
+                'screening threshold.'
+            )
+        elif _valid and _gross_lb <= env['no_permit_gvw_lb']:
+            _badge_text = '✓ US road (no permits needed)'
+            _bc = ('#15803d', '#dcfce7', '#bbf7d0')
+            _reason = (
+                f'Fits {_selected}; loaded height = '
+                f'{_sel["package_height_m"]:.2f} m package + '
+                f'{_deck_m:.2f} m trailer deck = '
+                f'{_sel["loaded_height_m"]:.2f} m. Estimated GVW '
+                f'= {_gross_lb:,.0f} lb.'
+            )
+        else:
+            _badge_text = '⚠ US road (permit required)'
+            _bc = ('#a16207', '#fef9c3', '#fde047')
+            _triggers = []
+            if _gross_lb > env['no_permit_gvw_lb']:
+                _triggers.append(
+                    f'estimated GVW {_gross_lb:,.0f} lb exceeds '
+                    f'{env["no_permit_gvw_lb"]:,.0f} lb'
+                )
+            if not _valid:
+                _geometry_triggers = []
+                if not _sel['width_ok']:
+                    _geometry_triggers.append('width')
+                if not _sel['height_ok']:
+                    _geometry_triggers.append('loaded height')
+                _triggers.append(
+                    f'{_selected} orientation exceeds ' +
+                    ', '.join(_geometry_triggers)
+                )
+            _reason = 'Permit trigger: ' + '; '.join(_triggers) + '.'
+
+        return (
+            '<div style="background:#ffffff;border:1px solid #bfdbfe;'
+            'border-radius:8px;padding:0.7rem 0.85rem;margin-bottom:0.6rem;'
+            'color:#0a2540;">'
+            f'<div style="font-weight:600;font-size:0.85rem;color:#0a2540;'
+            f'margin-bottom:0.35rem;">{env["name"]}'
+            f'{_help_icon(env["help_text"])}</div>'
+            f'<div style="display:inline-block;background:{_bc[1]};'
+            f'border:1px solid {_bc[2]};color:{_bc[0]};font-size:0.85rem;'
+            f'font-weight:600;padding:0.15rem 0.5rem;border-radius:8px;'
+            f'margin-bottom:0.4rem;max-width:100%;white-space:normal;'
+            f'line-height:1.3;">{_badge_text}</div>'
+            f'<div style="font-size:0.85rem;color:#3c4257;line-height:1.4;'
+            f'margin-bottom:0.25rem;">w ≤ {env["width_m"]:.2f} m '
+            f'&nbsp;|&nbsp; loaded h ≤ {env["height_m"]:.2f} m '
+            f'&nbsp;|&nbsp; no-permit GVW ≤ '
+            f'{env["no_permit_gvw_lb"]:,.0f} lb '
+            f'&nbsp;|&nbsp; superload &gt; '
+            f'{env["superload_gvw_lb"]:,.0f} lb</div>'
+            f'<div style="font-size:0.82rem;color:#64748b;line-height:1.35;'
+            f'margin-bottom:0.25rem;">{_reason}</div>'
+            f'<div style="font-size:0.82rem;color:#64748b;line-height:1.35;'
+            f'margin-bottom:0.25rem;">GVW planning estimate = assembled '
+            f'reactor-module mass + {_tare_lb:,.0f} lb tractor/trailer '
+            f'tare. Shipping frame/cradle mass is not yet included.</div>'
+            f'<div style="font-size:0.85rem;color:#64748b;line-height:1.4;">'
+            f'{env["cite_html"]}</div>'
+            '</div>'
+        )
+
+    def _render_envelope_card(env, mode_name=''):
+        # Evaluate the cylindrical reactor module in both physically
+        # meaningful shipping orientations:
+        #   upright:    width = diameter, height = module height,
+        #               length = diameter
+        #   horizontal: width = diameter, height = diameter,
+        #               length = module height
+        #
+        # This prevents a tall cylindrical module from being rejected
+        # simply because only the upright orientation was checked.
+        _orientations = {
+            'upright': {
+                'width_m': _rvacs_dia_m,
+                'height_m': _rvacs_h_m,
+                'length_m': _rvacs_dia_m,
+            },
+            'horizontal': {
+                'width_m': _rvacs_dia_m,
+                'height_m': _rvacs_dia_m,
+                'length_m': _rvacs_h_m,
+            },
+        }
+
+        def _orientation_result(dims):
+            _w_ok = dims['width_m'] <= env['width_m']
+            _h_ok = dims['height_m'] <= env['height_m']
+            _len_ok = (env['length_m'] is None) or (dims['length_m'] <= env['length_m'])
+            return {
+                'width_ok': _w_ok,
+                'height_ok': _h_ok,
+                'length_ok': _len_ok,
+                'geometry_ok': _w_ok and _h_ok and _len_ok,
+            }
+
+        _orientation_results = {
+            name: _orientation_result(dims)
+            for name, dims in _orientations.items()
+        }
+        _valid_orientations = [
+            name for name, result in _orientation_results.items()
+            if result['geometry_ok']
+        ]
+        _selected_orientation = _valid_orientations[0] if _valid_orientations else None
+
+        # Fit-check uses payload_t (realistic cargo capacity) for the
+        # weight comparison. When payload_t is None, the weight check is
+        # skipped and the badge reflects geometry only.
+        _wt_ok = (env.get('payload_t') is None) or (_badge_total_t <= env['payload_t'])
+        _fits = (_selected_orientation is not None) and _wt_ok
+        _bc = ('#15803d', '#dcfce7', '#bbf7d0') if _fits else ('#b91c1c', '#fee2e2', '#fecaca')
+
+        if _fits:
+            _badge_text = f'✓ fits {_selected_orientation}'
+            _orientation_note = (
+                f'Compatible orientation: {_selected_orientation}. '
+                'Both upright and horizontal orientations are checked.'
+            )
+        elif _selected_orientation is not None and not _wt_ok:
+            _badge_text = '✗ exceeds weight'
+            _orientation_note = (
+                f'Geometry fits {_selected_orientation}, but the module '
+                'exceeds the listed cargo-mass limit.'
+            )
+        else:
+            _badge_text = '✗ does not fit in either orientation'
+            _orientation_failures = []
+            for _orientation_name, _result in _orientation_results.items():
+                _fails = []
+                if not _result['width_ok']:
+                    _fails.append('width')
+                if not _result['height_ok']:
+                    _fails.append('height')
+                if not _result['length_ok']:
+                    _fails.append('length')
+                _orientation_failures.append(
+                    f'{_orientation_name}: ' + ', '.join(_fails)
+                )
+            _orientation_note = '; '.join(_orientation_failures) + '.'
+
         _height_note = env.get('height_note', '')
         _height_note_str = f' <span style="color:#64748b;">{_height_note}</span>' if _height_note else ''
         _len_str = (f' &nbsp;|&nbsp; len ≤ {env["length_m"]:.2f} m'
@@ -4870,6 +5211,8 @@ with streamlit_analytics.track():
             f'w ≤ {env["width_m"]:.2f} m &nbsp;|&nbsp; '
             f'h ≤ {env["height_m"]:.2f} m{_height_note_str}{_len_str}{_wt_str}'
             f'</div>'
+            f'<div style="font-size:0.82rem;color:#64748b;line-height:1.35;'
+            f'margin-bottom:0.25rem;">{_orientation_note}</div>'
             + (f'<div style="font-size:0.85rem;color:#3c4257;line-height:1.4;'
                f'margin-bottom:0.25rem;">{env["note_html"]}</div>'
                if env.get('note_html') else '')
@@ -4895,9 +5238,15 @@ with streamlit_analytics.track():
                 unsafe_allow_html=True,
             )
             _cards_html = ''.join(
-                _render_envelope_card(_envelopes[k], mode_name=_group['name'])
+                _render_road_category_card(_envelopes[k])
+                if _envelopes[k].get('road_category')
+                else _render_envelope_card(
+                    _envelopes[k], mode_name=_group['name']
+                )
                 for k in _group['envelope_keys']
             )
+            if _group['name'] in ('Rail', 'Sea'):
+                _cards_html += _render_rail_sea_category_card(_group['name'])
             st.markdown(_cards_html, unsafe_allow_html=True)
 
     # Footnote — what each badge does and doesn't check, plus the
@@ -4908,15 +5257,25 @@ with streamlit_analytics.track():
         'padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:0.85rem;line-height:1.45;color:#92400e;">'
         '<strong>Notes:</strong>'
         '<ul style="margin:0.4rem 0 0 1.2rem;padding:0;">'
-        '<li>Each badge compares the outermost RVACS envelope (diameter, '
-        'height) and the sum of all component masses against the listed '
-        'envelope. Per component dimensions and masses are shown in the '
-        'table above.</li>'
+        '<li>Each badge compares the assembled reactor module: the '
+        'outermost RVACS envelope (diameter and height) and the sum of all '
+        'component masses. Both upright and horizontal orientations are '
+        'checked. Per-component dimensions and masses are shown above.</li>'
+        '<li>The US road classification estimates gross vehicle weight '
+        'using the reactor-module mass plus a 32,000 lb tractor/trailer '
+        'tare and calculates loaded height using a 1.52 m trailer deck. '
+        'Shipping-frame mass is not yet included.</li>'
+        '<li>The rail and sea colors describe logistics complexity, not '
+        'a legal permit ladder. Rail uses green for an ISO-container '
+        'intermodal concept, yellow for a dimensional shipment requiring '
+        'railroad clearance, and orange for specialized railcar or '
+        'special-train planning. Sea uses green for ISO-container shipping '
+        'and yellow for breakbulk or heavy-lift planning.</li>'
         '<li>For modules larger than these envelopes, road uses permitted '
-        'heavy haul (axle bridge limits often the binding constraint), rail '
-        'uses specialized cars such as Schnabel (300 to 500+ tons), and sea '
-        'uses breakbulk or heavy lift vessels (hundreds to 1000+ tons). Each '
-        'oversized shipment is planned per route.</li>'
+        'heavy haul, rail uses project-specific heavy-duty or Schnabel cars, '
+        'and sea uses breakbulk or heavy-lift vessels. Actual feasibility '
+        'depends on the selected carrier, route, railroads, ports, vessel, '
+        'lifting plan, cargo securement, and first/last-mile access.</li>'
         '</ul>'
         '</div>',
         unsafe_allow_html=True,
