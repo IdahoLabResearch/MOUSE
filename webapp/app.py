@@ -4632,7 +4632,7 @@ with streamlit_analytics.track():
         'font-size:0.85rem;line-height:1.45;color:#92400e;">'
         '<strong>Caveat:</strong> geometry and mass check only. '
         'Fueled modules, or modules removed after operation, '
-        'require shielded casks that add tens of tonnes and can '
+        'require shielded casks that add tens of thousands of pounds and can '
         'exceed the ISO container envelope.'
         '</div>',
         unsafe_allow_html=True,
@@ -4646,19 +4646,18 @@ with streamlit_analytics.track():
         '<div style="background:#f7f8fa;border:1px solid #bfdbfe;border-radius:8px;'
         'padding:0.85rem 1.1rem;margin-bottom:0.9rem;'
         'font-size:0.85rem;line-height:1.45;color:#3c4257;">'
-        '<strong>How to read this:</strong> the three columns below '
-        '(Road, Rail, Sea) each list standard shipping limits used in '
-        'that mode. Each card compares your reactor module\'s outer '
-        'dimensions and mass to one limit. The reactor module is evaluated '
-        'in a horizontal shipping orientation. The road summary uses green for no '
-        'permit, yellow for a permitted overweight/oversize shipment, and '
-        'orange for a superload above the MOUSE 150,000 lb screening '
-        'threshold. The rail summary uses green for an ISO-container '
-        'intermodal shipment, yellow for a dimensional shipment requiring '
-        'railroad clearance, and orange for specialized railcar or '
-        'special-train planning. The sea summary uses green for a standard '
-        'ISO-container shipment and yellow when breakbulk or heavy-lift '
-        'service is required.'
+        '<strong>How to read this:</strong> ISO-container cards answer two '
+        'separate questions: whether the horizontal reactor module fits inside '
+        'the container, and the transportation status for that container in the '
+        'selected mode. The final card in each column evaluates a '
+        '<strong>direct shipment without an ISO container</strong>. Road uses '
+        'green for no permit, yellow for a permitted overweight/oversize '
+        'shipment, and orange for a superload above the MOUSE 150,000 lb '
+        'screening threshold. Rail uses green for standard intermodal '
+        'container service, yellow for dimensional-load clearance, and orange '
+        'for specialized railcar or special-train planning. Sea uses green for '
+        'standard container service and yellow for breakbulk or heavy-lift '
+        'service.'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -4671,110 +4670,107 @@ with streamlit_analytics.track():
     # heavy options (Schnabel rail, breakbulk sea) get a closing
     # note per mode rather than a fit-check.
     # Each envelope carries:
-    # - `gross_t`: the number SHOWN to the user (container structural
+    # - `gross_lb`: the number SHOWN to the user (container structural
     #   rating for ISOs, Gross Vehicle Weight for US road).
-    # - `payload_t`: what the fit-check actually compares against
-    #   (container gross − tare for ISOs; GVW − tractor+trailer tare
+    # - `payload_lb`: what the fit-check actually compares against
+    #   (container gross minus tare for ISOs; loaded vehicle weight minus tractor/trailer tare
     #   for US road). This is the realistic cargo mass available.
     # - `height_note`: optional small qualifier shown after the
     #   height number (e.g. "(route-dep.)" for state-set limits).
     _envelopes = {
         'iso20': {
             'name': 'ISO 20 ft container',
+            'is_iso': True,
             'width_m': 2.35,
             'height_m': 2.39,
             'length_m': 5.90,
-            'payload_t': 21.7,  # 24 t total minus ~2.3 t container weight
+            'payload_lb': 47800.0,
+            'container_tare_lb': 5100.0,
+            'road_loaded_height_m': 3.81,
             'help_text': (
-                'A standard 20 ft shipping container, used worldwide on '
-                'trucks, trains, and ships. Maximum cargo weight is '
-                '~21.7 t (the 24 t total limit minus ~2.3 t for the '
-                'container itself). Key advantage: the same container '
-                'moves between truck, train, and ship without ever '
-                'being unpacked.'
+                'A standard 20 ft shipping container used on trucks, trains, '
+                'and ships. Approximate maximum cargo mass is 47,800 lb after '
+                'allowing for the container itself. The fit badge checks the '
+                'reactor module against the container interior. The mode-status '
+                'badge separately shows the road, rail, or sea transportation '
+                'category for that containerized shipment.'
             ),
             'cite_html': (
                 'Source: <a href="https://www.iso.org/standard/76912.html" '
                 'target="_blank" style="color:#1B4F8C;">ISO 668:2020</a>'
-            ),
-            'road_note_html': (
-                'Typical cargo limit on US trucks: 21 to 22 t '
-                '(24 t total minus ~2.3 t container weight).'
             ),
         },
         'iso40': {
             'name': 'ISO 40 ft container',
+            'is_iso': True,
             'width_m': 2.35,
             'height_m': 2.39,
             'length_m': 12.03,
-            'payload_t': 26.78,  # 30.48 t total minus ~3.7 t container weight
+            'payload_lb': 59000.0,
+            'container_tare_lb': 8200.0,
+            'road_loaded_height_m': 3.81,
             'help_text': (
-                'A standard 40 ft shipping container with the same '
-                'width and height as the 20 ft, roughly double the '
-                'length. Maximum cargo weight is ~26.8 t (30.5 t total '
-                'minus ~3.7 t container). On US roads, federal truck '
-                'weight rules often reduce what you can actually load '
-                'below this number.'
+                'A standard 40 ft shipping container. Approximate maximum '
+                'cargo mass is 59,000 lb after allowing for the container '
+                'itself. The fit badge checks the reactor module against the '
+                'container interior. The mode-status badge separately shows '
+                'the road, rail, or sea transportation category for that '
+                'containerized shipment.'
             ),
             'cite_html': (
                 'Source: <a href="https://www.iso.org/standard/76912.html" '
                 'target="_blank" style="color:#1B4F8C;">ISO 668:2020</a>'
-            ),
-            'road_note_html': (
-                'Typical cargo limit on US trucks: 26 to 28 t. '
-                'US federal 80,000 lb truck weight law often reduces '
-                'this further in practice.'
             ),
         },
         'iso40hc': {
             'name': 'ISO 40 ft High Cube container',
+            'is_iso': True,
             'width_m': 2.35,
             'height_m': 2.70,
             'length_m': 12.03,
-            'payload_t': 26.58,  # 30.48 t total minus ~3.9 t container weight
+            'payload_lb': 58600.0,
+            'container_tare_lb': 8600.0,
+            'road_loaded_height_m': 4.11,
             'help_text': (
-                'Like a standard 40 ft container but ~30 cm taller '
-                'inside. The usual choice when the module is too tall '
-                'for a regular container. Maximum cargo weight ~26.6 t. '
-                'On US trucks, loaded height (~4.1 m) sits right at the '
-                'no permit clearance limit, so the truck chassis '
-                'matters.'
+                'A 40 ft High Cube container with additional internal height. '
+                'Approximate maximum cargo mass is 58,600 lb after allowing '
+                'for the container itself. The fit badge checks the reactor '
+                'module against the container interior. The mode-status badge '
+                'separately shows the road, rail, or sea transportation '
+                'category. For road screening, the loaded container height is '
+                'assumed to be approximately 4.11 m.'
             ),
             'cite_html': (
                 'Source: <a href="https://www.iso.org/standard/76912.html" '
                 'target="_blank" style="color:#1B4F8C;">ISO 668:2020</a>'
             ),
-            'road_note_html': (
-                'Typical cargo limit on US trucks: 26 to 27 t. '
-                'Loaded height on a standard chassis is ~4.1 m, right '
-                'at the US no permit clearance limit.'
-            ),
         },
         'us_no_permit': {
-            'name': 'US road transport category',
+            'name': 'Direct road shipment',
             'width_m': 2.59,
             'height_m': 4.11,
             'height_note': '(loaded vehicle planning limit)',
             'length_m': None,
-            'payload_t': None,
+            'payload_lb': None,
             'road_category': True,
             # MOUSE screening assumptions. The legal 80,000 lb threshold
-            # applies to gross vehicle weight, not reactor-module mass.
+            # applies to loaded vehicle weight, not reactor-module mass.
             'tractor_trailer_tare_lb': 32000.0,
             'deck_height_m': 1.52,
             'no_permit_gvw_lb': 80000.0,
             'superload_gvw_lb': 150000.0,
             'help_text': (
-                'The reactor module is evaluated horizontally. Estimated loaded '
-                'vehicle weight equals the assembled reactor-module mass plus a '
-                '32,000 lb tractor/trailer planning allowance; the shipping frame '
-                'or cradle is not yet included. Loaded height equals the module '
-                'diameter plus a 1.52 m trailer deck. Green means no permit is '
-                'needed under the MOUSE screening limits. Yellow means an '
-                'overweight or oversize permit is needed. Orange means the '
-                'estimated loaded vehicle weight exceeds the MOUSE 150,000 lb '
-                'superload screening threshold. Actual requirements vary by '
-                'state and route.'
+                'Direct road shipment means the reactor box is placed on a '
+                'trailer without an ISO container. The module is evaluated '
+                'horizontally. Estimated loaded vehicle weight equals the '
+                'assembled reactor-module mass plus a 32,000 lb tractor/trailer '
+                'planning allowance; the shipping frame or cradle is not yet '
+                'included. Loaded height equals the module diameter plus a '
+                '1.52 m trailer deck. Green means no permit is needed under '
+                'the MOUSE screening limits. Yellow means an overweight or '
+                'oversize permit is needed. Orange means the estimated loaded '
+                'vehicle weight exceeds the MOUSE 150,000 lb superload '
+                'screening threshold. Actual requirements vary by state and route.'
             ),
             'cite_html': (
                 'Sources: <a href="https://www.law.cornell.edu/uscode/text/23/127" '
@@ -4793,18 +4789,16 @@ with streamlit_analytics.track():
             'height_m': 5.18,
             'height_note': '(above rail)',
             'length_m': None,
-            'payload_t': None,
+            'payload_lb': None,
             'help_text': (
-                'Preliminary dimensional-envelope check for an open rail '
-                'flatcar. A geometric fit does not mean the shipment is '
-                'approved. Dimensional rail loads require railroad '
-                'clearance, and final acceptance depends on the complete '
-                'loaded-car profile, axle and wheel loading, center of '
-                'gravity, securement, route obstructions, interchange '
-                'railroads, and loading/unloading tracks. The simplified '
-                'MOUSE check does not yet apply a route-specific mass or '
-                'length limit and does not model the narrowing upper '
-                'corners of the loading gauge.'
+                'Preliminary dimensional-envelope check for a direct shipment '
+                'on an open rail flatcar without an ISO container. A geometric '
+                'fit does not mean the shipment is approved. Dimensional rail '
+                'loads require railroad clearance, and final acceptance depends '
+                'on the complete loaded-car profile, axle and wheel loading, '
+                'center of gravity, securement, route obstructions, interchange '
+                'railroads, and loading/unloading tracks. The simplified MOUSE '
+                'check does not yet apply a route-specific mass or length limit.'
             ),
             'cite_html': (
                 'Screening envelope; clearance requirements: '
@@ -4829,7 +4823,7 @@ with streamlit_analytics.track():
     _rvacs_h_m = _rvacs_height_cm / 100.0
     _badge_total_kg = (_reactor_mass_kg + _rv_mass_kg
                        + _gv_mass_kg + _rvacs_mass_kg)
-    _badge_total_t = _badge_total_kg / 1000.0
+    _badge_total_lb = _badge_total_kg * 2.2046226218
 
     def _module_fits_envelope(env):
         """Return a preliminary horizontal mass-and-envelope fit."""
@@ -4847,89 +4841,101 @@ with streamlit_analytics.track():
             )
         )
         _weight_ok = (
-            env.get('payload_t') is None
-            or _badge_total_t <= env['payload_t']
+            env.get('payload_lb') is None
+            or _badge_total_lb <= env['payload_lb']
         )
         return _geometry_ok and _weight_ok
 
-    def _render_rail_sea_category_card(mode_name):
-        """Render mode-level logistics categories for rail and sea.
+    def _container_mode_status(env, mode_name, container_fits):
+        """Return a second badge for a containerized movement by mode."""
+        if not container_fits:
+            return (
+                f'{mode_name}: container option unavailable',
+                ('#b91c1c', '#fee2e2', '#fecaca'),
+                '',
+            )
 
-        These colors describe logistics complexity, not a statutory permit
-        ladder. Detailed carrier, route, port, vessel, and securement review
-        remains necessary for an actual shipment.
-        """
-        _iso_keys = ('iso20', 'iso40', 'iso40hc')
-        _fitting_isos = [
-            _envelopes[key]['name']
-            for key in _iso_keys
-            if _module_fits_envelope(_envelopes[key])
-        ]
+        if mode_name == 'Road':
+            # Planning estimate for a loaded containerized truck:
+            # reactor module + ISO container + tractor/chassis allowance.
+            _loaded_weight_lb = (
+                _badge_total_lb
+                + float(env.get('container_tare_lb', 0.0))
+                + 32000.0
+            )
+            _loaded_height_m = float(env.get('road_loaded_height_m', 0.0))
+            if _loaded_weight_lb > 150000.0:
+                return (
+                    'Road: superload',
+                    ('#c2410c', '#ffedd5', '#fdba74'),
+                    f'Loaded vehicle weight: {_loaded_weight_lb:,.0f} lb.',
+                )
+            if _loaded_weight_lb > 80000.0 or _loaded_height_m > 4.11:
+                _trigger = 'weight' if _loaded_weight_lb > 80000.0 else 'height'
+                return (
+                    'Road: permit required',
+                    ('#a16207', '#fef9c3', '#fde047'),
+                    f'Loaded vehicle weight: {_loaded_weight_lb:,.0f} lb; '
+                    f'permit triggered by {_trigger}.',
+                )
+            return (
+                'Road: no permit needed',
+                ('#15803d', '#dcfce7', '#bbf7d0'),
+                f'Loaded vehicle weight: {_loaded_weight_lb:,.0f} lb.',
+            )
 
         if mode_name == 'Rail':
-            _title = 'Rail transport category'
-            _help_text = (
-                'This is a preliminary logistics-complexity classification, '
-                'not a permit determination. Green means at least one ISO '
-                'container fit check passes, allowing a standard intermodal '
-                'concept. Yellow means no ISO container fits but the '
-                'simplified rail-flatcar envelope fits; a dimensional-load '
-                'clearance proposal is required. Orange means the simplified '
-                'flatcar envelope also fails, so specialized equipment such '
-                'as a heavy-duty or Schnabel car and possibly special-train '
-                'planning may be needed. Even a green result still requires '
-                'carrier acceptance, route and interchange review, loading '
-                'and unloading track approval, axle-loading and center-of-'
-                'gravity checks, securement design, and a commercial quote.'
+            return (
+                'Rail: standard intermodal shipment',
+                ('#15803d', '#dcfce7', '#bbf7d0'),
+                '',
             )
-            if _fitting_isos:
-                _badge_text = '✓ Rail (standard ISO-container/intermodal shipment)'
-                _bc = ('#15803d', '#dcfce7', '#bbf7d0')
-                _reason = 'Fits: ' + ', '.join(_fitting_isos) + '.'
-            elif _module_fits_envelope(_envelopes['aar_plate_f']):
-                _badge_text = '⚠ Rail (dimensional shipment — clearance required)'
+
+        if mode_name == 'Sea':
+            return (
+                'Sea: standard container shipment',
+                ('#15803d', '#dcfce7', '#bbf7d0'),
+                '',
+            )
+
+        return ('', ('#64748b', '#f1f5f9', '#cbd5e1'), '')
+
+    def _render_rail_sea_category_card(mode_name):
+        """Render direct non-containerized shipment categories."""
+        if mode_name == 'Rail':
+            _title = 'Direct rail shipment'
+            _help_text = (
+                'Direct rail shipment means the reactor box is loaded on a '
+                'railcar without an ISO container. Yellow means it fits the '
+                'simplified flatcar envelope but still requires dimensional-load '
+                'clearance. Orange means the simplified flatcar envelope is '
+                'exceeded and specialized railcar or special-train planning may '
+                'be needed. Carrier and route approval remain necessary.'
+            )
+            if _module_fits_envelope(_envelopes['aar_plate_f']):
+                _badge_text = 'Dimensional flatcar shipment — clearance required'
                 _bc = ('#a16207', '#fef9c3', '#fde047')
-                _reason = (
-                    'ISO-container limits exceeded; rail flatcar fits. '
-                    'Railroad clearance required.'
-                )
+                _reason = 'Fits the simplified flatcar envelope.'
             else:
-                _badge_text = '⚠ Rail (specialized railcar or special-train planning required)'
+                _badge_text = 'Specialized railcar or special-train planning required'
                 _bc = ('#c2410c', '#ffedd5', '#fdba74')
-                _reason = (
-                    'Standard container and flatcar limits exceeded. '
-                    'Specialized rail planning required.'
-                )
+                _reason = 'Standard flatcar limits exceeded.'
             _source_html = (
                 'Clearance process: <a href="https://www.up.com/shipping/'
                 'machinery/seven-steps" target="_blank" '
                 'style="color:#1B4F8C;">Union Pacific dimensional loads</a>'
             )
         elif mode_name == 'Sea':
-            _title = 'Sea transport category'
+            _title = 'Direct sea shipment'
             _help_text = (
-                'This is a preliminary logistics-complexity classification, '
-                'not a maritime permit determination. Green means at least '
-                'one ISO-container fit check passes. Yellow means no ISO '
-                'container fits and the module would require a breakbulk, '
-                'multipurpose, or heavy-lift shipping concept. A yellow '
-                'result requires vessel and port suitability checks, lift '
-                'planning, stowage and securing design, and confirmation of '
-                'terminal handling and inland road or rail legs. MOUSE does '
-                'not yet model crane capacity, hatch and deck limits, port '
-                'access, or shipment-specific handling costs.'
+                'Direct sea shipment means the reactor box is shipped without '
+                'an ISO container. It therefore requires a breakbulk, '
+                'multipurpose, or heavy-lift concept, including vessel and port '
+                'suitability checks, lift planning, stowage, and securement.'
             )
-            if _fitting_isos:
-                _badge_text = '✓ Sea (standard ISO-container shipment)'
-                _bc = ('#15803d', '#dcfce7', '#bbf7d0')
-                _reason = 'Fits: ' + ', '.join(_fitting_isos) + '.'
-            else:
-                _badge_text = '⚠ Sea (breakbulk or heavy-lift shipment required)'
-                _bc = ('#a16207', '#fef9c3', '#fde047')
-                _reason = (
-                    'ISO-container limits exceeded. Breakbulk or heavy-lift '
-                    'planning required.'
-                )
+            _badge_text = 'Breakbulk or heavy-lift shipment required'
+            _bc = ('#a16207', '#fef9c3', '#fde047')
+            _reason = 'Non-containerized sea shipment.'
             _source_html = (
                 'Cargo planning and securing: '
                 '<a href="https://www.imo.org/en/ourwork/safety/pages/'
@@ -4959,10 +4965,10 @@ with streamlit_analytics.track():
         )
 
     def _render_road_category_card(env):
-        """Render the three-level US road screening classification."""
+        """Render the direct-road screening classification."""
         _tare_lb = float(env['tractor_trailer_tare_lb'])
         _deck_m = float(env['deck_height_m'])
-        _loaded_vehicle_weight_lb = _badge_total_kg * 2.2046226218 + _tare_lb
+        _loaded_vehicle_weight_lb = _badge_total_lb + _tare_lb
 
         # Horizontal reactor shipment: diameter controls width and package
         # height; modeled module height controls transport length.
@@ -4974,22 +4980,15 @@ with streamlit_analytics.track():
         _geometry_ok = _width_ok and _height_ok
 
         if _loaded_vehicle_weight_lb > env['superload_gvw_lb']:
-            _badge_text = '⚠ US road (superload)'
+            _badge_text = 'Direct road: superload'
             _bc = ('#c2410c', '#ffedd5', '#fdba74')
-            _reason = (
-                f'Estimated loaded vehicle weight: '
-                f'{_loaded_vehicle_weight_lb:,.0f} lb — superload.'
-            )
+            _reason = f'Loaded vehicle weight: {_loaded_vehicle_weight_lb:,.0f} lb.'
         elif _geometry_ok and _loaded_vehicle_weight_lb <= env['no_permit_gvw_lb']:
-            _badge_text = '✓ US road (no permits needed)'
+            _badge_text = 'Direct road: no permit needed'
             _bc = ('#15803d', '#dcfce7', '#bbf7d0')
-            _reason = (
-                f'Estimated loaded vehicle weight: '
-                f'{_loaded_vehicle_weight_lb:,.0f} lb. Width and loaded '
-                'height are within no-permit limits.'
-            )
+            _reason = f'Loaded vehicle weight: {_loaded_vehicle_weight_lb:,.0f} lb.'
         else:
-            _badge_text = '⚠ US road (permit required)'
+            _badge_text = 'Direct road: permit required'
             _bc = ('#a16207', '#fef9c3', '#fde047')
             _triggers = []
             if _loaded_vehicle_weight_lb > env['no_permit_gvw_lb']:
@@ -4999,9 +4998,8 @@ with streamlit_analytics.track():
             if not _height_ok:
                 _triggers.append('loaded height')
             _reason = (
-                f'Estimated loaded vehicle weight: '
-                f'{_loaded_vehicle_weight_lb:,.0f} lb. Permit required due '
-                'to ' + ', '.join(_triggers) + '.'
+                f'Loaded vehicle weight: {_loaded_vehicle_weight_lb:,.0f} lb; '
+                'permit triggered by ' + ', '.join(_triggers) + '.'
             )
 
         return (
@@ -5046,8 +5044,8 @@ with streamlit_analytics.track():
         )
         _geometry_ok = _width_ok and _height_ok and _length_ok
         _weight_ok = (
-            env.get('payload_t') is None
-            or _badge_total_t <= env['payload_t']
+            env.get('payload_lb') is None
+            or _badge_total_lb <= env['payload_lb']
         )
         _fits = _geometry_ok and _weight_ok
         _bc = (
@@ -5056,13 +5054,13 @@ with streamlit_analytics.track():
         )
 
         if _fits:
-            _badge_text = '✓ fits'
+            _badge_text = 'Fits inside container' if env.get('is_iso') else 'Fits envelope'
             _fit_note = ''
         elif _geometry_ok and not _weight_ok:
-            _badge_text = '✗ exceeds weight'
-            _fit_note = 'Geometry fits, but the cargo-mass limit is exceeded.'
+            _badge_text = 'Exceeds cargo-weight limit'
+            _fit_note = 'Dimensions fit, but the cargo-weight limit is exceeded.'
         else:
-            _badge_text = '✗ does not fit'
+            _badge_text = 'Does not fit'
             _failures = []
             if not _width_ok:
                 _failures.append('width')
@@ -5082,11 +5080,26 @@ with streamlit_analytics.track():
             if env['length_m'] is not None else ''
         )
         _wt_str = (
-            f' &nbsp;|&nbsp; weight ≤ {env["payload_t"]:.1f} t'
-            if env.get('payload_t') is not None else ''
+            f' &nbsp;|&nbsp; cargo weight ≤ {env["payload_lb"]:,.0f} lb'
+            if env.get('payload_lb') is not None else ''
         )
-        _mode_key = (mode_name or '').lower() + '_note_html'
-        _mode_note = env.get(_mode_key, '')
+
+        _mode_badge_html = ''
+        if env.get('is_iso'):
+            _mode_text, _mode_bc, _mode_detail = _container_mode_status(
+                env, mode_name, _fits
+            )
+            _mode_badge_html = (
+                f'<div style="display:inline-block;background:{_mode_bc[1]};'
+                f'border:1px solid {_mode_bc[2]};color:{_mode_bc[0]};'
+                f'font-size:0.82rem;font-weight:600;padding:0.15rem 0.5rem;'
+                f'border-radius:8px;margin:0 0 0.4rem 0;max-width:100%;'
+                f'white-space:normal;line-height:1.3;">{_mode_text}</div>'
+                + (f'<div style="font-size:0.80rem;color:#64748b;'
+                   f'line-height:1.35;margin-bottom:0.25rem;">{_mode_detail}</div>'
+                   if _mode_detail else '')
+            )
+
         return (
             '<div style="background:#ffffff;border:1px solid #bfdbfe;'
             'border-radius:8px;padding:0.7rem 0.85rem;margin-bottom:0.6rem;'
@@ -5098,8 +5111,9 @@ with streamlit_analytics.track():
             f'<div style="display:inline-block;background:{_bc[1]};'
             f'border:1px solid {_bc[2]};color:{_bc[0]};font-size:0.85rem;'
             f'font-weight:600;padding:0.15rem 0.5rem;border-radius:8px;'
-            f'margin-bottom:0.4rem;max-width:100%;white-space:normal;'
-            f'line-height:1.3;">{_badge_text}</div>'
+            f'margin-bottom:0.35rem;max-width:100%;white-space:normal;'
+            f'line-height:1.3;">{_badge_text}</div><br>'
+            f'{_mode_badge_html}'
             f'<div style="font-size:0.85rem;color:#3c4257;margin-bottom:0.25rem;">'
             f'w ≤ {env["width_m"]:.2f} m &nbsp;|&nbsp; '
             f'h ≤ {env["height_m"]:.2f} m{_height_note_str}{_len_str}{_wt_str}'
@@ -5107,12 +5121,6 @@ with streamlit_analytics.track():
             + (f'<div style="font-size:0.82rem;color:#64748b;line-height:1.35;'
                f'margin-bottom:0.25rem;">{_fit_note}</div>'
                if _fit_note else '')
-            + (f'<div style="font-size:0.85rem;color:#3c4257;line-height:1.4;'
-               f'margin-bottom:0.25rem;">{env["note_html"]}</div>'
-               if env.get('note_html') else '')
-            + (f'<div style="font-size:0.85rem;color:#3c4257;line-height:1.4;'
-               f'margin-bottom:0.25rem;">{_mode_note}</div>'
-               if _mode_note else '')
             + f'<div style="font-size:0.85rem;color:#64748b;line-height:1.4;">'
               f'{env["cite_html"]}</div>'
             + '</div>'
@@ -5143,33 +5151,27 @@ with streamlit_analytics.track():
                 _cards_html += _render_rail_sea_category_card(_group['name'])
             st.markdown(_cards_html, unsafe_allow_html=True)
 
-    # Footnote — what each badge does and doesn't check, plus the
-    # oversized fallback for every mode. Rendered as two parallel
-    # bullets so they read as siblings, not as text + an afterthought.
+    # Footnote — assumptions and distinctions that are intentionally kept
+    # out of the short visible status lines.
     st.markdown(
         '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;'
         'padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:0.85rem;line-height:1.45;color:#92400e;">'
         '<strong>Notes:</strong>'
         '<ul style="margin:0.4rem 0 0 1.2rem;padding:0;">'
-        '<li>Each badge compares the assembled reactor module: the '
-        'outermost RVACS envelope (diameter and height) and the sum of all '
-        'component masses. The reactor module is evaluated horizontally. '
-        'Per-component dimensions and masses are shown above.</li>'
-        '<li>The US road classification estimates loaded vehicle weight '
-        'using the reactor-module mass plus a 32,000 lb tractor/trailer '
-        'tare and calculates loaded height using a 1.52 m trailer deck. '
-        'Shipping-frame mass is not yet included.</li>'
-        '<li>The rail and sea colors describe logistics complexity, not '
-        'a legal permit ladder. Rail uses green for an ISO-container '
-        'intermodal concept, yellow for a dimensional shipment requiring '
-        'railroad clearance, and orange for specialized railcar or '
-        'special-train planning. Sea uses green for ISO-container shipping '
-        'and yellow for breakbulk or heavy-lift planning.</li>'
-        '<li>For modules larger than these envelopes, road uses permitted '
-        'heavy haul, rail uses project-specific heavy-duty or Schnabel cars, '
-        'and sea uses breakbulk or heavy-lift vessels. Actual feasibility '
-        'depends on the selected carrier, route, railroads, ports, vessel, '
-        'lifting plan, cargo securement, and first/last-mile access.</li>'
+        '<li>All masses in this transportation section are shown in pounds. '
+        'The reactor module is evaluated horizontally.</li>'
+        '<li>An ISO-container card first checks whether the reactor fits inside '
+        'the container. Its second badge shows the transportation status for '
+        'moving that loaded container by road, rail, or sea.</li>'
+        '<li>Containerized-road weight is estimated as reactor-module mass + '
+        'container tare + a 32,000 lb tractor/chassis allowance. Direct-road '
+        'weight is estimated as reactor-module mass + a 32,000 lb tractor/trailer '
+        'allowance. Shipping-frame or cradle mass is not yet included.</li>'
+        '<li>The direct-shipment cards evaluate the reactor box without an ISO '
+        'container. Direct rail still requires carrier clearance; direct sea '
+        'requires breakbulk or heavy-lift planning.</li>'
+        '<li>Actual feasibility depends on the carrier, route, railroads, ports, '
+        'vessel, lifting plan, cargo securement, and first/last-mile access.</li>'
         '</ul>'
         '</div>',
         unsafe_allow_html=True,
