@@ -5092,11 +5092,152 @@ with streamlit_analytics.track():
             _results, key=lambda item: (item[0], item[1])
         )
 
-    _rail_standard = sum(1 for sev, *_ in _mode_results['Rail'] if sev == 0)
+    # Convert functional packages into a simple, realistic set of shipping
+    # units. At most two standard packages may share a truck or ISO container.
+    # Packages are tested end-to-end first and then side-by-side. Stacking is
+    # not allowed. Hazardous NaK, pre-containerized control equipment, and
+    # packages already requiring permits or specialized service remain
+    # dedicated shipping units.
+    _road_trailer_length_m = 14.63  # 48 ft screening deck length
+    _container_clearance_m = 0.05   # small packing clearance per dimension
+
+    def _tr_combined_package(pkg_a, pkg_b, arrangement):
+        if arrangement == 'end-to-end':
+            length_m = pkg_a['length_m'] + pkg_b['length_m']
+            width_m = max(pkg_a['width_m'], pkg_b['width_m'])
+        else:
+            length_m = max(pkg_a['length_m'], pkg_b['length_m'])
+            width_m = pkg_a['width_m'] + pkg_b['width_m']
+        return {
+            'name': f'{pkg_a["name"]} + {pkg_b["name"]}',
+            'mass_lb': pkg_a['mass_lb'] + pkg_b['mass_lb'],
+            'length_m': length_m,
+            'width_m': width_m,
+            'height_m': max(pkg_a['height_m'], pkg_b['height_m']),
+        }
+
+    def _tr_dedicated_package(pkg):
+        return (
+            bool(pkg.get('precontainerized'))
+            or pkg['name'] == 'NaK coolant package'
+        )
+
+    def _tr_best_pairing(packages, pair_check):
+        """Maximize the number of valid two-package shipping units."""
+        packages = list(packages)
+
+        def _solve(remaining):
+            if not remaining:
+                return [], []
+            first = remaining[0]
+            best_pairs, best_singles = _solve(remaining[1:])
+            best_singles = [first] + best_singles
+            best_score = (
+                len(best_pairs),
+                -sum(pair[2].get('rank', 0) for pair in best_pairs),
+            )
+            for idx in range(1, len(remaining)):
+                second = remaining[idx]
+                metadata = pair_check(first, second)
+                if metadata is None:
+                    continue
+                rest = remaining[1:idx] + remaining[idx + 1:]
+                pairs, singles = _solve(rest)
+                candidate_pairs = [(first, second, metadata)] + pairs
+                candidate_score = (
+                    len(candidate_pairs),
+                    -sum(pair[2].get('rank', 0) for pair in candidate_pairs),
+                )
+                if candidate_score > best_score:
+                    best_pairs = candidate_pairs
+                    best_singles = singles
+                    best_score = candidate_score
+            return best_pairs, best_singles
+
+        return _solve(packages)
+
+    def _tr_road_pair_check(pkg_a, pkg_b):
+        if _tr_dedicated_package(pkg_a) or _tr_dedicated_package(pkg_b):
+            return None
+        if _tr_direct_road_status(pkg_a)[0] != 0:
+            return None
+        if _tr_direct_road_status(pkg_b)[0] != 0:
+            return None
+        for rank, arrangement in enumerate(('end-to-end', 'side-by-side')):
+            combined = _tr_combined_package(pkg_a, pkg_b, arrangement)
+            if combined['length_m'] > _road_trailer_length_m:
+                continue
+            severity, _, _ = _tr_direct_road_status(combined)
+            if severity == 0:
+                return {'arrangement': arrangement, 'rank': rank}
+        return None
+
+    def _tr_iso_pair_check(pkg_a, pkg_b):
+        if _tr_dedicated_package(pkg_a) or _tr_dedicated_package(pkg_b):
+            return None
+        if not any(_tr_iso_fit(pkg_a, key)[0] for key in _envelopes):
+            return None
+        if not any(_tr_iso_fit(pkg_b, key)[0] for key in _envelopes):
+            return None
+        for container_rank, key in enumerate(('iso20', 'iso40', 'iso40hc')):
+            env = _envelopes[key]
+            for arrangement_rank, arrangement in enumerate(
+                ('end-to-end', 'side-by-side')
+            ):
+                combined = _tr_combined_package(pkg_a, pkg_b, arrangement)
+                if (
+                    combined['length_m']
+                    <= env['length_m'] - _container_clearance_m
+                    and combined['width_m']
+                    <= env['width_m'] - _container_clearance_m
+                    and combined['height_m']
+                    <= env['height_m'] - _container_clearance_m
+                    and combined['mass_lb'] <= env['payload_lb']
+                ):
+                    return {
+                        'arrangement': arrangement,
+                        'container': key,
+                        'rank': container_rank * 2 + arrangement_rank,
+                    }
+        return None
+
+    _road_pairs, _road_singles = _tr_best_pairing(
+        _transport_packages, _tr_road_pair_check
+    )
+    _iso_pairs, _iso_singles = _tr_best_pairing(
+        _transport_packages, _tr_iso_pair_check
+    )
+
+    def _tr_pair_names(pairs):
+        return '; '.join(
+            f'{pkg_a["name"]} + {pkg_b["name"]}'
+            for pkg_a, pkg_b, _ in pairs
+        )
+
+    def _tr_single_names(singles):
+        return '; '.join(pkg['name'] for pkg in singles)
+
+    _road_loads = len(_transport_packages) - len(_road_pairs)
+    _road_shared_text = _tr_pair_names(_road_pairs)
+    _road_separate_text = _tr_single_names(_road_singles)
+
+    _rail_standard_packages = [
+        pkg for pkg, result in zip(_transport_packages, _mode_results['Rail'])
+        if result[0] == 0
+    ]
+    _rail_standard = len(_rail_standard_packages) - len(_iso_pairs)
     _rail_dimensional = sum(1 for sev, *_ in _mode_results['Rail'] if sev == 1)
     _rail_special = sum(1 for sev, *_ in _mode_results['Rail'] if sev >= 2)
-    _sea_standard = sum(1 for sev, *_ in _mode_results['Sea'] if sev == 0)
-    _sea_heavy = len(_transport_packages) - _sea_standard
+
+    _sea_standard_packages = [
+        pkg for pkg, result in zip(_transport_packages, _mode_results['Sea'])
+        if result[0] == 0
+    ]
+    _sea_standard = len(_sea_standard_packages) - len(_iso_pairs)
+    _sea_heavy = len(_transport_packages) - len(_sea_standard_packages)
+
+    _iso_shared_text = _tr_pair_names(_iso_pairs)
+    _iso_separate_text = _tr_single_names(_iso_singles)
 
     st.markdown(
         '<div style="font-size:1rem;font-weight:700;color:#0a2540;'
@@ -5108,8 +5249,8 @@ with streamlit_analytics.track():
     _rail_lines = []
     if _rail_standard:
         _rail_lines.append(
-            f'{_rail_standard} package{"s" if _rail_standard != 1 else ""} '
-            'in standard containers'
+            f'{_rail_standard} standard-container rail load'
+            f'{"s" if _rail_standard != 1 else ""}'
         )
     if _rail_dimensional:
         _rail_lines.append(
@@ -5125,8 +5266,8 @@ with streamlit_analytics.track():
     _sea_lines = []
     if _sea_standard:
         _sea_lines.append(
-            f'{_sea_standard} package{"s" if _sea_standard != 1 else ""} '
-            'in standard containers'
+            f'{_sea_standard} standard container'
+            f'{"s" if _sea_standard != 1 else ""}'
         )
     if _sea_heavy:
         _sea_lines.append(
@@ -5141,38 +5282,62 @@ with streamlit_analytics.track():
             for line in lines
         )
 
+    def _shipment_assignment_html(shared_text, separate_text, mode_label):
+        if shared_text:
+            shared_line = (
+                f'<div style="font-size:0.78rem;color:#475569;margin-top:0.45rem;'
+                f'line-height:1.35;"><strong>Packages that can share a {mode_label}:</strong> '
+                f'{shared_text}</div>'
+            )
+        else:
+            shared_line = (
+                f'<div style="font-size:0.78rem;color:#475569;margin-top:0.45rem;'
+                f'line-height:1.35;"><strong>Shared loads:</strong> None</div>'
+            )
+        separate_line = (
+            f'<div style="font-size:0.78rem;color:#475569;margin-top:0.25rem;'
+            f'line-height:1.35;"><strong>Separate loads:</strong> '
+            f'{separate_text or "None"}</div>'
+        )
+        return shared_line + separate_line
+
     _count_cols = st.columns(3, gap='medium')
     _count_cols[0].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:154px;">'
+        'padding:0.8rem 0.9rem;min-height:238px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
         'text-transform:uppercase;letter-spacing:0.07em;">Road</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#0a2540;margin-top:0.25rem;">'
-        f'{len(_transport_packages)} estimated truckloads</div>'
-        '<div style="font-size:0.78rem;color:#64748b;margin-top:0.35rem;line-height:1.35;">'
-        'Assumes one package per truckload. Package consolidation is not yet '
-        'evaluated, and the truckload count is separate from the container count.'
-        '</div>'
-        f'<div style="font-size:0.80rem;color:#475569;margin-top:0.45rem;">'
-        f'Most difficult package to transport: {_controlling["Road"][2]}</div></div>',
+        f'{_road_loads} truckload{"s" if _road_loads != 1 else ""} required</div>'
+        + _shipment_assignment_html(
+            _road_shared_text, _road_separate_text, 'truck'
+        )
+        + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
+          f'Most difficult package to transport: {_controlling["Road"][2]}</div></div>',
         unsafe_allow_html=True,
     )
     _count_cols[1].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:154px;">'
+        'padding:0.8rem 0.9rem;min-height:238px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
         'text-transform:uppercase;letter-spacing:0.07em;">Rail</div>'
         + _shipment_lines_html(_rail_lines)
+        + _shipment_assignment_html(
+            _iso_shared_text, _iso_separate_text, 'standard container'
+        )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
           f'Most difficult package to transport: {_controlling["Rail"][2]}</div></div>',
         unsafe_allow_html=True,
     )
     _count_cols[2].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:154px;">'
+        'padding:0.8rem 0.9rem;min-height:238px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
         'text-transform:uppercase;letter-spacing:0.07em;">Sea</div>'
         + _shipment_lines_html(_sea_lines)
+        + _shipment_assignment_html(
+            _iso_shared_text, _iso_separate_text, 'standard container'
+        )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
           f'Most difficult package to transport: {_controlling["Sea"][2]}</div></div>',
         unsafe_allow_html=True,
@@ -5185,10 +5350,14 @@ with streamlit_analytics.track():
         '<strong>Notes:</strong>'
         '<ul style="margin:0.35rem 0 0 1.15rem;padding:0;">'
         '<li>All transportation masses are displayed in pounds.</li>'
-        '<li>The road truckload estimate assumes one functional package per '
-        'truckload. Container, rail and sea counts are reported separately. '
-        'Later logistics work may consolidate small packages or split an '
-        'oversized package.</li>'
+        '<li>MOUSE may combine at most two compatible standard packages on '
+        'one truck or in one ISO container. It checks end-to-end placement '
+        'first and side-by-side placement second; stacking is not allowed.</li>'
+        '<li>The NaK coolant package, the pre-containerized control/electrical '
+        'package, and packages requiring permits or specialized service remain '
+        'dedicated loads. Road consolidation uses a 48 ft trailer-length '
+        'screening assumption; container consolidation retains 0.05 m packing '
+        'clearance in each dimension.</li>'
         '<li>Road screening uses a 32,000 lb tractor/trailer allowance and a '
         '1.52 m deck for direct shipment. Shipping cradles are included only '
         'where explicitly stated in the package model.</li>'
