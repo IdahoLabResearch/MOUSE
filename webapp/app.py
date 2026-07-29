@@ -207,6 +207,7 @@ from webapp.estimate_service import (
     run_estimate,
     run_lcoe_at_noak_unit,
 )
+from cost.cost_drivers import energy_cost_levelized_per_acct
 
 # ---------------------------------------------------------------------------
 # Performance patches: cache Excel reads that would otherwise repeat on every run.
@@ -5372,6 +5373,28 @@ with streamlit_analytics.track():
         _rail_cost_low = _rail_cost_high = None
         _sea_cost_low = _sea_cost_high = None
 
+    # Transportation is a one-time initial-deployment cost. Reuse the same
+    # discounted-cash-flow helper that MOUSE uses to quantify the LCOE
+    # contribution of an added capital or annual cost.
+    def _transport_lcoe_increase(capital_cost):
+        if capital_cost is None:
+            return None
+        return float(energy_cost_levelized_per_acct(
+            params, float(capital_cost), 0.0
+        ))
+
+    try:
+        _road_lcoe_low = _transport_lcoe_increase(_road_cost_low)
+        _road_lcoe_high = _transport_lcoe_increase(_road_cost_high)
+        _rail_lcoe_low = _transport_lcoe_increase(_rail_cost_low)
+        _rail_lcoe_high = _transport_lcoe_increase(_rail_cost_high)
+        _sea_lcoe_low = _transport_lcoe_increase(_sea_cost_low)
+        _sea_lcoe_high = _transport_lcoe_increase(_sea_cost_high)
+    except Exception:
+        _road_lcoe_low = _road_lcoe_high = None
+        _rail_lcoe_low = _rail_lcoe_high = None
+        _sea_lcoe_low = _sea_lcoe_high = None
+
     _transport_cost_help = (
         'One-way, unirradiated transportation screening estimate in 2025 USD. '
         'Road cost applies the entered distance to each consolidated truckload; '
@@ -5384,20 +5407,54 @@ with streamlit_analytics.track():
         'for rail and sea, explicit transload costs, installation, and site assembly '
         'are excluded.'
     )
+    _transport_lcoe_help = (
+        'Increase caused by treating the one-way transportation cost as a one-time '
+        'capital cost at year 0. MOUSE uses the same discounted-cash-flow method, '
+        'plant lifetime, discount rate, electric power, and capacity factor used by '
+        'its existing added-cost and cost-driver LCOE calculations. Displayed values '
+        'are rounded to one significant digit.'
+    )
 
-    def _transport_cost_html(low, high):
+    def _format_first_nonzero(value):
+        """Format a positive value to one significant digit."""
+        if value is None or not math.isfinite(float(value)):
+            return None
+        value = float(value)
+        if value == 0:
+            return '0'
+        order = math.floor(math.log10(abs(value)))
+        rounded = round(value, -order)
+        rounded_order = math.floor(math.log10(abs(rounded))) if rounded else 0
+        decimals = max(0, -rounded_order)
+        return f'{rounded:,.{decimals}f}'
+
+    def _transport_cost_html(low, high, lcoe_low, lcoe_high):
         if low is None or high is None:
             return (
                 '<div style="font-size:0.82rem;color:#b91c1c;margin-top:0.65rem;'
                 'padding-top:0.55rem;border-top:1px solid #e2e8f0;">'
                 '<strong>Transportation cost unavailable.</strong></div>'
             )
+
+        _lcoe_low_text = _format_first_nonzero(lcoe_low)
+        _lcoe_high_text = _format_first_nonzero(lcoe_high)
+        if _lcoe_low_text is None or _lcoe_high_text is None:
+            _lcoe_html = ''
+        else:
+            _lcoe_html = (
+                '<div style="font-size:0.88rem;color:#0a2540;margin-top:0.35rem;'
+                'line-height:1.35;">'
+                f'<strong>Increase in LCOE{_help_icon(_transport_lcoe_help)}:</strong> '
+                f'${_lcoe_low_text}-${_lcoe_high_text}/MWh</div>'
+            )
+
         return (
             '<div style="font-size:0.92rem;color:#0a2540;margin-top:0.65rem;'
             'padding-top:0.55rem;border-top:1px solid #e2e8f0;line-height:1.35;">'
             f'<strong>Estimated transportation cost{_help_icon(_transport_cost_help)}:</strong> '
             f'${low:,.0f}-${high:,.0f} <span style="font-size:0.76rem;'
             'color:#64748b;">(2025 USD)</span></div>'
+            + _lcoe_html
         )
 
     st.markdown(
@@ -5475,7 +5532,10 @@ with streamlit_analytics.track():
         )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
           f'Most difficult package to transport: {_controlling["Road"][2]}</div>'
-        + _transport_cost_html(_road_cost_low, _road_cost_high)
+        + _transport_cost_html(
+            _road_cost_low, _road_cost_high,
+            _road_lcoe_low, _road_lcoe_high,
+        )
         + '</div>',
         unsafe_allow_html=True,
     )
@@ -5490,7 +5550,10 @@ with streamlit_analytics.track():
         )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
           f'Most difficult package to transport: {_controlling["Rail"][2]}</div>'
-        + _transport_cost_html(_rail_cost_low, _rail_cost_high)
+        + _transport_cost_html(
+            _rail_cost_low, _rail_cost_high,
+            _rail_lcoe_low, _rail_lcoe_high,
+        )
         + '</div>',
         unsafe_allow_html=True,
     )
@@ -5505,7 +5568,10 @@ with streamlit_analytics.track():
         )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
           f'Most difficult package to transport: {_controlling["Sea"][2]}</div>'
-        + _transport_cost_html(_sea_cost_low, _sea_cost_high)
+        + _transport_cost_html(
+            _sea_cost_low, _sea_cost_high,
+            _sea_lcoe_low, _sea_lcoe_high,
+        )
         + '</div>',
         unsafe_allow_html=True,
     )
