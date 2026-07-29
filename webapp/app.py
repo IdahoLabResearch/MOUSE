@@ -2547,19 +2547,19 @@ with streamlit_analytics.track():
         st.markdown('**D Transportability**')
 
         road_distance_miles = st.number_input(
-            'Road Transportation Distance (miles)',
+            'Transportation Distance (miles)',
             min_value=0,
             max_value=10000,
             value=1000,
             step=50,
             format='%d',
             help=(
-                'Enter the one-way road distance from the manufacturing facility '
-                'to the deployment site. This input is used only for direct road '
-                'transportation. Current rail and sea cost inputs are stated per '
-                'shipment or per container, so their travel distances are not '
-                'modeled. First- and last-mile trucking for rail and sea is also '
-                'excluded from this screening estimate.'
+                'Enter the approximate one-way transportation distance. The value '
+                'is used for direct road transportation and, only when specialized '
+                'rail service is required, as the approximate rail mileage. Standard '
+                'rail and sea costs remain shipment-based because the available cost '
+                'inputs are not stated per mile. Actual road and rail route lengths '
+                'may differ. First- and last-mile trucking for rail and sea is excluded.'
             ),
         )
 
@@ -5282,9 +5282,10 @@ with streamlit_analytics.track():
     _iso_separate_text = _tr_single_names(_iso_singles)
 
     # Apply the version-controlled transportation cost ranges. Road costs are
-    # distance-based and calculated for each consolidated truckload. Rail is a
-    # single coordinated-shipment range. Sea is charged per standard container
-    # plus one coordinated heavy-lift shipment when oversized packages exist.
+    # distance-based and calculated for each consolidated truckload. Rail uses a
+    # coordinated-shipment range, with a distance-sensitive special-train adder
+    # only when specialized rail service is required. Sea is charged per standard
+    # container and per oversized heavy-lift piece.
     _transport_cost_error = None
     try:
         _transport_cost_inputs = _load_transportation_cost_inputs()
@@ -5300,6 +5301,9 @@ with streamlit_analytics.track():
         _r2_low, _r2_high = _transport_bounds('R2')
         _r3_low, _r3_high = _transport_bounds('R3')
         _l1_low, _l1_high = _transport_bounds('L1')
+        _l2_low, _l2_high = _transport_bounds('L2')
+        _l3_low, _l3_high = _transport_bounds('L3')
+        _l4_low, _l4_high = _transport_bounds('L4')
         _s1_low, _s1_high = _transport_bounds('S1')
         _s2_low, _s2_high = _transport_bounds('S2')
 
@@ -5340,11 +5344,28 @@ with streamlit_analytics.track():
             _road_cost_high += _r3_high
 
         _rail_cost_low, _rail_cost_high = _l1_low, _l1_high
-        _sea_cost_low = _sea_standard * _s1_low
-        _sea_cost_high = _sea_standard * _s1_high
-        if _sea_heavy:
-            _sea_cost_low += _s2_low
-            _sea_cost_high += _s2_high
+        if _rail_special:
+            # Apply the special-train mileage charge once to the coordinated rail
+            # shipment when one or more packages trigger specialized rail service.
+            _special_train_low = max(
+                _l3_low,
+                float(road_distance_miles) * _l2_low,
+            ) + _l4_low
+            _special_train_high = max(
+                _l3_high,
+                float(road_distance_miles) * _l2_high,
+            ) + _l4_high
+            _rail_cost_low += _special_train_low
+            _rail_cost_high += _special_train_high
+
+        _sea_cost_low = (
+            _sea_standard * _s1_low
+            + _sea_heavy * _s2_low
+        )
+        _sea_cost_high = (
+            _sea_standard * _s1_high
+            + _sea_heavy * _s2_high
+        )
     except Exception as _exc:
         _transport_cost_error = str(_exc)
         _road_cost_low = _road_cost_high = None
@@ -5353,13 +5374,15 @@ with streamlit_analytics.track():
 
     _transport_cost_help = (
         'One-way, unirradiated transportation screening estimate in 2025 USD. '
-        'Road cost uses the entered factory-to-site distance and applies the '
-        'appropriate rate to each consolidated truckload; the route-planning '
-        'adder is included once when any truckload is a superload. Rail uses one '
-        'coordinated-shipment range. Sea uses a per-container range plus one '
-        'coordinated heavy-lift range when needed. Rail and sea travel distance, '
-        'first- and last-mile trucking, explicit transload costs, installation, '
-        'and site assembly are excluded.'
+        'Road cost applies the entered distance to each consolidated truckload; '
+        'the route-planning adder is included once when any truckload is a superload. '
+        'Rail uses one coordinated-shipment range. If specialized rail service is '
+        'required, MOUSE also applies the 2025 Union Pacific special-train mileage '
+        'charge, minimum charge, and switching charge once to the rail shipment. '
+        'Sea applies a per-container range to each standard container and a '
+        'heavy-lift range to each oversized package. First- and last-mile trucking '
+        'for rail and sea, explicit transload costs, installation, and site assembly '
+        'are excluded.'
     )
 
     def _transport_cost_html(low, high):
@@ -5513,7 +5536,9 @@ with streamlit_analytics.track():
         'remain necessary.</li>'
         '<li>Transportation costs are one-way, unirradiated screening estimates '
         'from assets/transportation_cost_inputs_2025.csv. Road cost varies with '
-        'the entered distance; rail and sea travel distances are not modeled.</li>'
+        'the entered distance. Rail distance is used only when specialized '
+        'special-train service is triggered; standard rail and sea travel distances '
+        'are not modeled explicitly.</li>'
         '</ul></div>',
         unsafe_allow_html=True,
     )
