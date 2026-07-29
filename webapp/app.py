@@ -2155,6 +2155,25 @@ def _load_state_industrial_price_distribution():
              / 'state_industrial_price_distribution_2024.csv')
     return pd.read_csv(_path)
 
+@st.cache_data(show_spinner=False)
+def _load_transportation_cost_inputs():
+    """Load the version-controlled transportation cost screening inputs."""
+    _path = (Path(__file__).resolve().parent.parent
+             / 'assets' / 'transportation_cost_inputs_2025.csv')
+    _df = pd.read_csv(_path)
+    _required = {
+        'id', 'cost_value_lower_bound', 'cost_value_upper_bound',
+        'units', 'dollar_year',
+    }
+    _missing = _required.difference(_df.columns)
+    if _missing:
+        raise ValueError(
+            'Transportation cost input file is missing columns: '
+            + ', '.join(sorted(_missing))
+        )
+    return _df.set_index('id', drop=False)
+
+
 cookies = _get_cookie_manager()
 if not cookies.ready():
     st.stop()
@@ -2525,6 +2544,26 @@ with streamlit_analytics.track():
             )
 
         st.divider()
+        st.markdown('**D Transportability**')
+
+        road_distance_miles = st.number_input(
+            'Road Transportation Distance (miles)',
+            min_value=0,
+            max_value=10000,
+            value=1000,
+            step=50,
+            format='%d',
+            help=(
+                'Enter the one-way road distance from the manufacturing facility '
+                'to the deployment site. This input is used only for direct road '
+                'transportation. Current rail and sea cost inputs are stated per '
+                'shipment or per container, so their travel distances are not '
+                'modeled. First- and last-mile trucking for rail and sea is also '
+                'excluded from this screening estimate.'
+            ),
+        )
+
+        st.divider()
         run_button = st.button('⚡ Run Analysis', type='primary', width='stretch')
         if run_button:
             # Run a generational GC pass before kicking off a new
@@ -2559,6 +2598,7 @@ with streamlit_analytics.track():
                 'tax_credit_type': tax_credit_type,
                 'tax_credit_value': tax_credit_value,
                 'tax_credit_units': tax_credit_units,
+                'road_distance_miles': road_distance_miles,
             }
 
         st.divider()
@@ -2759,6 +2799,7 @@ with streamlit_analytics.track():
         'tax_credit_type': tax_credit_type,
         'tax_credit_value': tax_credit_value,
         'tax_credit_units': tax_credit_units,
+        'road_distance_miles': road_distance_miles,
     }
     if _current_inputs != _committed:
         st.markdown(
@@ -2794,6 +2835,7 @@ with streamlit_analytics.track():
     tax_credit_type = _committed['tax_credit_type']
     tax_credit_value = _committed['tax_credit_value']
     tax_credit_units = _committed.get('tax_credit_units')
+    road_distance_miles = _committed.get('road_distance_miles', 1000)
 
     # ── Show single progress banner covering BOTH the basic estimate
     # and the NOAK deployment-scale sweep that follows. ─────────────────────
@@ -5239,6 +5281,102 @@ with streamlit_analytics.track():
     _iso_shared_text = _tr_pair_names(_iso_pairs)
     _iso_separate_text = _tr_single_names(_iso_singles)
 
+    # Apply the version-controlled transportation cost ranges. Road costs are
+    # distance-based and calculated for each consolidated truckload. Rail is a
+    # single coordinated-shipment range. Sea is charged per standard container
+    # plus one coordinated heavy-lift shipment when oversized packages exist.
+    _transport_cost_error = None
+    try:
+        _transport_cost_inputs = _load_transportation_cost_inputs()
+
+        def _transport_bounds(input_id):
+            row = _transport_cost_inputs.loc[input_id]
+            return (
+                float(row['cost_value_lower_bound']),
+                float(row['cost_value_upper_bound']),
+            )
+
+        _r1_low, _r1_high = _transport_bounds('R1')
+        _r2_low, _r2_high = _transport_bounds('R2')
+        _r3_low, _r3_high = _transport_bounds('R3')
+        _l1_low, _l1_high = _transport_bounds('L1')
+        _s1_low, _s1_high = _transport_bounds('S1')
+        _s2_low, _s2_high = _transport_bounds('S2')
+
+        _road_shipping_units = []
+        for pkg_a, pkg_b, metadata in _road_pairs:
+            _road_shipping_units.append(
+                _tr_combined_package(
+                    pkg_a, pkg_b, metadata['arrangement']
+                )
+            )
+        _road_shipping_units.extend(_road_singles)
+
+        _road_standard_loads = 0
+        _road_permit_loads = 0
+        _road_superloads = 0
+        for _unit in _road_shipping_units:
+            _severity, _, _ = _tr_direct_road_status(_unit)
+            if _severity == 0:
+                _road_standard_loads += 1
+            elif _severity == 1:
+                _road_permit_loads += 1
+            else:
+                _road_superloads += 1
+
+        _road_heavy_loads = _road_permit_loads + _road_superloads
+        _road_cost_low = float(road_distance_miles) * (
+            _road_standard_loads * _r1_low
+            + _road_heavy_loads * _r2_low
+        )
+        _road_cost_high = float(road_distance_miles) * (
+            _road_standard_loads * _r1_high
+            + _road_heavy_loads * _r2_high
+        )
+        if _road_superloads:
+            # Detailed route planning is applied once to the common deployment
+            # route, not once per superload truck.
+            _road_cost_low += _r3_low
+            _road_cost_high += _r3_high
+
+        _rail_cost_low, _rail_cost_high = _l1_low, _l1_high
+        _sea_cost_low = _sea_standard * _s1_low
+        _sea_cost_high = _sea_standard * _s1_high
+        if _sea_heavy:
+            _sea_cost_low += _s2_low
+            _sea_cost_high += _s2_high
+    except Exception as _exc:
+        _transport_cost_error = str(_exc)
+        _road_cost_low = _road_cost_high = None
+        _rail_cost_low = _rail_cost_high = None
+        _sea_cost_low = _sea_cost_high = None
+
+    _transport_cost_help = (
+        'One-way, unirradiated transportation screening estimate in 2025 USD. '
+        'Road cost uses the entered factory-to-site distance and applies the '
+        'appropriate rate to each consolidated truckload; the route-planning '
+        'adder is included once when any truckload is a superload. Rail uses one '
+        'coordinated-shipment range. Sea uses a per-container range plus one '
+        'coordinated heavy-lift range when needed. Rail and sea travel distance, '
+        'first- and last-mile trucking, explicit transload costs, installation, '
+        'and site assembly are excluded.'
+    )
+
+    def _transport_cost_html(low, high):
+        if low is None or high is None:
+            return (
+                '<div style="font-size:0.82rem;color:#b91c1c;margin-top:0.65rem;'
+                'padding-top:0.55rem;border-top:1px solid #e2e8f0;">'
+                '<strong>Transportation cost unavailable.</strong></div>'
+            )
+        return (
+            '<div style="font-size:0.92rem;color:#0a2540;margin-top:0.65rem;'
+            'padding-top:0.55rem;border-top:1px solid #e2e8f0;line-height:1.35;">'
+            f'<strong>Estimated transportation cost{_help_icon(_transport_cost_help)}:</strong> '
+            f'${low:,.0f}-${high:,.0f} <span style="font-size:0.76rem;'
+            'color:#64748b;">(2025 USD)</span></div>'
+        )
+
     st.markdown(
         '<div style="font-size:1rem;font-weight:700;color:#0a2540;'
         'border-left:4px solid #0a2540;padding:0.4rem 0 0.4rem 0.75rem;'
@@ -5304,7 +5442,7 @@ with streamlit_analytics.track():
     _count_cols = st.columns(3, gap='medium')
     _count_cols[0].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:238px;">'
+        'padding:0.8rem 0.9rem;min-height:290px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
         'text-transform:uppercase;letter-spacing:0.07em;">Road</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#0a2540;margin-top:0.25rem;">'
@@ -5313,12 +5451,14 @@ with streamlit_analytics.track():
             _road_shared_text, _road_separate_text, 'truck'
         )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
-          f'Most difficult package to transport: {_controlling["Road"][2]}</div></div>',
+          f'Most difficult package to transport: {_controlling["Road"][2]}</div>'
+        + _transport_cost_html(_road_cost_low, _road_cost_high)
+        + '</div>',
         unsafe_allow_html=True,
     )
     _count_cols[1].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:238px;">'
+        'padding:0.8rem 0.9rem;min-height:290px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
         'text-transform:uppercase;letter-spacing:0.07em;">Rail</div>'
         + _shipment_lines_html(_rail_lines)
@@ -5326,12 +5466,14 @@ with streamlit_analytics.track():
             _iso_shared_text, _iso_separate_text, 'standard container'
         )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
-          f'Most difficult package to transport: {_controlling["Rail"][2]}</div></div>',
+          f'Most difficult package to transport: {_controlling["Rail"][2]}</div>'
+        + _transport_cost_html(_rail_cost_low, _rail_cost_high)
+        + '</div>',
         unsafe_allow_html=True,
     )
     _count_cols[2].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:238px;">'
+        'padding:0.8rem 0.9rem;min-height:290px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
         'text-transform:uppercase;letter-spacing:0.07em;">Sea</div>'
         + _shipment_lines_html(_sea_lines)
@@ -5339,7 +5481,9 @@ with streamlit_analytics.track():
             _iso_shared_text, _iso_separate_text, 'standard container'
         )
         + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
-          f'Most difficult package to transport: {_controlling["Sea"][2]}</div></div>',
+          f'Most difficult package to transport: {_controlling["Sea"][2]}</div>'
+        + _transport_cost_html(_sea_cost_low, _sea_cost_high)
+        + '</div>',
         unsafe_allow_html=True,
     )
 
@@ -5367,6 +5511,9 @@ with streamlit_analytics.track():
         '<li>Rail and sea categories represent logistics complexity, not a '
         'universal permit hierarchy. Carrier, route, port and vessel review '
         'remain necessary.</li>'
+        '<li>Transportation costs are one-way, unirradiated screening estimates '
+        'from assets/transportation_cost_inputs_2025.csv. Road cost varies with '
+        'the entered distance; rail and sea travel distances are not modeled.</li>'
         '</ul></div>',
         unsafe_allow_html=True,
     )
