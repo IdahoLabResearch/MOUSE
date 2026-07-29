@@ -4470,6 +4470,34 @@ with streamlit_analytics.track():
 
     # Build the functional transportation packages.
     _transport_packages = []
+
+    _reactor_breakdown = [
+        {
+            'name': 'Reactor: core, reflectors and drums',
+            'mass_lb': _tr_lb(_reactor_mass_kg),
+        },
+        {
+            'name': 'Reactor vessel',
+            'mass_lb': _tr_lb(_rv_mass_kg),
+        },
+    ]
+    if _has_guard:
+        _reactor_breakdown.append({
+            'name': 'Guard vessel',
+            'mass_lb': _tr_lb(_gv_mass_kg),
+        })
+    _reactor_breakdown.append({
+        'name': 'Reactor Vessel Auxiliary Cooling System',
+        'mass_lb': _tr_lb(_rvacs_mass_kg),
+    })
+    if reactor_type == 'HPMR':
+        _reactor_breakdown.append({
+            'name': 'External heat-pipe sections and sodium',
+            'mass_lb': _tr_lb(
+                _hpmr_extra_heatpipe_steel_kg + _hpmr_heatpipe_sodium_kg
+            ),
+        })
+
     _transport_packages.append({
         'name': 'Reactor module',
         'quantity': 1,
@@ -4479,6 +4507,7 @@ with streamlit_analytics.track():
         'height_m': _reactor_package_height_m,
         'orientation': 'Horizontal',
         'basis': 'Calculated by MOUSE',
+        'breakdown': _reactor_breakdown,
         'help_text': (
             'The reactor, reactor vessel, guard vessel when used, and RVACS are '
             'treated as one assembled reactor module. The package is screened '
@@ -4525,6 +4554,20 @@ with streamlit_analytics.track():
             _hx_assembly_volume_m3 + _rotating_volume_m3
         )
         _hx_l_m, _hx_w_m, _hx_h_m = _tr_box_dimensions(_hx_package_volume_m3)
+        _hx_allowances_lb = max(
+            0.0,
+            _tr_lb(_hx_package_mass_kg)
+            - _tr_lb(_hx_core_kg)
+            - _rotating_mass_lb,
+        )
+        _hx_breakdown = [
+            {'name': 'Primary HX core', 'mass_lb': _tr_lb(_hx_core_kg)},
+            {'name': _rotating_label.capitalize(), 'mass_lb': _rotating_mass_lb},
+            {
+                'name': 'Headers, local piping, supports and shipping frame',
+                'mass_lb': _hx_allowances_lb,
+            },
+        ]
         _transport_packages.append({
             'name': _hx_name,
             'quantity': 1,
@@ -4534,6 +4577,7 @@ with streamlit_analytics.track():
             'height_m': _hx_h_m,
             'orientation': 'Horizontal',
             'basis': 'MOUSE HX mass + screening allowances',
+            'breakdown': _hx_breakdown,
             'help_text': (
                 f'One package is used; redundant loop counts do not create a '
                 f'second shipping box. Mass starts from MOUSE Primary HX Mass '
@@ -4621,6 +4665,18 @@ with streamlit_analytics.track():
         _cool_l_m, _cool_w_m, _cool_h_m = _tr_box_dimensions(
             _coolant_vessel_volume_m3
         )
+        _coolant_breakdown = [
+            {
+                'name': 'NaK coolant inventory',
+                'mass_lb': _tr_lb(_coolant_inventory_kg),
+            },
+            {
+                'name': 'Transport vessels, valves, supports and skid',
+                'mass_lb': _tr_lb(
+                    _coolant_package_mass_kg - _coolant_inventory_kg
+                ),
+            },
+        ]
         _transport_packages.append({
             'name': 'NaK coolant package',
             'quantity': 1,
@@ -4630,6 +4686,7 @@ with streamlit_analytics.track():
             'height_m': _cool_h_m,
             'orientation': 'Horizontal vessel/skid arrangement',
             'basis': 'MOUSE inventory + vessel allowance',
+            'breakdown': _coolant_breakdown,
             'help_text': (
                 'The LTMR reactor and HX are assumed to ship drained. NaK is '
                 'transported separately in sealed compatible metal vessels on '
@@ -4641,15 +4698,16 @@ with streamlit_analytics.track():
             ),
         })
 
-    # Package summary.
+    # Package summary. Package totals are shown as parent rows. Selected
+    # packages include a short mass breakdown directly underneath the total.
     st.markdown(
         '<div style="font-size:1rem;font-weight:700;color:#0a2540;'
         'border-left:4px solid #0a2540;padding:0.4rem 0 0.4rem 0.75rem;'
         'margin:0 0 0.4rem 0;">Transported Package Summary</div>'
         '<p style="color:#64748b;font-size:0.85rem;margin:0 0 0.85rem 0;">'
-        'These are functional equipment packages. The initial logistics '
-        'screen assumes one shipping unit per package; package splitting or '
-        'consolidation is handled in a later step.'
+        'The table lists the major functional packages transported for the '
+        'complete plant. Indented rows show the principal mass components '
+        'where a breakdown is useful.'
         '</p>',
         unsafe_allow_html=True,
     )
@@ -4663,141 +4721,54 @@ with streamlit_analytics.track():
         'letter-spacing:0.05em;color:#3c4257;font-weight:600;'
     )
     _tr_summary_rows = []
-    for _i, _pkg in enumerate(_transport_packages):
-        _bg = '#ffffff' if _i % 2 == 0 else '#f7f8fa'
+    _row_index = 0
+    for _pkg in _transport_packages:
+        _bg = '#ffffff' if _row_index % 2 == 0 else '#f7f8fa'
         _dims = (
             f'{_pkg["length_m"]:.2f} x {_pkg["width_m"]:.2f} x '
             f'{_pkg["height_m"]:.2f}'
         )
         _tr_summary_rows.append(
             f'<tr style="background:{_bg};">'
-            f'<td style="{_tr_cell};font-weight:600;">{_pkg["name"]}'
+            f'<td style="{_tr_cell};font-weight:700;">{_pkg["name"]}'
             f'{_help_icon(_pkg["help_text"])}</td>'
-            f'<td style="{_tr_cell};text-align:center;">{_pkg["quantity"]}</td>'
-            f'<td style="{_tr_cell};text-align:center;">{_pkg["mass_lb"]:,.0f}</td>'
-            f'<td style="{_tr_cell};text-align:center;">{_dims}</td>'
-            f'<td style="{_tr_cell};">{_pkg["orientation"]}</td>'
+            f'<td style="{_tr_cell};text-align:center;font-weight:700;">'
+            f'{_pkg["mass_lb"]:,.0f}</td>'
+            f'<td style="{_tr_cell};text-align:center;font-weight:700;">{_dims}</td>'
             '</tr>'
         )
+        _row_index += 1
+        for _part in _pkg.get('breakdown', []):
+            _bg = '#ffffff' if _row_index % 2 == 0 else '#f7f8fa'
+            _tr_summary_rows.append(
+                f'<tr style="background:{_bg};">'
+                f'<td style="{_tr_cell};padding-left:2.0rem;color:#475569;">'
+                f'↳ {_part["name"]}</td>'
+                f'<td style="{_tr_cell};text-align:center;color:#475569;">'
+                f'{_part["mass_lb"]:,.0f}</td>'
+                f'<td style="{_tr_cell};text-align:center;color:#94a3b8;">—</td>'
+                '</tr>'
+            )
+            _row_index += 1
     st.markdown(
         '<div style="margin-bottom:1rem;">'
         '<table style="width:100%;border-collapse:collapse;font-size:0.84rem;'
         'background:#ffffff;color:#0a2540;border:1px solid #bfdbfe;'
         'border-radius:8px;overflow:hidden;">'
         '<thead style="background:#f1f3f5;"><tr>'
-        f'<th style="{_tr_th};text-align:left;">Package</th>'
-        f'<th style="{_tr_th};text-align:center;">Qty</th>'
+        f'<th style="{_tr_th};text-align:left;">Package / component</th>'
         f'<th style="{_tr_th};text-align:center;">Mass (lb)</th>'
         f'<th style="{_tr_th};text-align:center;">L x W x H (m)</th>'
-        f'<th style="{_tr_th};text-align:left;">Shipping orientation</th>'
         '</tr></thead><tbody>' + ''.join(_tr_summary_rows) + '</tbody></table>'
         '</div>',
         unsafe_allow_html=True,
     )
 
-    _selected_package_name = st.selectbox(
-        'Select a package to review',
-        [p['name'] for p in _transport_packages],
-        key=f'transport_package_selector_{reactor_type}',
-        help=(
-            'The compatibility cards below apply only to the selected package. '
-            'The whole-plant summary farther down combines all packages.'
-        ),
-    )
+    # The reactor module receives the detailed compatibility cards. The
+    # whole-plant table below summarizes every other package.
     _selected_package = next(
-        p for p in _transport_packages if p['name'] == _selected_package_name
+        p for p in _transport_packages if p['name'] == 'Reactor module'
     )
-
-    st.markdown(
-        '<div style="font-size:1rem;font-weight:700;color:#0a2540;'
-        'border-left:4px solid #0a2540;padding:0.4rem 0 0.4rem 0.75rem;'
-        'margin:1.1rem 0 0.65rem 0;">Selected Package Geometry</div>',
-        unsafe_allow_html=True,
-    )
-    _selected_dims = (
-        f'{_selected_package["length_m"]:.2f} x '
-        f'{_selected_package["width_m"]:.2f} x '
-        f'{_selected_package["height_m"]:.2f} m'
-    )
-    st.markdown(
-        '<div style="background:#ffffff;border:1px solid #bfdbfe;'
-        'border-radius:8px;padding:0.8rem 1rem;margin-bottom:0.75rem;'
-        'font-size:0.86rem;color:#0a2540;">'
-        f'<strong>{_selected_package["name"]}</strong>'
-        f'{_help_icon(_selected_package["help_text"])}'
-        f'<div style="margin-top:0.35rem;color:#3c4257;">'
-        f'Mass: <strong>{_selected_package["mass_lb"]:,.0f} lb</strong> '
-        f'&nbsp;|&nbsp; Dimensions (L x W x H): <strong>{_selected_dims}</strong> '
-        f'&nbsp;|&nbsp; Orientation: <strong>{_selected_package["orientation"]}</strong>'
-        '</div>'
-        f'<div style="margin-top:0.25rem;color:#64748b;font-size:0.82rem;">'
-        f'Basis: {_selected_package["basis"]}</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-    # Detailed reactor component table remains available when the reactor
-    # module is selected.
-    if _selected_package_name == 'Reactor module':
-        _moderator_for_type = {
-            'LTMR': 'ZrH',
-            'GCMR': 'graphite (with ZrH booster pins)',
-            'HPMR': 'monolith graphite',
-        }.get(reactor_type, 'moderator')
-        _reactor_desc = (
-            f'Includes modeled fuel mass, moderator ({_moderator_for_type}), '
-            'radial and axial reflectors, control drums, and modeled heat-pipe '
-            'steel for HPMR.'
-        )
-        _component_rows = [
-            ('Reactor (core + reflectors + drums)', _reactor_h_cm,
-             _reactor_dia_cm, _reactor_mass_kg, _reactor_desc),
-            ('Reactor vessel', _rv_height_cm, _rv_dia_cm, _rv_mass_kg,
-             'Pressure-boundary wall mass and modeled vessel envelope.'),
-        ]
-        if _has_guard:
-            _component_rows.append((
-                'Guard vessel', _gv_height_cm, _gv_dia_cm, _gv_mass_kg,
-                'Secondary containment shell around the LTMR reactor vessel.',
-            ))
-        _component_rows.append((
-            'Reactor Vessel Auxiliary Cooling System',
-            _rvacs_height_cm, _rvacs_dia_cm, _rvacs_mass_kg,
-            'Cooling vessel plus intake vessel, treated as the outer shipping envelope.',
-        ))
-        if reactor_type == 'HPMR':
-            _component_rows.append((
-                'Heat-pipe external extensions and sodium',
-                220.0, 0.0,
-                _hpmr_extra_heatpipe_steel_kg + _hpmr_heatpipe_sodium_kg,
-                'Fixed 2.2 m external heat-pipe extension beyond the modeled active length.',
-            ))
-        _component_html = []
-        for _i, (_name, _height_cm, _diam_cm, _mass_kg, _desc) in enumerate(_component_rows):
-            _bg = '#ffffff' if _i % 2 == 0 else '#f7f8fa'
-            _diameter_text = _tr_m1(_diam_cm) if _diam_cm > 0 else 'N/A'
-            _component_html.append(
-                f'<tr style="background:{_bg};">'
-                f'<td style="{_tr_cell};font-weight:600;">{_name}'
-                f'<div style="font-size:0.80rem;font-weight:400;color:#64748b;'
-                f'line-height:1.35;margin-top:0.15rem;">{_desc}</div></td>'
-                f'<td style="{_tr_cell};text-align:center;">{_tr_m1(_height_cm)}</td>'
-                f'<td style="{_tr_cell};text-align:center;">{_diameter_text}</td>'
-                f'<td style="{_tr_cell};text-align:center;">{_tr_lb_str(_mass_kg)}</td>'
-                '</tr>'
-            )
-        st.markdown(
-            '<table style="width:100%;border-collapse:collapse;font-size:0.84rem;'
-            'background:#ffffff;color:#0a2540;border:1px solid #bfdbfe;'
-            'border-radius:8px;overflow:hidden;margin-bottom:0.8rem;">'
-            '<thead style="background:#f1f3f5;"><tr>'
-            f'<th style="{_tr_th};text-align:left;">Component</th>'
-            f'<th style="{_tr_th};text-align:center;">Height</th>'
-            f'<th style="{_tr_th};text-align:center;">Diameter</th>'
-            f'<th style="{_tr_th};text-align:center;">Mass (lb)</th>'
-            '</tr></thead><tbody>' + ''.join(_component_html) + '</tbody></table>',
-            unsafe_allow_html=True,
-        )
 
     st.markdown(
         '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;'
@@ -4813,7 +4784,7 @@ with streamlit_analytics.track():
     st.markdown(
         '<div style="font-size:1rem;font-weight:700;color:#0a2540;'
         'border-left:4px solid #0a2540;padding:0.4rem 0 0.4rem 0.75rem;'
-        'margin:1.15rem 0 0.65rem 0;">Selected Package Transport Compatibility</div>',
+        'margin:1.15rem 0 0.65rem 0;">Reactor Module Transport Compatibility</div>',
         unsafe_allow_html=True,
     )
 
@@ -5127,38 +5098,83 @@ with streamlit_analytics.track():
     _sea_standard = sum(1 for sev, *_ in _mode_results['Sea'] if sev == 0)
     _sea_heavy = len(_transport_packages) - _sea_standard
 
+    st.markdown(
+        '<div style="font-size:1rem;font-weight:700;color:#0a2540;'
+        'border-left:4px solid #0a2540;padding:0.4rem 0 0.4rem 0.75rem;'
+        'margin:1.05rem 0 0.65rem 0;">Estimated Shipment Requirements</div>',
+        unsafe_allow_html=True,
+    )
+
+    _rail_lines = []
+    if _rail_standard:
+        _rail_lines.append(
+            f'{_rail_standard} package{"s" if _rail_standard != 1 else ""} '
+            'in standard containers'
+        )
+    if _rail_dimensional:
+        _rail_lines.append(
+            f'{_rail_dimensional} oversized flatcar load'
+            f'{"s" if _rail_dimensional != 1 else ""} requiring railroad clearance'
+        )
+    if _rail_special:
+        _rail_lines.append(
+            f'{_rail_special} package{"s" if _rail_special != 1 else ""} '
+            'requiring specialized rail planning'
+        )
+
+    _sea_lines = []
+    if _sea_standard:
+        _sea_lines.append(
+            f'{_sea_standard} package{"s" if _sea_standard != 1 else ""} '
+            'in standard containers'
+        )
+    if _sea_heavy:
+        _sea_lines.append(
+            f'{_sea_heavy} oversized package{"s" if _sea_heavy != 1 else ""} '
+            'requiring heavy-lift or breakbulk service'
+        )
+
+    def _shipment_lines_html(lines):
+        return ''.join(
+            f'<div style="font-size:0.92rem;font-weight:650;color:#0a2540;'
+            f'margin-top:0.28rem;line-height:1.3;">{line}</div>'
+            for line in lines
+        )
+
     _count_cols = st.columns(3, gap='medium')
     _count_cols[0].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:116px;">'
+        'padding:0.8rem 0.9rem;min-height:154px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
-        'text-transform:uppercase;letter-spacing:0.07em;">Road shipping units</div>'
-        f'<div style="font-size:1.35rem;font-weight:700;color:#0a2540;margin-top:0.25rem;">'
-        f'{len(_transport_packages)} trucks</div>'
-        f'<div style="font-size:0.80rem;color:#64748b;margin-top:0.3rem;">'
-        f'Controlling package: {_controlling["Road"][2]}</div></div>',
+        'text-transform:uppercase;letter-spacing:0.07em;">Road</div>'
+        f'<div style="font-size:1.25rem;font-weight:700;color:#0a2540;margin-top:0.25rem;">'
+        f'{len(_transport_packages)} estimated truckloads</div>'
+        '<div style="font-size:0.78rem;color:#64748b;margin-top:0.35rem;line-height:1.35;">'
+        'Assumes one package per truckload. Package consolidation is not yet '
+        'evaluated, and the truckload count is separate from the container count.'
+        '</div>'
+        f'<div style="font-size:0.80rem;color:#475569;margin-top:0.45rem;">'
+        f'Most difficult package to transport: {_controlling["Road"][2]}</div></div>',
         unsafe_allow_html=True,
     )
     _count_cols[1].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:116px;">'
+        'padding:0.8rem 0.9rem;min-height:154px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
-        'text-transform:uppercase;letter-spacing:0.07em;">Rail shipping units</div>'
-        f'<div style="font-size:1.05rem;font-weight:700;color:#0a2540;margin-top:0.25rem;">'
-        f'{_rail_standard} intermodal | {_rail_dimensional} dimensional | {_rail_special} special</div>'
-        f'<div style="font-size:0.80rem;color:#64748b;margin-top:0.3rem;">'
-        f'Controlling package: {_controlling["Rail"][2]}</div></div>',
+        'text-transform:uppercase;letter-spacing:0.07em;">Rail</div>'
+        + _shipment_lines_html(_rail_lines)
+        + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
+          f'Most difficult package to transport: {_controlling["Rail"][2]}</div></div>',
         unsafe_allow_html=True,
     )
     _count_cols[2].markdown(
         '<div style="background:#ffffff;border:1px solid #bfdbfe;border-radius:8px;'
-        'padding:0.8rem 0.9rem;min-height:116px;">'
+        'padding:0.8rem 0.9rem;min-height:154px;">'
         '<div style="font-size:0.82rem;font-weight:600;color:#64748b;'
-        'text-transform:uppercase;letter-spacing:0.07em;">Sea shipping units</div>'
-        f'<div style="font-size:1.05rem;font-weight:700;color:#0a2540;margin-top:0.25rem;">'
-        f'{_sea_standard} containers | {_sea_heavy} heavy-lift pieces</div>'
-        f'<div style="font-size:0.80rem;color:#64748b;margin-top:0.3rem;">'
-        f'Controlling package: {_controlling["Sea"][2]}</div></div>',
+        'text-transform:uppercase;letter-spacing:0.07em;">Sea</div>'
+        + _shipment_lines_html(_sea_lines)
+        + f'<div style="font-size:0.80rem;color:#475569;margin-top:0.55rem;">'
+          f'Most difficult package to transport: {_controlling["Sea"][2]}</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -5169,9 +5185,10 @@ with streamlit_analytics.track():
         '<strong>Notes:</strong>'
         '<ul style="margin:0.35rem 0 0 1.15rem;padding:0;">'
         '<li>All transportation masses are displayed in pounds.</li>'
-        '<li>The current shipment count assumes one functional package per '
-        'truck, container, rail load or heavy-lift piece. Later logistics work '
-        'may consolidate small packages or split an oversized package.</li>'
+        '<li>The road truckload estimate assumes one functional package per '
+        'truckload. Container, rail and sea counts are reported separately. '
+        'Later logistics work may consolidate small packages or split an '
+        'oversized package.</li>'
         '<li>Road screening uses a 32,000 lb tractor/trailer allowance and a '
         '1.52 m deck for direct shipment. Shipping cradles are included only '
         'where explicitly stated in the package model.</li>'
