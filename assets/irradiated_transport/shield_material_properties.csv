@@ -1,0 +1,2 @@
+material,density_kg_m3,raw_material_cost_2024_usd_per_kg,cpi_2024_to_2025,raw_material_cost_2025_usd_per_kg,attenuation_data,source,notes
+Lead,11340.0,2.0,1.0263126854942315,2.052625370988463,decay_gamma_reference.csv lead_mass_attenuation_cm2_g,Manit Shah workbook; 2024 material-cost basis. CPI-U escalation to 2025 using BLS annual averages.,Only lead is enabled in the first irradiated-transport screening implementation.
