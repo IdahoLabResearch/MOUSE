@@ -2578,9 +2578,10 @@ with streamlit_analytics.track():
                 step=1,
                 help=(
                     'Time between reactor shutdown and transportation. MOUSE applies '
-                    'a finite-irradiation Way-Wigner decay-heat screening correlation. '
-                    'The source strength decreases with cooldown time. This simplified '
-                    'screen is not a substitute for a depletion/source-term calculation.'
+                    'a finite-irradiation decay-heat correlation. Photon spectrum shapes '
+                    'are available through 36 months; for longer cooldown periods the '
+                    '36-month spectrum shape is retained while source strength continues '
+                    'to decrease with cooldown time.'
                 ),
             )
             shield_material = st.selectbox(
@@ -2588,12 +2589,10 @@ with streamlit_analytics.track():
                 options=list(available_shield_materials()),
                 index=0,
                 help=(
-                    'Candidate gamma-shield materials are compared using density, 2025 '
-                    'raw-material cost, and NIST photon attenuation data at the 0.7-MeV '
-                    'representative photon energy. Carbon steel and tungsten heavy alloy '
-                    'are transport-package candidates. Ordinary concrete is included only '
-                    'as a stationary or limited site-transfer sensitivity. Fabrication and '
-                    'certified-package structure are excluded.'
+                    'Lead is the only material currently enabled because its multigroup '
+                    'attenuation data and screening calculation were checked against the '
+                    'Manit Shah transportation-dose workbook. Additional materials can be '
+                    'added when equivalent direct-photon response data are available.'
                 ),
             )
             target_dose_rate_mrem_h = st.number_input(
@@ -2603,28 +2602,21 @@ with streamlit_analytics.track():
                 value=10.0,
                 step=1.0,
                 help=(
-                    '**Regulatory reference:** the default exclusive-use transportation '
-                    'screening value is 10 mrem/h at 2 m from the outer lateral surface '
-                    'of the vehicle, or from the projected vehicle edge for a flatbed. '
-                    'Other limits also apply, including 200 mrem/h at the vehicle surface '
-                    'and 2 mrem/h in normally occupied spaces. Custom values are provided '
-                    'for research sensitivity and do not by themselves demonstrate '
-                    'regulatory compliance.'
+                    'The default comparison case is 10 mrem/h at 2 m outward from '
+                    'the shield surface. This simplified geometry does not model a '
+                    'vehicle or demonstrate regulatory compliance.'
                 ),
             )
             dose_evaluation_distance_m = st.number_input(
-                'Dose-Evaluation Distance (m)',
+                'Distance from Shield Surface (m)',
                 min_value=2.0,
                 max_value=30.0,
                 value=2.0,
                 step=1.0,
                 help=(
-                    '**Regulatory reference:** the standard exclusive-use criterion is '
-                    'evaluated at 2 m from the outer lateral surface of the vehicle, or '
-                    'from the projected vehicle edge for a flatbed. Values above 2 m '
-                    'represent a controlled-distance or rolling-exclusion-zone research '
-                    'sensitivity and should not be interpreted as satisfying the standard '
-                    '2-m criterion.'
+                    'Radial distance measured outward from the added shield surface. '
+                    'MOUSE converts this to point-source distance by adding the '
+                    'unshielded module radius and the calculated shield thickness.'
                 ),
             )
             if (
@@ -2632,8 +2624,8 @@ with streamlit_analytics.track():
                 or abs(float(dose_evaluation_distance_m) - 2.0) > 1.0e-9
             ):
                 st.warning(
-                    'Custom dose criterion selected. This is a research sensitivity, '
-                    'not a regulatory-compliance determination.'
+                    'Custom dose criterion selected. This remains a simplified '
+                    'screening sensitivity, not a regulatory-compliance determination.'
                 )
 
         road_distance_miles = st.number_input(
@@ -4699,8 +4691,10 @@ with streamlit_analytics.track():
     else:
         _reactor_package_help += (
             f'A closed cylindrical {shield_material.lower()} transport shield is '
-            f'added using the selected cooldown, dose target, and evaluation '
-            f'distance. No credit is taken for attenuation by fuel, reflector, '
+            f'added using the selected cooldown and dose target at the specified '
+            f'distance outward from the shield surface. The upper result from the '
+            f'0.7-MeV and 48-group sensitivity cases controls the package. No credit '
+            f'is taken for attenuation by fuel, reflector, '
             f'vessels, coolant, or existing reactor shielding. The estimate excludes '
             f'activation gamma rays, shutdown neutrons, buildup, impact limiters, '
             f'penetrations, and certified package structure.'
@@ -4984,45 +4978,87 @@ with streamlit_analytics.track():
             f'{cooldown_months:.0f} months',
             subtitle=(
                 f'{target_dose_rate_mrem_h:g} mrem/h at '
-                f'{dose_evaluation_distance_m:g} m'
+                f'{dose_evaluation_distance_m:g} m from shield surface'
             ),
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
         _info_card(
             _shield_cols[1], 'Added Shield Thickness',
-            f'{_irradiated_shield["shield_thickness_cm"]:.1f} cm',
-            subtitle=f'{shield_material}, closed cylindrical shell',
+            (
+                f'{_irradiated_shield["shield_thickness_min_cm"]:.1f}-'
+                f'{_irradiated_shield["shield_thickness_max_cm"]:.1f} cm'
+            ),
+            subtitle='0.7-MeV to 48-group sensitivity',
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
         _info_card(
             _shield_cols[2], 'Added Shield Mass',
-            f'{_tr_lb(_irradiated_shield["shield_mass_kg"]):,.0f} lb',
-            subtitle=f'{_irradiated_shield["shield_mass_kg"] / 1000.0:,.1f} metric tons',
+            (
+                f'{_tr_lb(_irradiated_shield["shield_mass_min_kg"]):,.0f}-'
+                f'{_tr_lb(_irradiated_shield["shield_mass_max_kg"]):,.0f} lb'
+            ),
+            subtitle=(
+                f'{_irradiated_shield["shield_mass_min_kg"] / 1000.0:,.1f}-'
+                f'{_irradiated_shield["shield_mass_max_kg"] / 1000.0:,.1f} metric tons'
+            ),
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
         _info_card(
             _shield_cols[3], 'Raw Shield Material',
-            f'${_irradiated_shield["shield_raw_material_cost_2025_usd"]:,.0f}',
+            (
+                f'${_irradiated_shield["shield_raw_material_cost_min_2025_usd"]:,.0f}-'
+                f'${_irradiated_shield["shield_raw_material_cost_max_2025_usd"]:,.0f}'
+            ),
             subtitle='2025 USD; package fabrication excluded',
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
+        _shield_model_rows = []
+        for _model_id in ('single_energy_0p7_mev', 'multigroup_shah'):
+            _model = _irradiated_shield['shielding_models'][_model_id]
+            _shield_model_rows.append(
+                '<tr>'
+                f'<td style="padding:0.42rem 0.55rem;">{_model["label"]}</td>'
+                f'<td style="padding:0.42rem 0.55rem;text-align:right;">'
+                f'{_model["shield_thickness_cm"]:.1f} cm</td>'
+                f'<td style="padding:0.42rem 0.55rem;text-align:right;">'
+                f'{_model["shield_mass_kg"] / 1000.0:,.1f} t</td>'
+                f'<td style="padding:0.42rem 0.55rem;text-align:right;">'
+                f'${_model["shield_raw_material_cost_2025_usd"]:,.0f}</td>'
+                '</tr>'
+            )
+        st.markdown(
+            '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;'
+            'background:#ffffff;color:#0a2540;border:1px solid #d8b4fe;">'
+            '<thead style="background:#faf5ff;"><tr>'
+            '<th style="padding:0.42rem 0.55rem;text-align:left;">Photon model</th>'
+            '<th style="padding:0.42rem 0.55rem;text-align:right;">Thickness</th>'
+            '<th style="padding:0.42rem 0.55rem;text-align:right;">Lead mass</th>'
+            '<th style="padding:0.42rem 0.55rem;text-align:right;">Raw lead</th>'
+            '</tr></thead><tbody>'
+            + ''.join(_shield_model_rows)
+            + '</tbody></table>',
+            unsafe_allow_html=True,
+        )
         _shield_note = (
             'Screening source model: MOUSE full-power fuel lifetime, a finite-'
-            'irradiation Way-Wigner decay-heat correlation, a 50% gamma-energy '
-            'fraction, and a representative 0.7 MeV photon. Material attenuation '
-            'and dry-air energy-absorption coefficients are based on NIST data. '
+            'irradiation Way-Wigner decay-heat correlation, and a common 50% '
+            'decay-gamma energy fraction. The displayed range compares the original '
+            '0.7-MeV photon model with cooldown-dependent Shah 48-group spectrum '
+            'shapes. Dose distance is measured outward from the shield surface. '
+            'The upper result controls package dimensions, transportation screening, '
+            'and transportation cost. '
             'No credit is taken for attenuation by the fuel, reflector, vessels, '
             'coolant, or existing reactor shielding. Activation gamma rays, '
             'shutdown neutrons, photon buildup, penetrations, impact limiters, '
             'thermal design, containment, and certified transport-package structure '
             'are excluded.'
         )
-        _shield_note += (
-            ' Material-specific scope: '
-            + str(_irradiated_shield.get('material_screening_scope', 'screening only'))
-            + '. '
-            + str(_irradiated_shield.get('material_notes', ''))
-        )
+        if _irradiated_shield.get('source_spectrum_capped_at_36_months'):
+            _shield_note += (
+                ' The selected cooldown exceeds 36 months; MOUSE retains the '
+                '36-month spectrum shape while continuing to reduce total source '
+                'strength with cooldown time.'
+            )
         st.markdown(
             '<div style="background:#faf5ff;border:1px solid #d8b4fe;'
             'border-radius:8px;padding:0.75rem 0.9rem;margin:0.7rem 0 1rem 0;'
@@ -5993,17 +6029,20 @@ with streamlit_analytics.track():
 
     if transport_condition == 'Unirradiated':
         _cost_scope_note = (
-            'Costs are one-way unirradiated screening estimates. Road cost uses '
-            'the entered distance; standard rail and sea distances are not '
-            'modeled explicitly.'
+            'Transportation costs are one-way, unirradiated screening estimates '
+            'from assets/transportation_cost_inputs_2025.csv. Road cost varies with '
+            'the entered distance. Rail distance is used only when specialized '
+            'special-train service is triggered; standard rail and sea travel '
+            'distances are not modeled explicitly.'
         )
     else:
         _cost_scope_note = (
-            'Costs are one-way irradiated-return screening estimates. Freight is '
-            'recalculated for the shielded module, then raw shield material and '
-            'radioactive road or sea allowances are added. Rail retains its broad '
-            'existing range. Cask certification, cranes, and route-specific civil '
-            'work are excluded.'
+            'Transportation costs are one-way irradiated-return screening estimates. '
+            'The existing freight model is rerun using the shielded reactor module, '
+            'then raw lead and the documented radioactive-specific road or sea '
+            'allowances are added. Rail uses its existing broad range without a '
+            'separate radioactive premium to avoid double counting. Detailed cask '
+            'fabrication/certification, cranes, and route-specific civil work are excluded.'
         )
 
     st.markdown(
@@ -6012,18 +6051,24 @@ with streamlit_analytics.track():
         'line-height:1.45;color:#92400e;">'
         '<strong>Notes:</strong>'
         '<ul style="margin:0.35rem 0 0 1.15rem;padding:0;">'
-        '<li>Masses are shown in pounds. Shipping cradles are included only '
-        'where explicitly modeled.</li>'
-        '<li>Up to two compatible standard packages may share one truck or ISO '
-        'container, end-to-end or side-by-side; stacking is not allowed. NaK, '
-        'pre-containerized control/electrical, and permit or specialized '
-        'packages remain dedicated loads.</li>'
-        '<li>Road checks assume a 32,000 lb tractor/trailer, 1.52 m deck, and '
-        '48 ft usable length. Containers use internal dimensions and payload '
-        'with 0.05 m packing clearance.</li>'
-        '<li>Results are screening-level. Rail and sea categories indicate '
-        'logistics complexity, not permit status; route, carrier, fit, loading, '
-        'lifting, and securement require engineering review.</li>'
+        '<li>All transportation masses are displayed in pounds.</li>'
+        '<li>MOUSE may combine at most two compatible standard packages on '
+        'one truck or in one ISO container. It checks end-to-end placement '
+        'first and side-by-side placement second; stacking is not allowed.</li>'
+        '<li>The NaK coolant package, the pre-containerized control/electrical '
+        'package, and packages requiring permits or specialized service remain '
+        'dedicated loads. Road consolidation uses a 48 ft trailer-length '
+        'screening assumption; container consolidation retains 0.05 m packing '
+        'clearance in each dimension.</li>'
+        '<li>Road screening uses a 32,000 lb tractor/trailer allowance and a '
+        '1.52 m deck for direct shipment. Shipping cradles are included only '
+        'where explicitly stated in the package model.</li>'
+        '<li>Container fit uses internal envelope and payload limits. Door '
+        'opening, concentrated floor loading, center of gravity, lifting and '
+        'securement require later engineering review.</li>'
+        '<li>Rail and sea categories represent logistics complexity, not a '
+        'universal permit hierarchy. Carrier, route, port and vessel review '
+        'remain necessary.</li>'
         f'<li>{_cost_scope_note}</li>'
         '</ul></div>',
         unsafe_allow_html=True,
