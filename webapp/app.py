@@ -208,6 +208,11 @@ from webapp.estimate_service import (
     run_lcoe_at_noak_unit,
 )
 from cost.cost_drivers import energy_cost_levelized_per_acct
+from webapp.irradiated_transport import (
+    available_shield_materials,
+    estimate_irradiated_transport_shield,
+    load_irradiated_cost_inputs,
+)
 
 # ---------------------------------------------------------------------------
 # Performance patches: cache Excel reads that would otherwise repeat on every run.
@@ -2547,6 +2552,89 @@ with streamlit_analytics.track():
         st.divider()
         st.markdown('**D Transportability**')
 
+        transport_condition = st.selectbox(
+            'Transportation Condition',
+            options=['Unirradiated', 'Irradiated'],
+            index=0,
+            help=(
+                '**Unirradiated:** preserves the existing MOUSE initial-deployment '
+                'transport screening.\n\n'
+                '**Irradiated:** screens one intact end-of-fuel-cycle reactor-module '
+                'return after onsite cooldown. Additional external shielding is added '
+                'to the reactor module before road, rail, sea, cost, and LCOE checks.'
+            ),
+        )
+
+        cooldown_months = 6
+        shield_material = 'Lead'
+        target_dose_rate_mrem_h = 10.0
+        dose_evaluation_distance_m = 2.0
+        if transport_condition == 'Irradiated':
+            cooldown_months = st.slider(
+                'Cooldown Time (months)',
+                min_value=1,
+                max_value=60,
+                value=6,
+                step=1,
+                help=(
+                    'Time between reactor shutdown and transportation. MOUSE applies '
+                    'a finite-irradiation decay-heat correlation. Photon spectrum shapes '
+                    'are available through 36 months; for longer cooldown periods the '
+                    '36-month spectrum shape is retained while source strength continues '
+                    'to decrease with cooldown time.'
+                ),
+            )
+            shield_material = st.selectbox(
+                'Shielding Material',
+                options=list(available_shield_materials()),
+                index=0,
+                help=(
+                    'Lead is the only material currently enabled because its multigroup '
+                    'attenuation data and screening calculation were checked against the '
+                    'Manit Shah transportation-dose workbook. Additional materials can be '
+                    'added when equivalent direct-photon response data are available.'
+                ),
+            )
+            target_dose_rate_mrem_h = st.number_input(
+                'Target Dose Rate (mrem/h)',
+                min_value=1.0,
+                max_value=100.0,
+                value=10.0,
+                step=1.0,
+                help=(
+                    '**Regulatory reference:** the default exclusive-use transportation '
+                    'screening value is 10 mrem/h at 2 m from the outer lateral surface '
+                    'of the vehicle, or from the projected vehicle edge for a flatbed. '
+                    'Other limits also apply, including 200 mrem/h at the vehicle surface '
+                    'and 2 mrem/h in normally occupied spaces. Custom values are provided '
+                    'for research sensitivity and do not by themselves demonstrate '
+                    'regulatory compliance.'
+                ),
+            )
+            dose_evaluation_distance_m = st.number_input(
+                'Dose-Evaluation Distance (m)',
+                min_value=2.0,
+                max_value=30.0,
+                value=2.0,
+                step=1.0,
+                help=(
+                    '**Regulatory reference:** the standard exclusive-use criterion is '
+                    'evaluated at 2 m from the outer lateral surface of the vehicle, or '
+                    'from the projected vehicle edge for a flatbed. Values above 2 m '
+                    'represent a controlled-distance or rolling-exclusion-zone research '
+                    'sensitivity and should not be interpreted as satisfying the standard '
+                    '2-m criterion.'
+                ),
+            )
+            if (
+                abs(float(target_dose_rate_mrem_h) - 10.0) > 1.0e-9
+                or abs(float(dose_evaluation_distance_m) - 2.0) > 1.0e-9
+            ):
+                st.warning(
+                    'Custom dose criterion selected. This is a research sensitivity, '
+                    'not a regulatory-compliance determination.'
+                )
+
         road_distance_miles = st.number_input(
             'Transportation Distance (miles)',
             min_value=0,
@@ -2557,10 +2645,11 @@ with streamlit_analytics.track():
             help=(
                 'Enter the approximate one-way transportation distance. The value '
                 'is used for direct road transportation and, only when specialized '
-                'rail service is required, as the approximate rail mileage. Standard '
-                'rail and sea costs remain shipment-based because the available cost '
-                'inputs are not stated per mile. Actual road and rail route lengths '
-                'may differ. First- and last-mile trucking for rail and sea is excluded.'
+                'rail service is required, as the approximate rail mileage. In '
+                'irradiated road mode it also determines the screening number of '
+                'security/escort travel days using 250 loaded miles per day. Standard '
+                'rail and sea costs remain shipment-based. First- and last-mile '
+                'trucking for rail and sea is excluded.'
             ),
         )
 
@@ -2599,6 +2688,11 @@ with streamlit_analytics.track():
                 'tax_credit_type': tax_credit_type,
                 'tax_credit_value': tax_credit_value,
                 'tax_credit_units': tax_credit_units,
+                'transport_condition': transport_condition,
+                'cooldown_months': cooldown_months,
+                'shield_material': shield_material,
+                'target_dose_rate_mrem_h': target_dose_rate_mrem_h,
+                'dose_evaluation_distance_m': dose_evaluation_distance_m,
                 'road_distance_miles': road_distance_miles,
             }
 
@@ -2800,6 +2894,11 @@ with streamlit_analytics.track():
         'tax_credit_type': tax_credit_type,
         'tax_credit_value': tax_credit_value,
         'tax_credit_units': tax_credit_units,
+        'transport_condition': transport_condition,
+        'cooldown_months': cooldown_months,
+        'shield_material': shield_material,
+        'target_dose_rate_mrem_h': target_dose_rate_mrem_h,
+        'dose_evaluation_distance_m': dose_evaluation_distance_m,
         'road_distance_miles': road_distance_miles,
     }
     if _current_inputs != _committed:
@@ -2836,6 +2935,11 @@ with streamlit_analytics.track():
     tax_credit_type = _committed['tax_credit_type']
     tax_credit_value = _committed['tax_credit_value']
     tax_credit_units = _committed.get('tax_credit_units')
+    transport_condition = _committed.get('transport_condition', 'Unirradiated')
+    cooldown_months = _committed.get('cooldown_months', 6)
+    shield_material = _committed.get('shield_material', 'Lead')
+    target_dose_rate_mrem_h = _committed.get('target_dose_rate_mrem_h', 10.0)
+    dose_evaluation_distance_m = _committed.get('dose_evaluation_distance_m', 2.0)
     road_distance_miles = _committed.get('road_distance_miles', 1000)
 
     # ── Show single progress banner covering BOTH the basic estimate
@@ -4511,6 +4615,41 @@ with streamlit_analytics.track():
     _reactor_package_width_m = _rvacs_dia_cm / 100.0
     _reactor_package_height_m = _reactor_package_width_m
 
+    _unirradiated_reactor_package_mass_kg = _reactor_package_mass_kg
+    _unirradiated_reactor_package_length_m = _reactor_package_length_m
+    _unirradiated_reactor_package_width_m = _reactor_package_width_m
+    _unirradiated_reactor_package_height_m = _reactor_package_height_m
+    _irradiated_shield = None
+    if transport_condition == 'Irradiated':
+        try:
+            _irradiated_shield = estimate_irradiated_transport_shield(
+                reactor_type=reactor_type,
+                params=params,
+                cooldown_months=cooldown_months,
+                target_dose_mrem_h=target_dose_rate_mrem_h,
+                dose_distance_m=dose_evaluation_distance_m,
+                shield_material=shield_material,
+                module_mass_kg=_reactor_package_mass_kg,
+                module_length_m=_reactor_package_length_m,
+                module_width_m=_reactor_package_width_m,
+                module_height_m=_reactor_package_height_m,
+            )
+            _reactor_package_mass_kg = float(
+                _irradiated_shield['shielded_module_mass_kg']
+            )
+            _reactor_package_length_m = float(
+                _irradiated_shield['shielded_module_length_m']
+            )
+            _reactor_package_width_m = float(
+                _irradiated_shield['shielded_module_width_m']
+            )
+            _reactor_package_height_m = float(
+                _irradiated_shield['shielded_module_height_m']
+            )
+        except Exception as _irr_exc:
+            st.error(f'Irradiated transport shielding calculation failed: {_irr_exc}')
+            st.stop()
+
     # Build the functional transportation packages.
     _transport_packages = []
 
@@ -4540,6 +4679,31 @@ with streamlit_analytics.track():
                 _hpmr_extra_heatpipe_steel_kg + _hpmr_heatpipe_sodium_kg
             ),
         })
+    if _irradiated_shield is not None:
+        _reactor_breakdown.append({
+            'name': f'Additional {shield_material} transport shielding',
+            'mass_lb': _tr_lb(_irradiated_shield['shield_mass_kg']),
+        })
+
+    _reactor_package_help = (
+        'The reactor, reactor vessel, guard vessel when used, and RVACS are '
+        'treated as one assembled reactor module and screened horizontally. '
+    )
+    if _irradiated_shield is None:
+        _reactor_package_help += (
+            'Irradiated-transport shielding is excluded. For HPMR, the package '
+            'includes the full heat-pipe length using a fixed 2.2 m external '
+            'extension and a screening estimate for sealed sodium working fluid.'
+        )
+    else:
+        _reactor_package_help += (
+            f'A closed cylindrical {shield_material.lower()} transport shield is '
+            f'added using the selected cooldown, dose target, and evaluation '
+            f'distance. No credit is taken for attenuation by fuel, reflector, '
+            f'vessels, coolant, or existing reactor shielding. The estimate excludes '
+            f'activation gamma rays, shutdown neutrons, buildup, impact limiters, '
+            f'penetrations, and certified package structure.'
+        )
 
     _transport_packages.append({
         'name': 'Reactor module',
@@ -4549,15 +4713,14 @@ with streamlit_analytics.track():
         'width_m': _reactor_package_width_m,
         'height_m': _reactor_package_height_m,
         'orientation': 'Horizontal',
-        'basis': 'Calculated by MOUSE',
-        'breakdown': _reactor_breakdown,
-        'help_text': (
-            'The reactor, reactor vessel, guard vessel when used, and RVACS are '
-            'treated as one assembled reactor module. The package is screened '
-            'horizontally. Shielding is excluded. For HPMR, the package includes '
-            'the full heat-pipe length using a fixed 2.2 m external extension and '
-            'a screening estimate for sealed sodium working fluid.'
+        'basis': (
+            'Calculated by MOUSE'
+            if _irradiated_shield is None
+            else 'MOUSE module + irradiated shielding screening'
         ),
+        'breakdown': _reactor_breakdown,
+        'dedicated': _irradiated_shield is not None,
+        'help_text': _reactor_package_help,
     })
 
     # LTMR and GCMR primary HX / heat-transport package.
@@ -4807,20 +4970,92 @@ with streamlit_analytics.track():
         unsafe_allow_html=True,
     )
 
+    if _irradiated_shield is not None:
+        st.markdown(
+            '<div style="font-size:1rem;font-weight:700;color:#0a2540;'
+            'border-left:4px solid #7c3aed;padding:0.4rem 0 0.4rem 0.75rem;'
+            'margin:1.05rem 0 0.65rem 0;">Irradiated Transport Shielding</div>',
+            unsafe_allow_html=True,
+        )
+        _shield_cols = st.columns(4, gap='small')
+        _info_card(
+            _shield_cols[0], 'Cooldown / Criterion',
+            f'{cooldown_months:.0f} months',
+            subtitle=(
+                f'{target_dose_rate_mrem_h:g} mrem/h at '
+                f'{dose_evaluation_distance_m:g} m'
+            ),
+            accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
+        )
+        _info_card(
+            _shield_cols[1], 'Added Shield Thickness',
+            f'{_irradiated_shield["shield_thickness_cm"]:.1f} cm',
+            subtitle=f'{shield_material}, closed cylindrical shell',
+            accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
+        )
+        _info_card(
+            _shield_cols[2], 'Added Shield Mass',
+            f'{_tr_lb(_irradiated_shield["shield_mass_kg"]):,.0f} lb',
+            subtitle=f'{_irradiated_shield["shield_mass_kg"] / 1000.0:,.1f} metric tons',
+            accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
+        )
+        _info_card(
+            _shield_cols[3], 'Raw Shield Material',
+            f'${_irradiated_shield["shield_raw_material_cost_2025_usd"]:,.0f}',
+            subtitle='2025 USD; package fabrication excluded',
+            accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
+        )
+        _shield_note = (
+            'Screening source model: MOUSE full-power fuel lifetime, a finite-'
+            'irradiation Way-Wigner decay-heat correlation, 13% decay-gamma '
+            'energy fraction, and cooldown-dependent Shah photon-spectrum shapes. '
+            'No credit is taken for attenuation by the fuel, reflector, vessels, '
+            'coolant, or existing reactor shielding. Activation gamma rays, '
+            'shutdown neutrons, photon buildup, penetrations, impact limiters, '
+            'thermal design, containment, and certified transport-package structure '
+            'are excluded.'
+        )
+        if _irradiated_shield.get('source_spectrum_capped_at_36_months'):
+            _shield_note += (
+                ' The selected cooldown exceeds 36 months; MOUSE retains the '
+                '36-month spectrum shape while continuing to reduce total source '
+                'strength with cooldown time.'
+            )
+        st.markdown(
+            '<div style="background:#faf5ff;border:1px solid #d8b4fe;'
+            'border-radius:8px;padding:0.75rem 0.9rem;margin:0.7rem 0 1rem 0;'
+            'font-size:0.80rem;line-height:1.45;color:#5b21b6;">'
+            + _shield_note + '</div>',
+            unsafe_allow_html=True,
+        )
+
     # The reactor module receives the detailed compatibility cards. The
     # whole-plant table below summarizes every other package.
     _selected_package = next(
         p for p in _transport_packages if p['name'] == 'Reactor module'
     )
 
+    if transport_condition == 'Unirradiated':
+        _transport_scope_text = (
+            '<strong>Scope:</strong> initial unirradiated transportation. '
+            'Irradiated-transport shielding and casks are excluded. Geometry, '
+            'mass and transport categories are screening results rather than '
+            'carrier approval.'
+        )
+    else:
+        _transport_scope_text = (
+            '<strong>Scope:</strong> one intact end-of-fuel-cycle irradiated '
+            'reactor-module return after the selected cooldown. The reactor module '
+            'is a dedicated load and receives additional external transport shielding. '
+            'Other plant packages remain in the whole-plant logistics summary but are '
+            'not treated as radioactive. Results are screening estimates, not package '
+            'certification or carrier approval.'
+        )
     st.markdown(
         '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;'
         'padding:0.8rem 1rem;margin-bottom:0.9rem;font-size:0.84rem;'
         'line-height:1.45;color:#92400e;">'
-        '<strong>Scope:</strong> initial unirradiated transportation. Shielding '
-        'and irradiated-transport casks are excluded. Geometry, mass and '
-        'transport categories are screening results rather than carrier approval.'
-        '</div>',
+        + _transport_scope_text + '</div>',
         unsafe_allow_html=True,
     )
 
@@ -5162,6 +5397,7 @@ with streamlit_analytics.track():
     def _tr_dedicated_package(pkg):
         return (
             bool(pkg.get('precontainerized'))
+            or bool(pkg.get('dedicated'))
             or pkg['name'] == 'NaK coolant package'
         )
 
@@ -5288,6 +5524,13 @@ with streamlit_analytics.track():
     # only when specialized rail service is required. Sea is charged per standard
     # container and per oversized heavy-lift piece.
     _transport_cost_error = None
+    _shield_material_cost = 0.0
+    _road_radioactive_low = _road_radioactive_high = 0.0
+    _road_transport_days = 0
+    _sea_irradiated_reactor_low = _sea_irradiated_reactor_high = 0.0
+    _road_base_cost_low = _road_base_cost_high = None
+    _rail_base_cost_low = _rail_base_cost_high = None
+    _sea_base_cost_low = _sea_base_cost_high = None
     try:
         _transport_cost_inputs = _load_transportation_cost_inputs()
 
@@ -5367,20 +5610,92 @@ with streamlit_analytics.track():
             _sea_standard * _s1_high
             + _sea_heavy * _s2_high
         )
+
+        # Preserve the shielded-package freight estimates before adding raw
+        # shield material or radioactive-content-specific premiums. These
+        # values support a transparent irradiated-mode cost breakdown.
+        _road_base_cost_low, _road_base_cost_high = _road_cost_low, _road_cost_high
+        _rail_base_cost_low, _rail_base_cost_high = _rail_cost_low, _rail_cost_high
+        _sea_base_cost_low, _sea_base_cost_high = _sea_cost_low, _sea_cost_high
+
+        if _irradiated_shield is not None:
+            _irradiated_cost_inputs = load_irradiated_cost_inputs()
+
+            def _irr_bounds(input_id):
+                row = _irradiated_cost_inputs.loc[input_id]
+                return (
+                    float(row['cost_value_lower_bound']),
+                    float(row['cost_value_upper_bound']),
+                )
+
+            _shield_material_cost = float(
+                _irradiated_shield['shield_raw_material_cost_2025_usd']
+            )
+
+            # Road: base freight is recalculated using the shielded package. Add
+            # only radioactive-specific screening premiums from Virgil Peoples.
+            _sec_low, _sec_high = _irr_bounds('IR_ROAD_SECURITY')
+            _ins_low, _ins_high = _irr_bounds('IR_ROAD_INSURANCE')
+            _road_transport_days = (
+                int(math.ceil(float(road_distance_miles) / 250.0))
+                if float(road_distance_miles) > 0 else 0
+            )
+            _road_radioactive_low = (
+                _road_transport_days * _sec_low + _ins_low
+            )
+            _road_radioactive_high = (
+                _road_transport_days * _sec_high + _ins_high
+            )
+            _road_cost_low += _shield_material_cost + _road_radioactive_low
+            _road_cost_high += _shield_material_cost + _road_radioactive_high
+
+            # Rail: the broad L1 range already states that dedicated service,
+            # security, Type B packaging, and emergency planning may be included.
+            # Add the raw shield material only to avoid double counting.
+            _rail_cost_low += _shield_material_cost
+            _rail_cost_high += _shield_material_cost
+
+            # Sea: replace the ordinary sea charge for the irradiated reactor
+            # module with Virgil's broad INF-Class 3 irradiated-shipment range.
+            # Other unirradiated plant packages retain the ordinary sea charges.
+            _reactor_sea_severity = _mode_results['Sea'][0][0]
+            if _reactor_sea_severity == 0:
+                _reactor_sea_base_low, _reactor_sea_base_high = _s1_low, _s1_high
+            else:
+                _reactor_sea_base_low, _reactor_sea_base_high = _s2_low, _s2_high
+            _sea_irradiated_reactor_low, _sea_irradiated_reactor_high = (
+                _irr_bounds('IR_SEA_TOTAL')
+            )
+            _sea_cost_low = (
+                _sea_cost_low - _reactor_sea_base_low
+                + _sea_irradiated_reactor_low + _shield_material_cost
+            )
+            _sea_cost_high = (
+                _sea_cost_high - _reactor_sea_base_high
+                + _sea_irradiated_reactor_high + _shield_material_cost
+            )
     except Exception as _exc:
         _transport_cost_error = str(_exc)
         _road_cost_low = _road_cost_high = None
         _rail_cost_low = _rail_cost_high = None
         _sea_cost_low = _sea_cost_high = None
 
-    # Transportation is a one-time initial-deployment cost. Reuse the same
-    # discounted-cash-flow helper that MOUSE uses to quantify the LCOE
-    # contribution of an added capital or annual cost.
+    # Unirradiated deployment cost is incurred at year 0. Irradiated return
+    # cost is incurred after the full-power fuel lifetime plus onsite cooldown;
+    # discount it to year 0 before passing it to the existing LCOE helper.
     def _transport_lcoe_increase(capital_cost):
         if capital_cost is None:
             return None
+        present_cost = float(capital_cost)
+        if transport_condition == 'Irradiated':
+            _event_year = (
+                float(params.get('Fuel Lifetime', 0.0)) / 365.0
+                + float(cooldown_months) / 12.0
+            )
+            _discount = float(params.get('Discount Rate', discount_rate / 100.0))
+            present_cost = present_cost / ((1.0 + _discount) ** _event_year)
         return float(energy_cost_levelized_per_acct(
-            params, float(capital_cost), 0.0
+            params, present_cost, 0.0
         ))
 
     try:
@@ -5395,25 +5710,43 @@ with streamlit_analytics.track():
         _rail_lcoe_low = _rail_lcoe_high = None
         _sea_lcoe_low = _sea_lcoe_high = None
 
-    _transport_cost_help = (
-        'One-way, unirradiated transportation screening estimate in 2025 USD. '
-        'Road cost applies the entered distance to each consolidated truckload; '
-        'the route-planning adder is included once when any truckload is a superload. '
-        'Rail uses one coordinated-shipment range. If specialized rail service is '
-        'required, MOUSE also applies the 2025 Union Pacific special-train mileage '
-        'charge, minimum charge, and switching charge once to the rail shipment. '
-        'Sea applies a per-container range to each standard container and a '
-        'heavy-lift range to each oversized package. First- and last-mile trucking '
-        'for rail and sea, explicit transload costs, installation, and site assembly '
-        'are excluded.'
-    )
-    _transport_lcoe_help = (
-        'Increase caused by treating the one-way transportation cost as a one-time '
-        'capital cost at year 0. MOUSE uses the same discounted-cash-flow method, '
-        'plant lifetime, discount rate, electric power, and capacity factor used by '
-        'its existing added-cost and cost-driver LCOE calculations. Displayed values '
-        'are rounded to one significant digit.'
-    )
+    if transport_condition == 'Unirradiated':
+        _transport_cost_help = (
+            'One-way, unirradiated transportation screening estimate in 2025 USD. '
+            'Road cost applies the entered distance to each consolidated truckload; '
+            'the route-planning adder is included once when any truckload is a superload. '
+            'Rail uses one coordinated-shipment range, with the special-train mileage, '
+            'minimum, and switching charge added once when specialized rail is required. '
+            'Sea applies per-container and heavy-lift ranges. First/last-mile trucking '
+            'for rail and sea, explicit transloads, cranes, installation, and site '
+            'assembly are excluded.'
+        )
+        _transport_lcoe_help = (
+            'Increase caused by treating the one-way initial-deployment transportation '
+            'cost as a capital cost at year 0. Displayed values are rounded to one '
+            'significant digit.'
+        )
+    else:
+        _transport_cost_help = (
+            'One-way irradiated-return screening estimate in 2025 USD. All ordinary '
+            'freight is recalculated using the shielded reactor-module mass and '
+            'dimensions. Raw lead cost is included. Road also includes a Virgil '
+            'Peoples screening allowance for HRCQ-like security/escort travel days '
+            '(250 loaded miles/day) and additional driver liability insurance. The '
+            'broad rail range is retained without separate radioactive adders to avoid '
+            'double counting dedicated service and security already described in its '
+            'source basis. The ordinary sea charge for the irradiated reactor module '
+            'is replaced by the $0.8-$1.0 million INF-Class 3 shipment range; ordinary '
+            'charges remain for other plant packages. Cranes, custom cask fabrication, '
+            'package certification, first/last-mile rail or sea legs, and route-specific '
+            'civil modifications are excluded.'
+        )
+        _transport_lcoe_help = (
+            'Increase caused by the one-way irradiated return. MOUSE discounts the '
+            'return cost from the end of the full-power fuel lifetime plus the selected '
+            'cooldown period to year 0, then applies its existing LCOE method. Displayed '
+            'values are rounded to one significant digit.'
+        )
 
     def _format_first_nonzero(value):
         """Format a positive value to one significant digit."""
@@ -5576,6 +5909,104 @@ with streamlit_analytics.track():
         unsafe_allow_html=True,
     )
 
+    if _irradiated_shield is not None and _transport_cost_error is None:
+        def _cost_range_text(low, high):
+            if low is None or high is None:
+                return 'Not available'
+            if abs(float(high) - float(low)) < 0.5:
+                return f'${float(low):,.0f}'
+            return f'${float(low):,.0f}-${float(high):,.0f}'
+
+        _road_premium_text = _cost_range_text(
+            _road_radioactive_low, _road_radioactive_high
+        )
+        _sea_other_low = max(
+            0.0,
+            float(_sea_base_cost_low or 0.0)
+            - (float(_s1_low) if _mode_results['Sea'][0][0] == 0 else float(_s2_low)),
+        )
+        _sea_other_high = max(
+            0.0,
+            float(_sea_base_cost_high or 0.0)
+            - (float(_s1_high) if _mode_results['Sea'][0][0] == 0 else float(_s2_high)),
+        )
+        _irr_cost_rows = [
+            (
+                'Road',
+                _cost_range_text(_road_base_cost_low, _road_base_cost_high),
+                f'${_shield_material_cost:,.0f}',
+                _road_premium_text,
+                f'{_road_transport_days} transport day(s); security plus liability insurance',
+            ),
+            (
+                'Rail',
+                _cost_range_text(_rail_base_cost_low, _rail_base_cost_high),
+                f'${_shield_material_cost:,.0f}',
+                'No separate adder',
+                'Broad rail range retained to avoid double counting dedicated service/security',
+            ),
+            (
+                'Sea',
+                _cost_range_text(_sea_other_low, _sea_other_high),
+                f'${_shield_material_cost:,.0f}',
+                _cost_range_text(
+                    _sea_irradiated_reactor_low, _sea_irradiated_reactor_high
+                ),
+                'INF-Class 3 reactor shipment replaces its ordinary sea charge',
+            ),
+        ]
+        _irr_cost_html = ''.join(
+            '<tr>'
+            f'<td style="padding:0.48rem 0.55rem;border-top:1px solid #e2e8f0;'
+            f'font-weight:700;color:#0a2540;">{mode}</td>'
+            f'<td style="padding:0.48rem 0.55rem;border-top:1px solid #e2e8f0;'
+            f'text-align:right;">{base}</td>'
+            f'<td style="padding:0.48rem 0.55rem;border-top:1px solid #e2e8f0;'
+            f'text-align:right;">{shield}</td>'
+            f'<td style="padding:0.48rem 0.55rem;border-top:1px solid #e2e8f0;'
+            f'text-align:right;">{premium}</td>'
+            f'<td style="padding:0.48rem 0.55rem;border-top:1px solid #e2e8f0;'
+            f'color:#64748b;">{note}</td>'
+            '</tr>'
+            for mode, base, shield, premium, note in _irr_cost_rows
+        )
+        st.markdown(
+            '<div style="font-size:0.95rem;font-weight:700;color:#0a2540;'
+            'margin:1rem 0 0.45rem 0;">Irradiated Cost Breakdown</div>'
+            '<div style="overflow-x:auto;margin-bottom:0.9rem;">'
+            '<table style="width:100%;border-collapse:collapse;background:#ffffff;'
+            'border:1px solid #d8b4fe;border-radius:8px;font-size:0.80rem;">'
+            '<thead style="background:#faf5ff;color:#5b21b6;">'
+            '<tr>'
+            '<th style="padding:0.52rem;text-align:left;">Mode</th>'
+            '<th style="padding:0.52rem;text-align:right;">Shielded-package freight</th>'
+            '<th style="padding:0.52rem;text-align:right;">Raw shield</th>'
+            '<th style="padding:0.52rem;text-align:right;">Radioactive-specific cost</th>'
+            '<th style="padding:0.52rem;text-align:left;">Treatment</th>'
+            '</tr></thead><tbody>'
+            + _irr_cost_html
+            + '</tbody></table></div>',
+            unsafe_allow_html=True,
+        )
+
+    if transport_condition == 'Unirradiated':
+        _cost_scope_note = (
+            'Transportation costs are one-way, unirradiated screening estimates '
+            'from assets/transportation_cost_inputs_2025.csv. Road cost varies with '
+            'the entered distance. Rail distance is used only when specialized '
+            'special-train service is triggered; standard rail and sea travel '
+            'distances are not modeled explicitly.'
+        )
+    else:
+        _cost_scope_note = (
+            'Transportation costs are one-way irradiated-return screening estimates. '
+            'The existing freight model is rerun using the shielded reactor module, '
+            'then raw lead and the documented radioactive-specific road or sea '
+            'allowances are added. Rail uses its existing broad range without a '
+            'separate radioactive premium to avoid double counting. Detailed cask '
+            'fabrication/certification, cranes, and route-specific civil work are excluded.'
+        )
+
     st.markdown(
         '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;'
         'padding:0.85rem 1.1rem;margin:0.9rem 0 1rem 0;font-size:0.84rem;'
@@ -5600,11 +6031,7 @@ with streamlit_analytics.track():
         '<li>Rail and sea categories represent logistics complexity, not a '
         'universal permit hierarchy. Carrier, route, port and vessel review '
         'remain necessary.</li>'
-        '<li>Transportation costs are one-way, unirradiated screening estimates '
-        'from assets/transportation_cost_inputs_2025.csv. Road cost varies with '
-        'the entered distance. Rail distance is used only when specialized '
-        'special-train service is triggered; standard rail and sea travel distances '
-        'are not modeled explicitly.</li>'
+        f'<li>{_cost_scope_note}</li>'
         '</ul></div>',
         unsafe_allow_html=True,
     )
