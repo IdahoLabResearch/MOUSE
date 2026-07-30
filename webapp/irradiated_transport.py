@@ -7,8 +7,7 @@ The runtime model deliberately avoids OpenMC and depletion calculations. It uses
 * the MOUSE full-power fuel lifetime;
 * a finite-irradiation Way-Wigner decay-heat approximation;
 * a fixed 50% decay-gamma energy fraction;
-* a cooldown-dependent normalized 48-group photon spectrum from the Manit
-  Shah workbook;
+* a cooldown-dependent normalized 48-group reference photon spectrum;
 * a point-source dose/lead attenuation treatment evaluated outward from the
   shield surface; and
 * a closed cylindrical external transport shield around the MOUSE reactor module.
@@ -75,10 +74,10 @@ def _reference_spectrum(
 ) -> Tuple[pd.DataFrame, str, float, float]:
     """Return a cooldown-dependent normalized spectrum and lead coefficients.
 
-    LTMR and GCMR use the Shah HTPM family as a spectrum-shape analogue;
-    HPMR uses the Shah HPMR family. LTMR retains the 10-MWt HTPM shape used in
+    LTMR and GCMR use the HTPM family as a spectrum-shape analogue;
+    HPMR uses the HPMR family. LTMR retains the 10-MWt HTPM shape used in
     the preliminary screening calculations, while GCMR and HPMR use the closest
-    available Shah reference power. Spectrum shape is linearly
+    available reference power. Spectrum shape is linearly
     interpolated between integer months through month 36 and held at the
     36-month shape for longer cooldown periods.
     """
@@ -252,7 +251,7 @@ def estimate_irradiated_transport_shield(
     module_width_m: float,
     module_height_m: float,
 ) -> Dict[str, float | str]:
-    """Estimate shielding with the Manit Shah 48-group photon spectrum.
+    """Estimate shielding with a cooldown-dependent 48-group photon spectrum.
 
     The requested dose distance is measured radially outward from the outer
     shield surface. The resulting thickness is the transport design basis used
@@ -312,8 +311,8 @@ def estimate_irradiated_transport_shield(
         "unshielded_dose_mrem_h": unshielded_dose,
         "source_to_detector_distance_m": source_to_detector_m,
         **metrics,
-        "photon_model": "multigroup_shah",
-        "photon_model_label": "Manit Shah 48-group",
+        "photon_model": "multigroup_48_group",
+        "photon_model_label": "48-group photon spectrum",
         "photon_energy_group_count": 48,
         "source_spectrum_family": source_family,
         "source_spectrum_reference_power_mwt": ref_power,

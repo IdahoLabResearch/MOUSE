@@ -2577,11 +2577,14 @@ with streamlit_analytics.track():
                 value=6,
                 step=1,
                 help=(
-                    'Time between reactor shutdown and transportation. MOUSE applies '
-                    'a finite-irradiation decay-heat correlation. Photon spectrum shapes '
-                    'are available through 36 months; for longer cooldown periods the '
-                    '36-month spectrum shape is retained while source strength continues '
-                    'to decrease with cooldown time.'
+                    'Time between reactor shutdown and transportation. Source strength '
+                    'is estimated with a finite-irradiation Way-Wigner decay-heat '
+                    'correlation, with 50% of decay heat assumed to be gamma energy. '
+                    'The normalized 48-group spectrum shape is interpolated through '
+                    '36 months; for longer cooldown periods the 36-month shape is '
+                    'retained while total source strength continues to decrease. '
+                    'This is a reference-spectrum screening model, not a '
+                    'reactor-specific depletion calculation.'
                 ),
             )
             shield_material = st.selectbox(
@@ -2589,10 +2592,10 @@ with streamlit_analytics.track():
                 options=list(available_shield_materials()),
                 index=0,
                 help=(
-                    'Lead is the only material currently enabled because its multigroup '
-                    'attenuation data and screening calculation were checked against the '
-                    'Manit Shah transportation-dose workbook. Additional materials can be '
-                    'added when equivalent direct-photon response data are available.'
+                    'Lead is the only material currently enabled because '
+                    'energy-dependent lead attenuation coefficients are available for '
+                    'all 48 photon-energy groups. Additional materials require '
+                    'equivalent multigroup attenuation data.'
                 ),
             )
             target_dose_rate_mrem_h = st.number_input(
@@ -2603,8 +2606,11 @@ with streamlit_analytics.track():
                 step=1.0,
                 help=(
                     'The default comparison case is 10 mrem/h at 2 m outward from '
-                    'the shield surface. This simplified geometry does not model a '
-                    'vehicle or demonstrate regulatory compliance.'
+                    'the shield surface. The calculation uses point-source exponential '
+                    'attenuation, does not include photon buildup, and takes no credit '
+                    'for attenuation by the fuel, reflector, vessels, coolant, or '
+                    'existing reactor shielding. It does not demonstrate regulatory '
+                    'compliance.'
                 ),
             )
             dose_evaluation_distance_m = st.number_input(
@@ -2615,8 +2621,10 @@ with streamlit_analytics.track():
                 step=1.0,
                 help=(
                     'Radial distance measured outward from the added shield surface. '
-                    'MOUSE converts this to point-source distance by adding the '
-                    'unshielded module radius and the calculated shield thickness.'
+                    'The source is treated as a point at the module center. MOUSE '
+                    'converts this surface offset to source-to-detector distance by '
+                    'adding the unshielded module radius and calculated shield '
+                    'thickness. Vehicle geometry is not modeled.'
                 ),
             )
             if (
@@ -4646,10 +4654,10 @@ with streamlit_analytics.track():
                     'Missing result fields: '
                     + ', '.join(_shield_missing_keys)
                 )
-            if _irradiated_shield['photon_model'] != 'multigroup_shah':
+            if _irradiated_shield['photon_model'] != 'multigroup_48_group':
                 raise RuntimeError(
                     'The irradiated-transport calculation did not return the '
-                    'required Manit Shah 48-group photon model.'
+                    'required 48-group photon model.'
                 )
             _reactor_package_mass_kg = float(
                 _irradiated_shield['shielded_module_mass_kg']
@@ -4716,8 +4724,8 @@ with streamlit_analytics.track():
         _reactor_package_help += (
             f'A closed cylindrical {shield_material.lower()} transport shield is '
             f'added using the selected cooldown and dose target at the specified '
-            f'distance outward from the shield surface. The Manit Shah 48-group '
-            f'photon spectrum defines the required shielding. No credit '
+            f'distance outward from the shield surface. A cooldown-dependent '
+            f'48-group photon spectrum defines the required shielding. No credit '
             f'is taken for attenuation by fuel, reflector, '
             f'vessels, coolant, or existing reactor shielding. The estimate excludes '
             f'activation gamma rays, shutdown neutrons, buildup, impact limiters, '
@@ -5009,7 +5017,7 @@ with streamlit_analytics.track():
         _info_card(
             _shield_cols[1], 'Added Shield Thickness',
             f'{_irradiated_shield["shield_thickness_cm"]:.1f} cm',
-            subtitle='Manit Shah 48-group spectrum',
+            subtitle='48-group photon spectrum',
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
         _info_card(
@@ -5029,7 +5037,7 @@ with streamlit_analytics.track():
         _shield_note = (
             'Screening source model: MOUSE full-power fuel lifetime, a finite-'
             'irradiation Way-Wigner decay-heat correlation, a 50% decay-gamma '
-            'energy fraction, and cooldown-dependent Manit Shah 48-group spectrum '
+            'energy fraction, and cooldown-dependent 48-group photon-spectrum '
             'shapes. Dose distance is measured outward from the shield surface. '
             'This result controls package dimensions, transportation screening, '
             'and transportation cost. '
