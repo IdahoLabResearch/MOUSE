@@ -4627,27 +4627,29 @@ with streamlit_analytics.track():
                 module_width_m=_reactor_package_width_m,
                 module_height_m=_reactor_package_height_m,
             )
-            _shield_range_required_keys = {
-                'shield_thickness_min_cm',
-                'shield_thickness_max_cm',
-                'shield_mass_min_kg',
-                'shield_mass_max_kg',
-                'shield_raw_material_cost_min_2025_usd',
-                'shield_raw_material_cost_max_2025_usd',
-                'shielding_models',
+            _shield_required_keys = {
+                'shield_thickness_cm',
+                'shield_mass_kg',
+                'shield_raw_material_cost_2025_usd',
+                'photon_model',
             }
-            _shield_range_missing_keys = sorted(
-                _shield_range_required_keys.difference(_irradiated_shield)
+            _shield_missing_keys = sorted(
+                _shield_required_keys.difference(_irradiated_shield)
             )
-            if _shield_range_missing_keys:
+            if _shield_missing_keys:
                 raise RuntimeError(
                     'The irradiated-transport files are from different update '
-                    'versions. webapp/app.py expects the two-model shielding '
-                    'range, but webapp/irradiated_transport.py returned the '
-                    'older single-model result. Replace both files from the '
-                    'same MOUSE shielding-range update and restart the app. '
+                    'versions. webapp/app.py expects the 48-group shielding '
+                    'result, but webapp/irradiated_transport.py returned an '
+                    'incompatible result. Replace both files from the same '
+                    'MOUSE shielding update and restart the app. '
                     'Missing result fields: '
-                    + ', '.join(_shield_range_missing_keys)
+                    + ', '.join(_shield_missing_keys)
+                )
+            if _irradiated_shield['photon_model'] != 'multigroup_shah':
+                raise RuntimeError(
+                    'The irradiated-transport calculation did not return the '
+                    'required Manit Shah 48-group photon model.'
                 )
             _reactor_package_mass_kg = float(
                 _irradiated_shield['shielded_module_mass_kg']
@@ -4714,8 +4716,8 @@ with streamlit_analytics.track():
         _reactor_package_help += (
             f'A closed cylindrical {shield_material.lower()} transport shield is '
             f'added using the selected cooldown and dose target at the specified '
-            f'distance outward from the shield surface. The upper result from the '
-            f'0.7-MeV and 48-group sensitivity cases controls the package. No credit '
+            f'distance outward from the shield surface. The Manit Shah 48-group '
+            f'photon spectrum defines the required shielding. No credit '
             f'is taken for attenuation by fuel, reflector, '
             f'vessels, coolant, or existing reactor shielding. The estimate excludes '
             f'activation gamma rays, shutdown neutrons, buildup, impact limiters, '
@@ -5006,68 +5008,30 @@ with streamlit_analytics.track():
         )
         _info_card(
             _shield_cols[1], 'Added Shield Thickness',
-            (
-                f'{_irradiated_shield["shield_thickness_min_cm"]:.1f}-'
-                f'{_irradiated_shield["shield_thickness_max_cm"]:.1f} cm'
-            ),
-            subtitle='0.7-MeV to 48-group sensitivity',
+            f'{_irradiated_shield["shield_thickness_cm"]:.1f} cm',
+            subtitle='Manit Shah 48-group spectrum',
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
         _info_card(
             _shield_cols[2], 'Added Shield Mass',
-            (
-                f'{_tr_lb(_irradiated_shield["shield_mass_min_kg"]):,.0f}-'
-                f'{_tr_lb(_irradiated_shield["shield_mass_max_kg"]):,.0f} lb'
-            ),
+            f'{_tr_lb(_irradiated_shield["shield_mass_kg"]):,.0f} lb',
             subtitle=(
-                f'{_irradiated_shield["shield_mass_min_kg"] / 1000.0:,.1f}-'
-                f'{_irradiated_shield["shield_mass_max_kg"] / 1000.0:,.1f} metric tons'
+                f'{_irradiated_shield["shield_mass_kg"] / 1000.0:,.1f} metric tons'
             ),
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
         _info_card(
             _shield_cols[3], 'Raw Shield Material',
-            (
-                f'${_irradiated_shield["shield_raw_material_cost_min_2025_usd"]:,.0f}-'
-                f'${_irradiated_shield["shield_raw_material_cost_max_2025_usd"]:,.0f}'
-            ),
+            f'${_irradiated_shield["shield_raw_material_cost_2025_usd"]:,.0f}',
             subtitle='2025 USD; package fabrication excluded',
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
-        _shield_model_rows = []
-        for _model_id in ('single_energy_0p7_mev', 'multigroup_shah'):
-            _model = _irradiated_shield['shielding_models'][_model_id]
-            _shield_model_rows.append(
-                '<tr>'
-                f'<td style="padding:0.42rem 0.55rem;">{_model["label"]}</td>'
-                f'<td style="padding:0.42rem 0.55rem;text-align:right;">'
-                f'{_model["shield_thickness_cm"]:.1f} cm</td>'
-                f'<td style="padding:0.42rem 0.55rem;text-align:right;">'
-                f'{_model["shield_mass_kg"] / 1000.0:,.1f} t</td>'
-                f'<td style="padding:0.42rem 0.55rem;text-align:right;">'
-                f'${_model["shield_raw_material_cost_2025_usd"]:,.0f}</td>'
-                '</tr>'
-            )
-        st.markdown(
-            '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;'
-            'background:#ffffff;color:#0a2540;border:1px solid #d8b4fe;">'
-            '<thead style="background:#faf5ff;"><tr>'
-            '<th style="padding:0.42rem 0.55rem;text-align:left;">Photon model</th>'
-            '<th style="padding:0.42rem 0.55rem;text-align:right;">Thickness</th>'
-            '<th style="padding:0.42rem 0.55rem;text-align:right;">Lead mass</th>'
-            '<th style="padding:0.42rem 0.55rem;text-align:right;">Raw lead</th>'
-            '</tr></thead><tbody>'
-            + ''.join(_shield_model_rows)
-            + '</tbody></table>',
-            unsafe_allow_html=True,
-        )
         _shield_note = (
             'Screening source model: MOUSE full-power fuel lifetime, a finite-'
-            'irradiation Way-Wigner decay-heat correlation, and a common 50% '
-            'decay-gamma energy fraction. The displayed range compares the original '
-            '0.7-MeV photon model with cooldown-dependent Shah 48-group spectrum '
+            'irradiation Way-Wigner decay-heat correlation, a 50% decay-gamma '
+            'energy fraction, and cooldown-dependent Manit Shah 48-group spectrum '
             'shapes. Dose distance is measured outward from the shield surface. '
-            'The upper result controls package dimensions, transportation screening, '
+            'This result controls package dimensions, transportation screening, '
             'and transportation cost. '
             'No credit is taken for attenuation by the fuel, reflector, vessels, '
             'coolant, or existing reactor shielding. Activation gamma rays, '

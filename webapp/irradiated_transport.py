@@ -7,8 +7,8 @@ The runtime model deliberately avoids OpenMC and depletion calculations. It uses
 * the MOUSE full-power fuel lifetime;
 * a finite-irradiation Way-Wigner decay-heat approximation;
 * a fixed 50% decay-gamma energy fraction;
-* both a 0.7-MeV screening photon and cooldown-dependent normalized photon
-  spectra from the Manit Shah workbook;
+* a cooldown-dependent normalized 48-group photon spectrum from the Manit
+  Shah workbook;
 * a point-source dose/lead attenuation treatment evaluated outward from the
   shield surface; and
 * a closed cylindrical external transport shield around the MOUSE reactor module.
@@ -33,8 +33,6 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 _IRR_DIR = _REPO_ROOT / "assets" / "irradiated_transport"
 _J_PER_MEV = 1.602176634e-13
 _GAMMA_FRACTION = 0.50
-_SINGLE_ENERGY_MEV = 0.70
-_LEAD_MASS_ATTENUATION_CM2_G_AT_0P7_MEV = 0.103933
 _WAY_WIGNER_COEFFICIENT = 0.066
 _DAYS_PER_MONTH = 30.0
 
@@ -127,19 +125,6 @@ def _reference_spectrum(
         raise ValueError("Reference gamma spectrum has zero total energy fraction.")
     spectrum["gamma_energy_fraction"] = fractions / fractions.sum()
     return spectrum, family, ref_power, m
-
-
-def _single_energy_spectrum() -> pd.DataFrame:
-    """Return the original MOUSE 0.7-MeV screening spectrum as one group."""
-    return pd.DataFrame(
-        {
-            "energy_mid_mev": [_SINGLE_ENERGY_MEV],
-            "gamma_energy_fraction": [1.0],
-            "lead_mass_attenuation_cm2_g": [
-                _LEAD_MASS_ATTENUATION_CM2_G_AT_0P7_MEV
-            ],
-        }
-    )
 
 
 def calculate_decay_heat_w(
@@ -266,12 +251,12 @@ def estimate_irradiated_transport_shield(
     module_length_m: float,
     module_width_m: float,
     module_height_m: float,
-) -> Dict[str, float | str | Dict[str, float]]:
-    """Estimate the 0.7-MeV-to-multigroup shielding sensitivity range.
+) -> Dict[str, float | str]:
+    """Estimate shielding with the Manit Shah 48-group photon spectrum.
 
     The requested dose distance is measured radially outward from the outer
-    shield surface. The thicker of the two cases is retained in the legacy
-    scalar result fields and used as the conservative transport design basis.
+    shield surface. The resulting thickness is the transport design basis used
+    for shield mass, cost, package dimensions, and transportation screening.
     """
     reactor_type = str(reactor_type).upper()
     properties = load_shield_material_properties()
@@ -298,49 +283,22 @@ def estimate_irradiated_transport_shield(
     radius_m = 0.5 * diameter_m
     material_cost = float(material["raw_material_cost_2025_usd_per_kg"])
 
-    model_inputs = {
-        "single_energy_0p7_mev": {
-            "label": "0.7-MeV single-energy",
-            "spectrum": _single_energy_spectrum(),
-        },
-        "multigroup_shah": {
-            "label": "Shah 48-group",
-            "spectrum": spectrum,
-        },
-    }
-    shielding_models: Dict[str, Dict[str, float | str]] = {}
-    for model_id, model in model_inputs.items():
-        thickness_cm, unshielded_dose, source_to_detector_m = _solve_thickness_cm(
-            target_dose_mrem_h,
-            dose_distance_m,
-            radius_m,
-            gamma_power_w,
-            model["spectrum"],
-            density_g_cm3,
-        )
-        metrics = _closed_shell_metrics(
-            thickness_cm,
-            density_kg_m3,
-            material_cost,
-            module_mass_kg,
-            length_m,
-            diameter_m,
-        )
-        shielding_models[model_id] = {
-            "label": str(model["label"]),
-            "gamma_fraction": _GAMMA_FRACTION,
-            "gamma_power_w": gamma_power_w,
-            "unshielded_dose_mrem_h": unshielded_dose,
-            "source_to_detector_distance_m": source_to_detector_m,
-            **metrics,
-        }
-
-    ordered_cases = sorted(
-        shielding_models.items(),
-        key=lambda item: float(item[1]["shield_thickness_cm"]),
+    thickness_cm, unshielded_dose, source_to_detector_m = _solve_thickness_cm(
+        target_dose_mrem_h,
+        dose_distance_m,
+        radius_m,
+        gamma_power_w,
+        spectrum,
+        density_g_cm3,
     )
-    low_model_id, low_case = ordered_cases[0]
-    high_model_id, high_case = ordered_cases[-1]
+    metrics = _closed_shell_metrics(
+        thickness_cm,
+        density_kg_m3,
+        material_cost,
+        module_mass_kg,
+        length_m,
+        diameter_m,
+    )
 
     return {
         "shield_material": str(shield_material),
@@ -351,30 +309,12 @@ def estimate_irradiated_transport_shield(
         "decay_heat_w": decay_heat_w,
         "gamma_power_w": gamma_power_w,
         "gamma_fraction": _GAMMA_FRACTION,
-        "unshielded_dose_mrem_h": float(high_case["unshielded_dose_mrem_h"]),
-        "shield_thickness_cm": float(high_case["shield_thickness_cm"]),
-        "shield_mass_kg": float(high_case["shield_mass_kg"]),
-        "shield_raw_material_cost_2025_usd": float(
-            high_case["shield_raw_material_cost_2025_usd"]
-        ),
-        "shielded_module_mass_kg": float(high_case["shielded_module_mass_kg"]),
-        "shielded_module_length_m": float(high_case["shielded_module_length_m"]),
-        "shielded_module_width_m": float(high_case["shielded_module_width_m"]),
-        "shielded_module_height_m": float(high_case["shielded_module_height_m"]),
-        "shield_thickness_min_cm": float(low_case["shield_thickness_cm"]),
-        "shield_thickness_max_cm": float(high_case["shield_thickness_cm"]),
-        "shield_mass_min_kg": float(low_case["shield_mass_kg"]),
-        "shield_mass_max_kg": float(high_case["shield_mass_kg"]),
-        "shield_raw_material_cost_min_2025_usd": float(
-            low_case["shield_raw_material_cost_2025_usd"]
-        ),
-        "shield_raw_material_cost_max_2025_usd": float(
-            high_case["shield_raw_material_cost_2025_usd"]
-        ),
-        "shielding_range_low_model": low_model_id,
-        "shielding_range_high_model": high_model_id,
-        "transport_design_basis_model": high_model_id,
-        "shielding_models": shielding_models,
+        "unshielded_dose_mrem_h": unshielded_dose,
+        "source_to_detector_distance_m": source_to_detector_m,
+        **metrics,
+        "photon_model": "multigroup_shah",
+        "photon_model_label": "Manit Shah 48-group",
+        "photon_energy_group_count": 48,
         "source_spectrum_family": source_family,
         "source_spectrum_reference_power_mwt": ref_power,
         "source_spectrum_month_used": used_spectrum_month,
