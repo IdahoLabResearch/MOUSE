@@ -2578,10 +2578,9 @@ with streamlit_analytics.track():
                 step=1,
                 help=(
                     'Time between reactor shutdown and transportation. MOUSE applies '
-                    'a finite-irradiation decay-heat correlation. Photon spectrum shapes '
-                    'are available through 36 months; for longer cooldown periods the '
-                    '36-month spectrum shape is retained while source strength continues '
-                    'to decrease with cooldown time.'
+                    'a finite-irradiation Way-Wigner decay-heat screening correlation. '
+                    'The source strength decreases with cooldown time. This simplified '
+                    'screen is not a substitute for a depletion/source-term calculation.'
                 ),
             )
             shield_material = st.selectbox(
@@ -2589,10 +2588,12 @@ with streamlit_analytics.track():
                 options=list(available_shield_materials()),
                 index=0,
                 help=(
-                    'Lead is the only material currently enabled because its multigroup '
-                    'attenuation data and screening calculation were checked against the '
-                    'Manit Shah transportation-dose workbook. Additional materials can be '
-                    'added when equivalent direct-photon response data are available.'
+                    'Candidate gamma-shield materials are compared using density, 2025 '
+                    'raw-material cost, and NIST photon attenuation data at the 0.7-MeV '
+                    'representative photon energy. Carbon steel and tungsten heavy alloy '
+                    'are transport-package candidates. Ordinary concrete is included only '
+                    'as a stationary or limited site-transfer sensitivity. Fabrication and '
+                    'certified-package structure are excluded.'
                 ),
             )
             target_dose_rate_mrem_h = st.number_input(
@@ -5007,20 +5008,21 @@ with streamlit_analytics.track():
         )
         _shield_note = (
             'Screening source model: MOUSE full-power fuel lifetime, a finite-'
-            'irradiation Way-Wigner decay-heat correlation, 13% decay-gamma '
-            'energy fraction, and cooldown-dependent Shah photon-spectrum shapes. '
+            'irradiation Way-Wigner decay-heat correlation, a 50% gamma-energy '
+            'fraction, and a representative 0.7 MeV photon. Material attenuation '
+            'and dry-air energy-absorption coefficients are based on NIST data. '
             'No credit is taken for attenuation by the fuel, reflector, vessels, '
             'coolant, or existing reactor shielding. Activation gamma rays, '
             'shutdown neutrons, photon buildup, penetrations, impact limiters, '
             'thermal design, containment, and certified transport-package structure '
             'are excluded.'
         )
-        if _irradiated_shield.get('source_spectrum_capped_at_36_months'):
-            _shield_note += (
-                ' The selected cooldown exceeds 36 months; MOUSE retains the '
-                '36-month spectrum shape while continuing to reduce total source '
-                'strength with cooldown time.'
-            )
+        _shield_note += (
+            ' Material-specific scope: '
+            + str(_irradiated_shield.get('material_screening_scope', 'screening only'))
+            + '. '
+            + str(_irradiated_shield.get('material_notes', ''))
+        )
         st.markdown(
             '<div style="background:#faf5ff;border:1px solid #d8b4fe;'
             'border-radius:8px;padding:0.75rem 0.9rem;margin:0.7rem 0 1rem 0;'
