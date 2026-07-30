@@ -4627,6 +4627,28 @@ with streamlit_analytics.track():
                 module_width_m=_reactor_package_width_m,
                 module_height_m=_reactor_package_height_m,
             )
+            _shield_range_required_keys = {
+                'shield_thickness_min_cm',
+                'shield_thickness_max_cm',
+                'shield_mass_min_kg',
+                'shield_mass_max_kg',
+                'shield_raw_material_cost_min_2025_usd',
+                'shield_raw_material_cost_max_2025_usd',
+                'shielding_models',
+            }
+            _shield_range_missing_keys = sorted(
+                _shield_range_required_keys.difference(_irradiated_shield)
+            )
+            if _shield_range_missing_keys:
+                raise RuntimeError(
+                    'The irradiated-transport files are from different update '
+                    'versions. webapp/app.py expects the two-model shielding '
+                    'range, but webapp/irradiated_transport.py returned the '
+                    'older single-model result. Replace both files from the '
+                    'same MOUSE shielding-range update and restart the app. '
+                    'Missing result fields: '
+                    + ', '.join(_shield_range_missing_keys)
+                )
             _reactor_package_mass_kg = float(
                 _irradiated_shield['shielded_module_mass_kg']
             )
