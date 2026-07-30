@@ -213,6 +213,10 @@ from webapp.irradiated_transport import (
     estimate_irradiated_transport_shield,
     load_irradiated_cost_inputs,
 )
+from webapp.display_formatting import (
+    format_cost_for_display,
+    round_cost_for_display,
+)
 
 # ---------------------------------------------------------------------------
 # Performance patches: cache Excel reads that would otherwise repeat on every run.
@@ -935,11 +939,7 @@ def _get_mean_std(df, account, which='FOAK'):
 def _fmt_cost(mean, std):
     if math.isnan(mean):
         return 'N/A'
-    # Sub-$1M values (e.g. training costs) round to 1 decimal so
-    # they read as "$0.3M" instead of "$0M". Values >= $1M stay as
-    # whole millions to keep OCC/TCI/Direct cards uncluttered.
-    use_decimal = abs(mean) < 1e6
-    fmt = (lambda v: f'${v / 1e6:.1f}M') if use_decimal else (lambda v: f'${round(v / 1e6)}M')
+    fmt = format_cost_for_display
     if math.isnan(std) or std == 0:
         return fmt(mean)
     # "Mean [low – high]" the mean is the headline, the bracketed
@@ -1033,22 +1033,7 @@ def _fmt_table_val(x):
         v = float(x)
     except (TypeError, ValueError):
         return str(x)
-    if v == 0:
-        return '0'
-    sign = '-' if v < 0 else ''
-    a = abs(v)
-    if a >= 1e7:
-        return f'{sign}{round(a / 1e6):.0f}M'
-    elif a >= 1e6:
-        return f'{sign}{round(a / 1e6):.0f}M'
-    elif a >= 1e5:
-        return f'{sign}{round(a / 1e4) * 10:.0f}K'
-    elif a >= 1e4:
-        return f'{sign}{round(a / 1e3):.0f}K'
-    elif a >= 1e3:
-        return f'{sign}{round(a / 1e3):.0f}K'
-    else:
-        return f'{sign}{int(round(a))}'
+    return f'{round_cost_for_display(v):,.0f}'
 
 
 # ---------------------------------------------------------------------------
@@ -2592,10 +2577,16 @@ with streamlit_analytics.track():
                 options=list(available_shield_materials()),
                 index=0,
                 help=(
-                    'Lead is the only material currently enabled because '
-                    'energy-dependent lead attenuation coefficients are available for '
-                    'all 48 photon-energy groups. Additional materials require '
-                    'equivalent multigroup attenuation data.'
+                    'Available photon-shielding sensitivities are lead, carbon steel, '
+                    'tungsten heavy alloy, and ordinary concrete. Each option uses '
+                    'material-specific attenuation coefficients for all 48 photon-energy '
+                    'groups, its bulk density, and a 2025 raw-material cost proxy. '
+                    'Concrete is included only as a stationary or limited site-transfer '
+                    'sensitivity; it is not treated as a normal over-the-road cask '
+                    'material. Costs exclude fabrication, structural shells, thermal '
+                    'design, and package certification. Hydrogenous neutron shields are '
+                    'not included because this model does not calculate shutdown-neutron '
+                    'dose.'
                 ),
             )
             target_dose_rate_mrem_h = st.number_input(
@@ -3601,7 +3592,8 @@ with streamlit_analytics.track():
         'margin:1.25rem 0 0.4rem 0;">Electricity Costs</div>'
         '<p style="color:#64748b;font-size:0.85rem;margin:0 0 0.85rem 0;">'
         'Ranges shown are <strong>mean &minus; 1&sigma;</strong> to '
-        '<strong>mean + 1&sigma;</strong>.'
+        '<strong>mean + 1&sigma;</strong>. Total-dollar values are displayed '
+        'with approximately half of their integer digits rounded to trailing zeros.'
         '</p>',
         unsafe_allow_html=True,
     )
@@ -5017,7 +5009,7 @@ with streamlit_analytics.track():
         _info_card(
             _shield_cols[1], 'Added Shield Thickness',
             f'{_irradiated_shield["shield_thickness_cm"]:.1f} cm',
-            subtitle='48-group photon spectrum',
+            subtitle=f'{shield_material}; 48-group photon spectrum',
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
         _info_card(
@@ -5030,7 +5022,9 @@ with streamlit_analytics.track():
         )
         _info_card(
             _shield_cols[3], 'Raw Shield Material',
-            f'${_irradiated_shield["shield_raw_material_cost_2025_usd"]:,.0f}',
+            format_cost_for_display(
+                _irradiated_shield["shield_raw_material_cost_2025_usd"]
+            ),
             subtitle='2025 USD; package fabrication excluded',
             accent='#7c3aed', bg='#faf5ff', border='#d8b4fe',
         )
@@ -5038,12 +5032,14 @@ with streamlit_analytics.track():
             'Screening source model: MOUSE full-power fuel lifetime, a finite-'
             'irradiation Way-Wigner decay-heat correlation, a 50% decay-gamma '
             'energy fraction, and cooldown-dependent 48-group photon-spectrum '
-            'shapes. Dose distance is measured outward from the shield surface. '
+            'shapes with material-specific photon attenuation coefficients. Dose '
+            'distance is measured outward from the shield surface. '
             'This result controls package dimensions, transportation screening, '
             'and transportation cost. '
             'No credit is taken for attenuation by the fuel, reflector, vessels, '
             'coolant, or existing reactor shielding. Activation gamma rays, '
-            'shutdown neutrons, photon buildup, penetrations, impact limiters, '
+            'shutdown neutrons, coupled neutron/gamma shielding, photon buildup, '
+            'penetrations, impact limiters, '
             'thermal design, containment, and certified transport-package structure '
             'are excluded.'
         )
@@ -5751,7 +5747,9 @@ with streamlit_analytics.track():
             'minimum, and switching charge added once when specialized rail is required. '
             'Sea applies per-container and heavy-lift ranges. First/last-mile trucking '
             'for rail and sea, explicit transloads, cranes, installation, and site '
-            'assembly are excluded.'
+            'assembly are excluded. Displayed total-dollar costs are rounded so '
+            'approximately half of their integer digits are trailing zeros; the '
+            'underlying calculation retains full precision.'
         )
         _transport_lcoe_help = (
             'Increase caused by treating the one-way initial-deployment transportation '
@@ -5762,7 +5760,8 @@ with streamlit_analytics.track():
         _transport_cost_help = (
             'One-way irradiated-return screening estimate in 2025 USD. All ordinary '
             'freight is recalculated using the shielded reactor-module mass and '
-            'dimensions. Raw lead cost is included. Road also includes a Virgil '
+            f'dimensions. Raw {shield_material.lower()} cost is included. Road also '
+            'includes a Virgil '
             'Peoples screening allowance for HRCQ-like security/escort travel days '
             '(250 loaded miles/day) and additional driver liability insurance. The '
             'broad rail range is retained without separate radioactive adders to avoid '
@@ -5771,7 +5770,9 @@ with streamlit_analytics.track():
             'is replaced by the $0.8-$1.0 million INF-Class 3 shipment range; ordinary '
             'charges remain for other plant packages. Cranes, custom cask fabrication, '
             'package certification, first/last-mile rail or sea legs, and route-specific '
-            'civil modifications are excluded.'
+            'civil modifications are excluded. Displayed total-dollar costs are '
+            'rounded so approximately half of their integer digits are trailing '
+            'zeros; the underlying calculation retains full precision.'
         )
         _transport_lcoe_help = (
             'Increase caused by the one-way irradiated return. MOUSE discounts the '
@@ -5813,11 +5814,18 @@ with streamlit_analytics.track():
                 f'${_lcoe_low_text}-${_lcoe_high_text}/MWh</div>'
             )
 
+        _low_cost_text = format_cost_for_display(low)
+        _high_cost_text = format_cost_for_display(high)
+        _cost_text = (
+            _low_cost_text
+            if _low_cost_text == _high_cost_text
+            else f'{_low_cost_text}-{_high_cost_text}'
+        )
         return (
             '<div style="font-size:0.92rem;color:#0a2540;margin-top:0.65rem;'
             'padding-top:0.55rem;border-top:1px solid #e2e8f0;line-height:1.35;">'
             f'<strong>Estimated transportation cost{_help_icon(_transport_cost_help)}:</strong> '
-            f'${low:,.0f}-${high:,.0f} <span style="font-size:0.76rem;'
+            f'{_cost_text} <span style="font-size:0.76rem;'
             'color:#64748b;">(2025 USD)</span></div>'
             + _lcoe_html
         )
@@ -5945,9 +5953,9 @@ with streamlit_analytics.track():
         def _cost_range_text(low, high):
             if low is None or high is None:
                 return 'Not available'
-            if abs(float(high) - float(low)) < 0.5:
-                return f'${float(low):,.0f}'
-            return f'${float(low):,.0f}-${float(high):,.0f}'
+            low_text = format_cost_for_display(low)
+            high_text = format_cost_for_display(high)
+            return low_text if low_text == high_text else f'{low_text}-{high_text}'
 
         _road_premium_text = _cost_range_text(
             _road_radioactive_low, _road_radioactive_high
@@ -5966,21 +5974,21 @@ with streamlit_analytics.track():
             (
                 'Road',
                 _cost_range_text(_road_base_cost_low, _road_base_cost_high),
-                f'${_shield_material_cost:,.0f}',
+                format_cost_for_display(_shield_material_cost),
                 _road_premium_text,
                 f'{_road_transport_days} transport day(s); security plus liability insurance',
             ),
             (
                 'Rail',
                 _cost_range_text(_rail_base_cost_low, _rail_base_cost_high),
-                f'${_shield_material_cost:,.0f}',
+                format_cost_for_display(_shield_material_cost),
                 'No separate adder',
                 'Broad rail range retained to avoid double counting dedicated service/security',
             ),
             (
                 'Sea',
                 _cost_range_text(_sea_other_low, _sea_other_high),
-                f'${_shield_material_cost:,.0f}',
+                format_cost_for_display(_shield_material_cost),
                 _cost_range_text(
                     _sea_irradiated_reactor_low, _sea_irradiated_reactor_high
                 ),
@@ -6033,7 +6041,8 @@ with streamlit_analytics.track():
         _cost_scope_note = (
             'Transportation costs are one-way irradiated-return screening estimates. '
             'The existing freight model is rerun using the shielded reactor module, '
-            'then raw lead and the documented radioactive-specific road or sea '
+            f'then raw {shield_material.lower()} and the documented '
+            'radioactive-specific road or sea '
             'allowances are added. Rail uses its existing broad range without a '
             'separate radioactive premium to avoid double counting. Detailed cask '
             'fabrication/certification, cranes, and route-specific civil work are excluded.'
@@ -6489,9 +6498,18 @@ with streamlit_analytics.track():
 
     st.markdown('<div style="height:1rem"></div>', unsafe_allow_html=True)
 
+    # Apply the same uncertainty-aware dollar precision to the user-facing
+    # spreadsheet.  Calculations above continue to use the unrounded values.
+    _export_df = display_df.copy()
+    for _column in _export_df.columns:
+        if 'Estimated Cost' in str(_column):
+            _export_df[_column] = pd.to_numeric(
+                _export_df[_column], errors='coerce'
+            ).map(round_cost_for_display)
+
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        display_df.to_excel(writer, index=False, sheet_name='Cost Estimate')
+        _export_df.to_excel(writer, index=False, sheet_name='Cost Estimate')
     buffer.seek(0)
 
     dl_col, _ = st.columns([1, 3])

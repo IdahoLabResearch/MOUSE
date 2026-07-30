@@ -8,7 +8,7 @@ The runtime model deliberately avoids OpenMC and depletion calculations. It uses
 * a finite-irradiation Way-Wigner decay-heat approximation;
 * a fixed 50% decay-gamma energy fraction;
 * a cooldown-dependent normalized 48-group reference photon spectrum;
-* a point-source dose/lead attenuation treatment evaluated outward from the
+* a point-source dose/material attenuation treatment evaluated outward from the
   shield surface; and
 * a closed cylindrical external transport shield around the MOUSE reactor module.
 
@@ -53,7 +53,34 @@ def _load_gamma_reference() -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def load_shield_material_properties() -> pd.DataFrame:
-    return pd.read_csv(_IRR_DIR / "shield_material_properties.csv")
+    path = _IRR_DIR / "shield_material_properties.csv"
+    df = pd.read_csv(path)
+    required = {
+        "material",
+        "density_kg_m3",
+        "raw_material_cost_2025_usd_per_kg",
+        "attenuation_column",
+    }
+    missing = required.difference(df.columns)
+    if missing:
+        raise ValueError(f"{path.name} is missing columns: {', '.join(sorted(missing))}")
+    return df
+
+
+@lru_cache(maxsize=1)
+def _load_shield_attenuation() -> pd.DataFrame:
+    path = _IRR_DIR / "shield_mass_attenuation_48group.csv"
+    df = pd.read_csv(path).sort_values("energy_group").reset_index(drop=True)
+    required = {"energy_group", "energy_mid_mev"}
+    required.update(
+        load_shield_material_properties()["attenuation_column"].astype(str)
+    )
+    missing = required.difference(df.columns)
+    if missing:
+        raise ValueError(f"{path.name} is missing columns: {', '.join(sorted(missing))}")
+    if len(df) != 48 or df["energy_group"].nunique() != 48:
+        raise ValueError(f"{path.name} must contain exactly 48 unique energy groups.")
+    return df
 
 
 @lru_cache(maxsize=1)
@@ -72,7 +99,7 @@ def _reference_spectrum(
     power_mwt: float,
     cooldown_months: float,
 ) -> Tuple[pd.DataFrame, str, float, float]:
-    """Return a cooldown-dependent normalized spectrum and lead coefficients.
+    """Return a cooldown-dependent normalized spectrum.
 
     LTMR and GCMR use the HTPM family as a spectrum-shape analogue;
     HPMR uses the HPMR family. LTMR retains the 10-MWt HTPM shape used in
@@ -123,6 +150,12 @@ def _reference_spectrum(
     if fractions.sum() <= 0:
         raise ValueError("Reference gamma spectrum has zero total energy fraction.")
     spectrum["gamma_energy_fraction"] = fractions / fractions.sum()
+    # Keep lead as the default for callers of this internal function, including
+    # the standalone comparison script.  The production estimator replaces
+    # this column with the user's selected material before solving thickness.
+    spectrum["mass_attenuation_cm2_g"] = spectrum[
+        "lead_mass_attenuation_cm2_g"
+    ].to_numpy(dtype=float)
     return spectrum, family, ref_power, m
 
 
@@ -153,7 +186,7 @@ def _dose_mrem_h(
 ) -> float:
     energy = spectrum["energy_mid_mev"].to_numpy(dtype=float)
     energy_fraction = spectrum["gamma_energy_fraction"].to_numpy(dtype=float)
-    mu_rho = spectrum["lead_mass_attenuation_cm2_g"].to_numpy(dtype=float)
+    mu_rho = spectrum["mass_attenuation_cm2_g"].to_numpy(dtype=float)
     photon_rate = gamma_power_w * energy_fraction / (energy * _J_PER_MEV)
     attenuation = np.exp(-mu_rho * density_g_cm3 * max(float(thickness_cm), 0.0))
     # Shah workbook coefficient: 0.14 gives uSv/h; multiply by 0.1 to mrem/h.
@@ -263,8 +296,6 @@ def estimate_irradiated_transport_shield(
     if selected.empty:
         raise ValueError(f"Unsupported shielding material: {shield_material}")
     material = selected.iloc[0]
-    if str(shield_material) != "Lead":
-        raise ValueError("Only lead is validated in the current screening model.")
 
     fuel_lifetime_days = float(params.get("Fuel Lifetime", 0.0))
     thermal_power_mwt = float(params.get("Power MWt", 0.0))
@@ -275,6 +306,17 @@ def estimate_irradiated_transport_shield(
     spectrum, source_family, ref_power, used_spectrum_month = _reference_spectrum(
         reactor_type, thermal_power_mwt, cooldown_months
     )
+    attenuation = _load_shield_attenuation()
+    attenuation_column = str(material["attenuation_column"])
+    coefficients = attenuation.set_index("energy_group")[attenuation_column]
+    spectrum = spectrum.copy()
+    spectrum["mass_attenuation_cm2_g"] = (
+        spectrum["energy_group"].map(coefficients).to_numpy(dtype=float)
+    )
+    if spectrum["mass_attenuation_cm2_g"].isna().any():
+        raise ValueError(
+            f"Incomplete 48-group attenuation data for {shield_material}."
+        )
     density_kg_m3 = float(material["density_kg_m3"])
     density_g_cm3 = density_kg_m3 / 1000.0
     length_m = max(float(module_length_m), 0.001)
@@ -318,4 +360,6 @@ def estimate_irradiated_transport_shield(
         "source_spectrum_reference_power_mwt": ref_power,
         "source_spectrum_month_used": used_spectrum_month,
         "source_spectrum_capped_at_36_months": bool(float(cooldown_months) > 36.0),
+        "shield_attenuation_column": attenuation_column,
+        "shield_screening_scope": str(material.get("screening_scope", "")),
     }
