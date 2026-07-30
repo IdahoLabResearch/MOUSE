@@ -4,7 +4,6 @@
 
 The runtime model deliberately avoids OpenMC and depletion calculations. It uses:
 
-* BOC OpenMC scalar results precomputed for the MOUSE design tables;
 * the MOUSE full-power fuel lifetime;
 * a finite-irradiation Way-Wigner decay-heat approximation;
 * a fixed 50% decay-gamma energy fraction;
@@ -25,13 +24,12 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 import math
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_BOC_DIR = _REPO_ROOT / "assets" / "Ref_Results" / "BOC"
 _IRR_DIR = _REPO_ROOT / "assets" / "irradiated_transport"
 _J_PER_MEV = 1.602176634e-13
 _GAMMA_FRACTION = 0.50
@@ -39,139 +37,6 @@ _SINGLE_ENERGY_MEV = 0.70
 _LEAD_MASS_ATTENUATION_CM2_G_AT_0P7_MEV = 0.103933
 _WAY_WIGNER_COEFFICIENT = 0.066
 _DAYS_PER_MONTH = 30.0
-
-
-_BOC_CONFIG = {
-    "LTMR": {
-        "file": "LTMR_BOC_scalar_results.csv",
-        "features": (
-            "reference_number_of_rings_per_assembly",
-            "reference_active_height",
-            "reference_enrichment",
-        ),
-        "query": lambda p: (
-            float(p.get("Number of Rings per Assembly", 0.0)),
-            float(p.get("Active Height", 0.0)),
-            float(p.get("Enrichment", 0.0)),
-        ),
-    },
-    "GCMR": {
-        "file": "GCMR_BOC_scalar_results.csv",
-        "features": (
-            "reference_assembly_rings",
-            "reference_core_rings",
-            "reference_active_height",
-            "reference_enrichment",
-        ),
-        "query": lambda p: (
-            float(p.get("Assembly Rings", 0.0)),
-            float(p.get("Core Rings", 0.0)),
-            float(p.get("Active Height", 0.0)),
-            float(p.get("Enrichment", 0.0)),
-        ),
-    },
-    "HPMR": {
-        "file": "HPMR_BOC_scalar_results.csv",
-        "features": (
-            "reference_assembly_rings",
-            "reference_core_rings",
-            "reference_height",
-            "reference_enrichment",
-        ),
-        "query": lambda p: (
-            float(p.get("Number of Rings per Assembly", 0.0)),
-            float(p.get("Number of Rings per Core", 0.0)),
-            float(p.get("Active Height", 0.0)),
-            float(p.get("Enrichment", 0.0)),
-        ),
-    },
-}
-
-_BOC_OUTPUTS = (
-    "fission_fraction_U235",
-    "fission_fraction_U238",
-    "fission_fraction_Pu239",
-    "fission_fraction_Pu241",
-    "effective_energy_per_fission_MeV",
-    "fuel_volume_cm3",
-    "boc_average_fuel_flux_n_cm2_s",
-    "boc_shield_flux_n_cm2_s",
-    "boc_keff",
-)
-
-
-@lru_cache(maxsize=3)
-def _load_boc_table(reactor_type: str) -> pd.DataFrame:
-    config = _BOC_CONFIG[reactor_type]
-    path = _BOC_DIR / config["file"]
-    df = pd.read_csv(path)
-    if "status" in df.columns:
-        df = df[df["status"].astype(str).str.lower() == "completed"].copy()
-    needed = list(config["features"]) + list(_BOC_OUTPUTS)
-    missing = [c for c in needed if c not in df.columns]
-    if missing:
-        raise ValueError(f"{path.name} is missing required columns: {', '.join(missing)}")
-    df = df.dropna(subset=list(config["features"])).copy()
-    # BOC physics outputs are power independent. The sweep materializes each
-    # power row, so retain one record per geometry/enrichment physics case.
-    df = df.drop_duplicates(subset=list(config["features"]), keep="first")
-    return df.reset_index(drop=True)
-
-
-def estimate_boc_characterization(
-    reactor_type: str,
-    params: Dict[str, object],
-    k_neighbors: int = 4,
-) -> Dict[str, float]:
-    """Interpolate the precomputed BOC scalar results for a MOUSE design."""
-    reactor_type = str(reactor_type).upper()
-    if reactor_type not in _BOC_CONFIG:
-        raise ValueError(f"Unsupported reactor type: {reactor_type}")
-    config = _BOC_CONFIG[reactor_type]
-    df = _load_boc_table(reactor_type)
-    feature_cols = list(config["features"])
-    x = df[feature_cols].to_numpy(dtype=float)
-    q = np.asarray(config["query"](params), dtype=float)
-
-    x_min = np.nanmin(x, axis=0)
-    x_max = np.nanmax(x, axis=0)
-    span = np.where(x_max > x_min, x_max - x_min, 1.0)
-    dist = np.sqrt(np.sum(((x - q) / span) ** 2, axis=1))
-    order = np.argsort(dist)
-    if dist[order[0]] < 1.0e-12:
-        weights = np.array([1.0])
-        rows = df.iloc[[order[0]]]
-    else:
-        idx = order[: max(1, min(int(k_neighbors), len(order)))]
-        inv = 1.0 / np.maximum(dist[idx], 1.0e-12)
-        weights = inv / inv.sum()
-        rows = df.iloc[idx]
-
-    result: Dict[str, float] = {}
-    for column in _BOC_OUTPUTS:
-        values = pd.to_numeric(rows[column], errors="coerce").to_numpy(dtype=float)
-        valid = np.isfinite(values)
-        if not valid.any():
-            result[column] = float("nan")
-            continue
-        local_weights = weights[valid]
-        local_weights = local_weights / local_weights.sum()
-        result[column] = float(np.sum(values[valid] * local_weights))
-
-    fission_cols = [
-        "fission_fraction_U235",
-        "fission_fraction_U238",
-        "fission_fraction_Pu239",
-        "fission_fraction_Pu241",
-    ]
-    fractions = np.array([max(0.0, result.get(c, 0.0)) for c in fission_cols])
-    total = float(fractions.sum())
-    if total > 0:
-        fractions /= total
-    for column, value in zip(fission_cols, fractions):
-        result[column] = float(value)
-    result["nearest_normalized_distance"] = float(dist[order[0]])
-    return result
 
 
 @lru_cache(maxsize=1)
@@ -419,7 +284,6 @@ def estimate_irradiated_transport_shield(
 
     fuel_lifetime_days = float(params.get("Fuel Lifetime", 0.0))
     thermal_power_mwt = float(params.get("Power MWt", 0.0))
-    boc = estimate_boc_characterization(reactor_type, params)
     decay_heat_w = calculate_decay_heat_w(
         thermal_power_mwt, fuel_lifetime_days, cooldown_months
     )
@@ -478,14 +342,6 @@ def estimate_irradiated_transport_shield(
     low_model_id, low_case = ordered_cases[0]
     high_model_id, high_case = ordered_cases[-1]
 
-    effective_energy = float(boc.get("effective_energy_per_fission_MeV", float("nan")))
-    if math.isfinite(effective_energy) and effective_energy > 0:
-        fission_rate_s = thermal_power_mwt * 1.0e6 / (effective_energy * _J_PER_MEV)
-        accumulated_fissions = fission_rate_s * fuel_lifetime_days * 86400.0
-    else:
-        fission_rate_s = float("nan")
-        accumulated_fissions = float("nan")
-
     return {
         "shield_material": str(shield_material),
         "cooldown_months": float(cooldown_months),
@@ -523,7 +379,4 @@ def estimate_irradiated_transport_shield(
         "source_spectrum_reference_power_mwt": ref_power,
         "source_spectrum_month_used": used_spectrum_month,
         "source_spectrum_capped_at_36_months": bool(float(cooldown_months) > 36.0),
-        "estimated_fission_rate_per_s": fission_rate_s,
-        "estimated_accumulated_fissions": accumulated_fissions,
-        "boc_characterization": boc,
     }
