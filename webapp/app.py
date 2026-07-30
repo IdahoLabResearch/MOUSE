@@ -5993,20 +5993,17 @@ with streamlit_analytics.track():
 
     if transport_condition == 'Unirradiated':
         _cost_scope_note = (
-            'Transportation costs are one-way, unirradiated screening estimates '
-            'from assets/transportation_cost_inputs_2025.csv. Road cost varies with '
-            'the entered distance. Rail distance is used only when specialized '
-            'special-train service is triggered; standard rail and sea travel '
-            'distances are not modeled explicitly.'
+            'Costs are one-way unirradiated screening estimates. Road cost uses '
+            'the entered distance; standard rail and sea distances are not '
+            'modeled explicitly.'
         )
     else:
         _cost_scope_note = (
-            'Transportation costs are one-way irradiated-return screening estimates. '
-            'The existing freight model is rerun using the shielded reactor module, '
-            'then raw lead and the documented radioactive-specific road or sea '
-            'allowances are added. Rail uses its existing broad range without a '
-            'separate radioactive premium to avoid double counting. Detailed cask '
-            'fabrication/certification, cranes, and route-specific civil work are excluded.'
+            'Costs are one-way irradiated-return screening estimates. Freight is '
+            'recalculated for the shielded module, then raw shield material and '
+            'radioactive road or sea allowances are added. Rail retains its broad '
+            'existing range. Cask certification, cranes, and route-specific civil '
+            'work are excluded.'
         )
 
     st.markdown(
@@ -6015,24 +6012,18 @@ with streamlit_analytics.track():
         'line-height:1.45;color:#92400e;">'
         '<strong>Notes:</strong>'
         '<ul style="margin:0.35rem 0 0 1.15rem;padding:0;">'
-        '<li>All transportation masses are displayed in pounds.</li>'
-        '<li>MOUSE may combine at most two compatible standard packages on '
-        'one truck or in one ISO container. It checks end-to-end placement '
-        'first and side-by-side placement second; stacking is not allowed.</li>'
-        '<li>The NaK coolant package, the pre-containerized control/electrical '
-        'package, and packages requiring permits or specialized service remain '
-        'dedicated loads. Road consolidation uses a 48 ft trailer-length '
-        'screening assumption; container consolidation retains 0.05 m packing '
-        'clearance in each dimension.</li>'
-        '<li>Road screening uses a 32,000 lb tractor/trailer allowance and a '
-        '1.52 m deck for direct shipment. Shipping cradles are included only '
-        'where explicitly stated in the package model.</li>'
-        '<li>Container fit uses internal envelope and payload limits. Door '
-        'opening, concentrated floor loading, center of gravity, lifting and '
-        'securement require later engineering review.</li>'
-        '<li>Rail and sea categories represent logistics complexity, not a '
-        'universal permit hierarchy. Carrier, route, port and vessel review '
-        'remain necessary.</li>'
+        '<li>Masses are shown in pounds. Shipping cradles are included only '
+        'where explicitly modeled.</li>'
+        '<li>Up to two compatible standard packages may share one truck or ISO '
+        'container, end-to-end or side-by-side; stacking is not allowed. NaK, '
+        'pre-containerized control/electrical, and permit or specialized '
+        'packages remain dedicated loads.</li>'
+        '<li>Road checks assume a 32,000 lb tractor/trailer, 1.52 m deck, and '
+        '48 ft usable length. Containers use internal dimensions and payload '
+        'with 0.05 m packing clearance.</li>'
+        '<li>Results are screening-level. Rail and sea categories indicate '
+        'logistics complexity, not permit status; route, carrier, fit, loading, '
+        'lifting, and securement require engineering review.</li>'
         f'<li>{_cost_scope_note}</li>'
         '</ul></div>',
         unsafe_allow_html=True,
