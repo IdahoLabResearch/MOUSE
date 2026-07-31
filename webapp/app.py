@@ -669,13 +669,14 @@ HPMR_DIAMETER_LABEL_TO_NC = {
 # Increment whenever the candidate geometry domain or constraint policy changes.
 # Passing this value as a cached-function argument prevents a long-running
 # Streamlit process from serving options computed under an older domain.
-GEOMETRY_CONSTRAINT_CACHE_VERSION = 2
+GEOMETRY_CONSTRAINT_CACHE_VERSION = 3
+DEFAULT_FUEL_LIFETIME_DAYS = 5 * 365
 
 
 @st.cache_data(show_spinner=False, max_entries=256)
 def _safe_diameter_height_options(reactor_type, power_mwt, enrichment,
                                   constraint_version):
-    """Map selectable diameter labels to lifetime-safe height intervals."""
+    """Map diameter labels to safe height intervals and five-year defaults."""
     del constraint_version # Used only as an explicit Streamlit cache key.
     safe_options = {}
 
@@ -710,24 +711,42 @@ def _safe_diameter_height_options(reactor_type, power_mwt, enrichment,
     for label, geometry, diameter_cm in candidates:
         minimum_height = max(1, int(round(ASPECT_RATIO_MIN * diameter_cm)))
         maximum_height = int(round(ASPECT_RATIO_MAX * diameter_cm))
+        lifetime_by_height = {}
+
+        def estimate_at_height(height):
+            if height not in lifetime_by_height:
+                lifetime_by_height[height] = estimator(geometry, height)
+            return lifetime_by_height[height]
+
         interval = safe_height_interval(
-            lambda height, g=geometry: estimator(g, height),
+            estimate_at_height,
             minimum_height,
             maximum_height,
         )
         if interval is not None:
-            safe_options[label] = interval
+            safe_min, safe_max = interval
+            default_height = min(
+                range(safe_min, safe_max + 1),
+                key=lambda height:
+                abs(estimate_at_height(height) - DEFAULT_FUEL_LIFETIME_DAYS),
+            )
+            safe_options[label] = (
+                safe_min,
+                safe_max,
+                default_height,
+                estimate_at_height(default_height),
+            )
 
     return safe_options
 
 
-def _diameter_default(options, preferred_label):
-    """Keep the preferred diameter when possible, otherwise use the nearest one."""
-    if preferred_label in options:
-        return preferred_label
-    preferred_diameter = int(preferred_label.split()[0])
-    return min(options, key=lambda label:
-               abs(int(label.split()[0]) - preferred_diameter))
+def _five_year_geometry_default(safe_geometry):
+    """Return the diameter label whose best safe height is nearest five years."""
+    return min(
+        safe_geometry,
+        key=lambda label:
+        abs(safe_geometry[label][3] - DEFAULT_FUEL_LIFETIME_DAYS),
+    )
 
 
 @st.cache_data(show_spinner=False, max_entries=2)
@@ -2298,7 +2317,7 @@ with streamlit_analytics.track():
                   'Down-blending (diluting higher-enriched U) is not considered.'),
         )
 
-        _power_defaults = {'LTMR': 20, 'GCMR': 15, 'HPMR': 5}
+        _power_defaults = {'LTMR': 20, 'GCMR': 20, 'HPMR': 20}
         _power_max = {'LTMR': 64, 'GCMR': 50, 'HPMR': 60}
 
         power_mwt = st.slider(
@@ -2328,14 +2347,7 @@ with streamlit_analytics.track():
                     'lifetime below 30 years at this power and enrichment.'
                 )
                 st.stop()
-            # Default to N=12 (95 cm), a mid-range trained geometry.
-            _default_diameter_label = next(
-                lbl for lbl in LTMR_DIAMETER_LABELS
-                if LTMR_DIAMETER_LABEL_TO_N[lbl] == 12
-            )
-            _default_diameter_label = _diameter_default(
-                _diameter_options, _default_diameter_label,
-            )
+            _default_diameter_label = _five_year_geometry_default(_safe_geometry)
             if st.session_state.get('ltmr_diameter') not in _diameter_options:
                 st.session_state['ltmr_diameter'] = _default_diameter_label
             _diameter_label = st.select_slider(
@@ -2354,8 +2366,7 @@ with streamlit_analytics.track():
 
             _ar_ltmr = LTMR_N_TO_ACTIVE_RADIUS_CM[n_rings_per_assembly]
             _ad_ltmr = LTMR_N_TO_DIAMETER_CM[n_rings_per_assembly] # active diameter
-            _h_min, _h_max = _safe_geometry[_diameter_label]
-            _h_default = min(max(int(round(_ad_ltmr)), _h_min), _h_max)
+            _h_min, _h_max, _h_default, _ = _safe_geometry[_diameter_label]
             _height_key = f'ltmr_active_height_{n_rings_per_assembly}'
             if _height_key in st.session_state:
                 st.session_state[_height_key] = min(
@@ -2387,12 +2398,7 @@ with streamlit_analytics.track():
                     'lifetime below 30 years at this power and enrichment.'
                 )
                 st.stop()
-            # Default to (N_A=6, N_C=5), the reference GCMR design
-            _default_label = next(
-                lbl for lbl in GCMR_DIAMETER_LABELS
-                if GCMR_DIAMETER_LABEL_TO_PAIR[lbl] == (6, 5)
-            )
-            _default_label = _diameter_default(_diameter_options, _default_label)
+            _default_label = _five_year_geometry_default(_safe_geometry)
             if st.session_state.get('gcmr_diameter') not in _diameter_options:
                 st.session_state['gcmr_diameter'] = _default_label
             _diameter_label = st.select_slider(
@@ -2410,8 +2416,7 @@ with streamlit_analytics.track():
 
             _ar_gcmr = _gcmr_active_radius(n_assembly_rings, n_core_rings)
             _ad_gcmr = 2.0 * _ar_gcmr # active diameter
-            _h_min, _h_max = _safe_geometry[_diameter_label]
-            _h_default = min(max(int(round(_ad_gcmr)), _h_min), _h_max)
+            _h_min, _h_max, _h_default, _ = _safe_geometry[_diameter_label]
             _height_key = f'gcmr_active_height_{n_assembly_rings}_{n_core_rings}'
             if _height_key in st.session_state:
                 st.session_state[_height_key] = min(
@@ -2447,11 +2452,7 @@ with streamlit_analytics.track():
             # active diameter slider varies only N_C. H is selected
             # independently with H/D in [ASPECT_RATIO_MIN, ASPECT_RATIO_MAX],
             # matching LTMR / GCMR.
-            _default_label = next(
-                lbl for lbl in HPMR_DIAMETER_LABELS
-                if HPMR_DIAMETER_LABEL_TO_NC[lbl] == 5
-            )
-            _default_label = _diameter_default(_diameter_options, _default_label)
+            _default_label = _five_year_geometry_default(_safe_geometry)
             if st.session_state.get('hpmr_diameter') not in _diameter_options:
                 st.session_state['hpmr_diameter'] = _default_label
             _diameter_label = st.select_slider(
@@ -2471,8 +2472,7 @@ with streamlit_analytics.track():
 
             _ar_hpmr = _hpmr_active_radius(n_core_rings)
             _ad_hpmr = 2.0 * _ar_hpmr # active diameter
-            _h_min, _h_max = _safe_geometry[_diameter_label]
-            _h_default = min(max(int(round(_ad_hpmr)), _h_min), _h_max)
+            _h_min, _h_max, _h_default, _ = _safe_geometry[_diameter_label]
             _height_key = f'hpmr_active_height_{n_core_rings}'
             if _height_key in st.session_state:
                 st.session_state[_height_key] = min(
