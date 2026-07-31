@@ -36,3 +36,35 @@ def format_cost_for_display(
         return "N/A"
     rounded = round_cost_for_display(number)
     return f"{currency_symbol}{rounded:,.0f}"
+
+
+def lcoe_y_axis_settings(
+    upper_band_values,
+    *,
+    linear_floor: float = 410.0,
+    linear_cap: float = 800.0,
+) -> tuple[str, float, float]:
+    """Choose a readable LCOE axis, switching to log for extreme values."""
+    finite_values = [
+        float(value)
+        for value in upper_band_values
+        if math.isfinite(float(value)) and float(value) > 0
+    ]
+    if not finite_values:
+        return "linear", 0.0, linear_floor
+
+    maximum = max(finite_values)
+    sorted_values = sorted(finite_values)
+    percentile_index = round(0.9 * (len(sorted_values) - 1))
+    percentile_90 = sorted_values[percentile_index]
+
+    if maximum <= linear_cap:
+        ymax = min(linear_cap, max(linear_floor, percentile_90 * 1.15))
+        return "linear", 0.0, ymax
+
+    padded_maximum = maximum * 1.15
+    if not math.isfinite(padded_maximum):
+        padded_maximum = maximum
+    # The lowest market benchmark is $29/MWh. A $10 lower bound keeps
+    # every benchmark visible while providing a clean logarithmic decade.
+    return "log", 10.0, max(linear_floor, padded_maximum)

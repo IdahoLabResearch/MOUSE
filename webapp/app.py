@@ -222,6 +222,7 @@ from webapp.irradiated_transport import (
 )
 from webapp.display_formatting import (
     format_cost_for_display,
+    lcoe_y_axis_settings,
     round_cost_for_display,
 )
 
@@ -6733,18 +6734,18 @@ with streamlit_analytics.track():
     _means.append(_noak_m)
     _stds.append(_noak_s)
 
-    # NaN-tolerant gating: drop points where the LCOE came back
-    # NaN, plot whatever valid points remain. Scatter markers +
+    # Non-finite-tolerant gating: drop points where the LCOE came back
+    # NaN/inf, plot whatever valid points remain. Scatter markers +
     # mean line are always drawn (they don't need the spline).
     _u_arr = np.array(_units, dtype=float) if _units else np.array([])
     _m_arr = np.array(_means, dtype=float) if _means else np.array([])
     _s_arr = np.array(_stds, dtype=float) if _stds else np.array([])
     if _m_arr.size:
-        _valid = ~np.isnan(_m_arr)
+        _valid = np.isfinite(_m_arr) & (_m_arr > 0)
         _u_arr = _u_arr[_valid]
         _m_arr = _m_arr[_valid]
         _s_arr = _s_arr[_valid]
-        _s_arr = np.nan_to_num(_s_arr, nan=0.0)
+        _s_arr = np.nan_to_num(_s_arr, nan=0.0, posinf=0.0, neginf=0.0)
 
     if _u_arr.size >= 2:
         _fill_color, _edge_color = '#1B4F8C', '#0a2540'
@@ -6761,17 +6762,17 @@ with streamlit_analytics.track():
             _m_smooth = _m_arr
             _s_smooth = _s_arr
 
-        # Y-axis sizing  90th-percentile of (mean + std) rather than
-        # max, so a single outlier point doesn't blow up the y-range
-        # and squash the rest of the data. Hard cap at $800 so even
-        # outliers stay readable.
-        if _m_arr.size:
-            _band_vals = _m_arr + _s_arr
-            _band_p90 = float(np.nanpercentile(_band_vals, 90))
-        else:
-            _band_p90 = 0.0
-        _ymax = max(410.0, _band_p90 * 1.15)
-        _ymax = min(_ymax, 800.0)
+        # Keep the familiar linear scale for ordinary results. If any
+        # uncertainty-band value exceeds $800/MWh, switch to a logarithmic
+        # scale and size it from the actual data instead of hiding the curve.
+        _band_vals = _m_arr + _s_arr
+        _y_scale_type, _ymin, _ymax = lcoe_y_axis_settings(_band_vals)
+        _use_log_y = _y_scale_type == 'log'
+        _y_scale = alt.Scale(
+            type='log' if _use_log_y else 'linear',
+            domain=[_ymin, _ymax],
+            nice=False,
+        )
 
         # Market benchmark ranges. Each market has a top (high) and
         # bottom (low) y-value bracketing an indicative cost range.
@@ -6810,7 +6811,8 @@ with streamlit_analytics.track():
         # ----- LCOE band + mean line + anchor points -----
         _band_df = pd.DataFrame({
             'units': _x_smooth,
-            'lower': _m_smooth - _s_smooth,
+            'lower': np.maximum(_m_smooth - _s_smooth, _ymin)
+                     if _use_log_y else _m_smooth - _s_smooth,
             'upper': _m_smooth + _s_smooth,
             'mean': _m_smooth,
         })
@@ -6839,7 +6841,7 @@ with streamlit_analytics.track():
             stroke=_edge_color, strokeWidth=1.5,
         ).encode(
             x=alt.X('units:Q', scale=alt.Scale(domain=[1, 100]), axis=_x_axis),
-            y=alt.Y('lower:Q', scale=alt.Scale(domain=[0, _ymax]),
+            y=alt.Y('lower:Q', scale=_y_scale,
                     axis=_y_axis),
             y2='upper:Q',
         )
@@ -6847,14 +6849,14 @@ with streamlit_analytics.track():
             color=_edge_color, strokeWidth=2.0,
         ).encode(
             x=alt.X('units:Q', scale=alt.Scale(domain=[1, 100])),
-            y=alt.Y('mean:Q', scale=alt.Scale(domain=[0, _ymax])),
+            y=alt.Y('mean:Q', scale=_y_scale),
         )
         _anchors = alt.Chart(_anchor_df).mark_point(
             color=_edge_color, size=80, filled=True,
             stroke='white', strokeWidth=1.2,
         ).encode(
             x=alt.X('units:Q', scale=alt.Scale(domain=[1, 100])),
-            y=alt.Y('lcoe:Q', scale=alt.Scale(domain=[0, _ymax])),
+            y=alt.Y('lcoe:Q', scale=_y_scale),
         )
 
         # ----- Market benchmark bars -----
@@ -6865,7 +6867,7 @@ with streamlit_analytics.track():
         ).encode(
             x=alt.X('x_left:Q', scale=alt.Scale(domain=[1, 100])),
             x2='x_right:Q',
-            y=alt.Y('y_start:Q', scale=alt.Scale(domain=[0, _ymax])),
+            y=alt.Y('y_start:Q', scale=_y_scale),
             color=alt.Color('color:N', scale=None, legend=None),
         )
         _bottom = alt.Chart(_market_df).mark_rule(
@@ -6873,14 +6875,14 @@ with streamlit_analytics.track():
         ).encode(
             x=alt.X('x_left:Q', scale=alt.Scale(domain=[1, 100])),
             x2='x_right:Q',
-            y=alt.Y('y_end:Q', scale=alt.Scale(domain=[0, _ymax])),
+            y=alt.Y('y_end:Q', scale=_y_scale),
             color=alt.Color('color:N', scale=None, legend=None),
         )
         _vert = alt.Chart(_market_df).mark_rule(
             strokeWidth=2.4, strokeCap='round',
         ).encode(
             x=alt.X('x_mid:Q', scale=alt.Scale(domain=[1, 100])),
-            y=alt.Y('y_start:Q', scale=alt.Scale(domain=[0, _ymax])),
+            y=alt.Y('y_start:Q', scale=_y_scale),
             y2='y_end:Q',
             color=alt.Color('color:N', scale=None, legend=None),
         )
@@ -6888,31 +6890,15 @@ with streamlit_analytics.track():
             fontSize=9, fontWeight='bold', baseline='middle', align='center',
         ).encode(
             x=alt.X('x_mid:Q', scale=alt.Scale(domain=[1, 100])),
-            y=alt.Y('label_y:Q', scale=alt.Scale(domain=[0, _ymax])),
+            y=alt.Y('label_y:Q', scale=_y_scale),
             text='name:N',
             color=alt.Color('color:N', scale=None, legend=None),
         )
 
-        # If the LCOE band sits entirely above the y-axis cap, warn
-        # the user before rendering the (invisible) curve.
-        _band_min_visible = (_m_arr - _s_arr).min() if _m_arr.size else 0.0
-        if _band_min_visible > _ymax:
-            _band_lo = (_m_arr - _s_arr).min()
-            _band_hi = (_m_arr + _s_arr).max()
-            st.markdown(
-                f'<div style="background:#fffbeb;border:1px solid #f59e0b;'
-                f'border-radius:8px;padding:0.85rem 1.1rem;margin-bottom:0.6rem;'
-                f'color:#92400e;font-size:0.85rem;line-height:1.55;">'
-                f'<strong style="color:#92400e;">⚠️ Reactor LCOE off the chart.</strong> '
-                f'The reactor LCOE band ranges roughly '
-                f'<strong>${_band_lo:,.0f}-${_band_hi:,.0f}/MWh</strong>, which is above '
-                f'the chart\'s <strong>${int(_ymax)}/MWh</strong> ceiling, so the curve is '
-                f'not visible on the plot below. The market benchmarks remain visible for '
-                f'reference. To bring the curve into the chart, try a higher reactor power, '
-                f'higher enrichment, longer plant lifetime, or a larger NOAK Unit Number '
-                f'any of those reduces the LCOE.'
-                f'</div>',
-                unsafe_allow_html=True,
+        if _use_log_y:
+            st.caption(
+                'The y-axis uses a logarithmic scale because the modeled LCOE '
+                'exceeds $800/MWh.'
             )
 
         _lcoe_chart = (
