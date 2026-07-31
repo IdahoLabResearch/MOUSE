@@ -187,19 +187,25 @@ from st_cookies_manager import EncryptedCookieManager
 
 from reactor_config import SubcriticalError, ShortLifetimeError, ESCALATION_YEAR
 from webapp.fuel_lifetime_estimator import (
+    estimate_ltmr_fuel_lifetime,
     get_ltmr_keff_curve,
     get_ltmr_peaking_factor,
     get_ltmr_leakage,
 )
 from webapp.gcmr_fuel_lifetime_estimator import (
+    estimate_gcmr_fuel_lifetime,
     get_gcmr_peaking_factor,
     get_gcmr_leakage,
     get_gcmr_keff_curve,
 )
 from webapp.hpmr_fuel_lifetime_estimator import (
+    estimate_hpmr_fuel_lifetime,
     get_hpmr_keff_curve,
     get_hpmr_peaking_factor,
     get_hpmr_leakage,
+)
+from webapp.design_constraints import (
+    safe_height_interval,
 )
 from webapp.estimate_service import (
     EstimateInputs,
@@ -659,6 +665,62 @@ HPMR_DIAMETER_LABELS = [
 HPMR_DIAMETER_LABEL_TO_NC = {
     label: nc for label, nc in zip(HPMR_DIAMETER_LABELS, HPMR_NC_VALUES)
 }
+
+
+@st.cache_data(show_spinner=False, max_entries=256)
+def _safe_diameter_height_options(reactor_type, power_mwt, enrichment):
+    """Map selectable diameter labels to lifetime-safe height intervals."""
+    safe_options = {}
+
+    if reactor_type == 'LTMR':
+        candidates = (
+            (label, (LTMR_DIAMETER_LABEL_TO_N[label],),
+             LTMR_N_TO_DIAMETER_CM[LTMR_DIAMETER_LABEL_TO_N[label]])
+            for label in LTMR_DIAMETER_LABELS
+        )
+        estimator = lambda geometry, height: estimate_ltmr_fuel_lifetime(
+            geometry[0], height, enrichment, power_mwt,
+        )
+    elif reactor_type == 'GCMR':
+        candidates = (
+            (label, GCMR_DIAMETER_LABEL_TO_PAIR[label],
+             GCMR_PAIR_TO_DIAMETER_CM[GCMR_DIAMETER_LABEL_TO_PAIR[label]])
+            for label in GCMR_DIAMETER_LABELS
+        )
+        estimator = lambda geometry, height: estimate_gcmr_fuel_lifetime(
+            geometry[0], geometry[1], height, enrichment, power_mwt,
+        )
+    else:
+        candidates = (
+            (label, (HPMR_DIAMETER_LABEL_TO_NC[label],),
+             HPMR_NC_TO_DIAMETER_CM[HPMR_DIAMETER_LABEL_TO_NC[label]])
+            for label in HPMR_DIAMETER_LABELS
+        )
+        estimator = lambda geometry, height: estimate_hpmr_fuel_lifetime(
+            HPMR_NA_FIXED, geometry[0], height, enrichment, power_mwt,
+        )
+
+    for label, geometry, diameter_cm in candidates:
+        minimum_height = max(1, int(round(ASPECT_RATIO_MIN * diameter_cm)))
+        maximum_height = int(round(ASPECT_RATIO_MAX * diameter_cm))
+        interval = safe_height_interval(
+            lambda height, g=geometry: estimator(g, height),
+            minimum_height,
+            maximum_height,
+        )
+        if interval is not None:
+            safe_options[label] = interval
+
+    return safe_options
+
+
+def _diameter_default(options, preferred_label):
+    """Keep the preferred diameter when possible, otherwise use the nearest one."""
+    if preferred_label in options:
+        return preferred_label
+    preferred_diameter = int(preferred_label.split()[0])
+    return min(options, key=lambda label:
+               abs(int(label.split()[0]) - preferred_diameter))
 
 
 @st.cache_data(show_spinner=False, max_entries=2)
@@ -2248,28 +2310,49 @@ with streamlit_analytics.track():
         n_core_rings = None # GCMR / HPMR
         active_height = None
         if reactor_type == 'LTMR':
+            _safe_geometry = _safe_diameter_height_options(
+                reactor_type, power_mwt, enrichment,
+            )
+            _diameter_options = list(_safe_geometry)
+            if not _diameter_options:
+                st.error(
+                    'No LTMR geometry in the modeled range has a usable fuel '
+                    'lifetime below 30 years at this power and enrichment.'
+                )
+                st.stop()
             # Default to N=12 (95 cm), a mid-range trained geometry.
             _default_diameter_label = next(
                 lbl for lbl in LTMR_DIAMETER_LABELS
                 if LTMR_DIAMETER_LABEL_TO_N[lbl] == 12
             )
+            _default_diameter_label = _diameter_default(
+                _diameter_options, _default_diameter_label,
+            )
+            if st.session_state.get('ltmr_diameter') not in _diameter_options:
+                st.session_state['ltmr_diameter'] = _default_diameter_label
             _diameter_label = st.select_slider(
                 'Active Core Diameter',
-                options=LTMR_DIAMETER_LABELS,
+                options=_diameter_options,
                 value=_default_diameter_label,
                 key='ltmr_diameter',
                 help=('Active core diameter (does NOT include the radial reflector). '
                       'Discrete values mapped to the number of fuel rings per '
                       'assembly. Values marked with * are interpolated between '
-                      'trained geometries.'),
+                      'trained geometries. The available range is limited to '
+                      'diameters with at least one height that gives a usable '
+                      'fuel lifetime below 30 years.'),
             )
             n_rings_per_assembly = LTMR_DIAMETER_LABEL_TO_N[_diameter_label]
 
             _ar_ltmr = LTMR_N_TO_ACTIVE_RADIUS_CM[n_rings_per_assembly]
             _ad_ltmr = LTMR_N_TO_DIAMETER_CM[n_rings_per_assembly] # active diameter
-            _h_min = max(1, int(round(ASPECT_RATIO_MIN * _ad_ltmr)))
-            _h_max = int(round(ASPECT_RATIO_MAX * _ad_ltmr))
-            _h_default = int(round(_ad_ltmr)) # H/D = 1.0
+            _h_min, _h_max = _safe_geometry[_diameter_label]
+            _h_default = min(max(int(round(_ad_ltmr)), _h_min), _h_max)
+            _height_key = f'ltmr_active_height_{n_rings_per_assembly}'
+            if _height_key in st.session_state:
+                st.session_state[_height_key] = min(
+                    max(st.session_state[_height_key], _h_min), _h_max,
+                )
 
             active_height = st.slider(
                 'Active Height (cm)',
@@ -2277,35 +2360,54 @@ with streamlit_analytics.track():
                 max_value=_h_max,
                 value=_h_default,
                 step=1,
-                key=f'ltmr_active_height_{n_rings_per_assembly}',
-                help=(f'Active fuel height in cm. Bounds correspond to aspect ratio '
-                      f'(H / D, where D is the active core diameter) between '
-                      f'{ASPECT_RATIO_MIN} and {ASPECT_RATIO_MAX}. For this geometry '
-                      f'the active core diameter is {_ad_ltmr} cm.'),
+                key=_height_key,
+                help=(f'Active fuel height in cm. The range is restricted to '
+                      f'usable fuel lifetimes below 30 years and remains within '
+                      f'the H/D limits of {ASPECT_RATIO_MIN} to {ASPECT_RATIO_MAX}. '
+                      f'The active core diameter is {_ad_ltmr} cm.'),
             )
 
         elif reactor_type == 'GCMR':
+            _safe_geometry = _safe_diameter_height_options(
+                reactor_type, power_mwt, enrichment,
+            )
+            _diameter_options = list(_safe_geometry)
+            if not _diameter_options:
+                st.error(
+                    'No GCMR geometry in the modeled range has a usable fuel '
+                    'lifetime below 30 years at this power and enrichment.'
+                )
+                st.stop()
             # Default to (N_A=6, N_C=5), the reference GCMR design
             _default_label = next(
                 lbl for lbl in GCMR_DIAMETER_LABELS
                 if GCMR_DIAMETER_LABEL_TO_PAIR[lbl] == (6, 5)
             )
+            _default_label = _diameter_default(_diameter_options, _default_label)
+            if st.session_state.get('gcmr_diameter') not in _diameter_options:
+                st.session_state['gcmr_diameter'] = _default_label
             _diameter_label = st.select_slider(
                 'Active Core Diameter',
-                options=GCMR_DIAMETER_LABELS,
+                options=_diameter_options,
                 value=_default_label,
                 key='gcmr_diameter',
                 help=('Active core diameter (does NOT include the radial reflector). '
                       'Discrete values mapped to (Assembly Rings, Core Rings). Values '
-                      'marked with * are interpolated between trained geometries.'),
+                      'marked with * are interpolated between trained geometries. '
+                      'The available range is limited to diameters with at least '
+                      'one height that gives a usable fuel lifetime below 30 years.'),
             )
             n_assembly_rings, n_core_rings = GCMR_DIAMETER_LABEL_TO_PAIR[_diameter_label]
 
             _ar_gcmr = _gcmr_active_radius(n_assembly_rings, n_core_rings)
             _ad_gcmr = 2.0 * _ar_gcmr # active diameter
-            _h_min = max(1, int(round(ASPECT_RATIO_MIN * _ad_gcmr)))
-            _h_max = int(round(ASPECT_RATIO_MAX * _ad_gcmr))
-            _h_default = int(round(_ad_gcmr)) # H/D = 1.0
+            _h_min, _h_max = _safe_geometry[_diameter_label]
+            _h_default = min(max(int(round(_ad_gcmr)), _h_min), _h_max)
+            _height_key = f'gcmr_active_height_{n_assembly_rings}_{n_core_rings}'
+            if _height_key in st.session_state:
+                st.session_state[_height_key] = min(
+                    max(st.session_state[_height_key], _h_min), _h_max,
+                )
 
             active_height = st.slider(
                 'Active Height (cm)',
@@ -2313,14 +2415,24 @@ with streamlit_analytics.track():
                 max_value=_h_max,
                 value=_h_default,
                 step=1,
-                key=f'gcmr_active_height_{n_assembly_rings}_{n_core_rings}',
-                help=(f'Active fuel height in cm. Bounds correspond to aspect ratio '
-                      f'(H / D, where D is the active core diameter) between '
-                      f'{ASPECT_RATIO_MIN} and {ASPECT_RATIO_MAX}. For this geometry '
-                      f'the active core diameter is {_ad_gcmr:.0f} cm.'),
+                key=_height_key,
+                help=(f'Active fuel height in cm. The range is restricted to '
+                      f'usable fuel lifetimes below 30 years and remains within '
+                      f'the H/D limits of {ASPECT_RATIO_MIN} to {ASPECT_RATIO_MAX}. '
+                      f'The active core diameter is {_ad_gcmr:.0f} cm.'),
             )
 
         elif reactor_type == 'HPMR':
+            _safe_geometry = _safe_diameter_height_options(
+                reactor_type, power_mwt, enrichment,
+            )
+            _diameter_options = list(_safe_geometry)
+            if not _diameter_options:
+                st.error(
+                    'No HPMR geometry in the modeled range has a usable fuel '
+                    'lifetime below 30 years at this power and enrichment.'
+                )
+                st.stop()
             # HPMR's parametric study has N_A locked at 6, so the
             # active diameter slider varies only N_C. H is selected
             # independently with H/D in [ASPECT_RATIO_MIN, ASPECT_RATIO_MAX],
@@ -2329,24 +2441,33 @@ with streamlit_analytics.track():
                 lbl for lbl in HPMR_DIAMETER_LABELS
                 if HPMR_DIAMETER_LABEL_TO_NC[lbl] == 5
             )
+            _default_label = _diameter_default(_diameter_options, _default_label)
+            if st.session_state.get('hpmr_diameter') not in _diameter_options:
+                st.session_state['hpmr_diameter'] = _default_label
             _diameter_label = st.select_slider(
                 'Active Core Diameter',
-                options=HPMR_DIAMETER_LABELS,
+                options=_diameter_options,
                 value=_default_label,
                 key='hpmr_diameter',
                 help=('Active core diameter (does NOT include the radial '
                       'reflector). Discrete values mapped to Core Rings '
                       '(N_C); Assembly Rings (N_A) is locked at 6 in the '
-                      'HPMR parametric study.'),
+                      'HPMR parametric study. The available range is limited '
+                      'to diameters with at least one height that gives a usable '
+                      'fuel lifetime below 30 years.'),
             )
             n_assembly_rings = HPMR_NA_FIXED # always 6
             n_core_rings = HPMR_DIAMETER_LABEL_TO_NC[_diameter_label]
 
             _ar_hpmr = _hpmr_active_radius(n_core_rings)
             _ad_hpmr = 2.0 * _ar_hpmr # active diameter
-            _h_min = max(1, int(round(ASPECT_RATIO_MIN * _ad_hpmr)))
-            _h_max = int(round(ASPECT_RATIO_MAX * _ad_hpmr))
-            _h_default = int(round(_ad_hpmr)) # H/D = 1.0
+            _h_min, _h_max = _safe_geometry[_diameter_label]
+            _h_default = min(max(int(round(_ad_hpmr)), _h_min), _h_max)
+            _height_key = f'hpmr_active_height_{n_core_rings}'
+            if _height_key in st.session_state:
+                st.session_state[_height_key] = min(
+                    max(st.session_state[_height_key], _h_min), _h_max,
+                )
 
             active_height = st.slider(
                 'Active Height (cm)',
@@ -2354,11 +2475,11 @@ with streamlit_analytics.track():
                 max_value=_h_max,
                 value=_h_default,
                 step=1,
-                key=f'hpmr_active_height_{n_core_rings}',
-                help=(f'Active fuel height in cm. Bounds correspond to aspect '
-                      f'ratio (H / D, where D is the active core diameter) '
-                      f'between {ASPECT_RATIO_MIN} and {ASPECT_RATIO_MAX}. For '
-                      f'this geometry the active core diameter is {_ad_hpmr:.0f} cm.'),
+                key=_height_key,
+                help=(f'Active fuel height in cm. The range is restricted to '
+                      f'usable fuel lifetimes below 30 years and remains within '
+                      f'the H/D limits of {ASPECT_RATIO_MIN} to {ASPECT_RATIO_MAX}. '
+                      f'The active core diameter is {_ad_hpmr:.0f} cm.'),
             )
 
         st.divider()
