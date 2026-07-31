@@ -666,10 +666,17 @@ HPMR_DIAMETER_LABEL_TO_NC = {
     label: nc for label, nc in zip(HPMR_DIAMETER_LABELS, HPMR_NC_VALUES)
 }
 
+# Increment whenever the candidate geometry domain or constraint policy changes.
+# Passing this value as a cached-function argument prevents a long-running
+# Streamlit process from serving options computed under an older domain.
+GEOMETRY_CONSTRAINT_CACHE_VERSION = 2
+
 
 @st.cache_data(show_spinner=False, max_entries=256)
-def _safe_diameter_height_options(reactor_type, power_mwt, enrichment):
+def _safe_diameter_height_options(reactor_type, power_mwt, enrichment,
+                                  constraint_version):
     """Map selectable diameter labels to lifetime-safe height intervals."""
+    del constraint_version # Used only as an explicit Streamlit cache key.
     safe_options = {}
 
     if reactor_type == 'LTMR':
@@ -2312,6 +2319,7 @@ with streamlit_analytics.track():
         if reactor_type == 'LTMR':
             _safe_geometry = _safe_diameter_height_options(
                 reactor_type, power_mwt, enrichment,
+                GEOMETRY_CONSTRAINT_CACHE_VERSION,
             )
             _diameter_options = list(_safe_geometry)
             if not _diameter_options:
@@ -2370,6 +2378,7 @@ with streamlit_analytics.track():
         elif reactor_type == 'GCMR':
             _safe_geometry = _safe_diameter_height_options(
                 reactor_type, power_mwt, enrichment,
+                GEOMETRY_CONSTRAINT_CACHE_VERSION,
             )
             _diameter_options = list(_safe_geometry)
             if not _diameter_options:
@@ -2425,6 +2434,7 @@ with streamlit_analytics.track():
         elif reactor_type == 'HPMR':
             _safe_geometry = _safe_diameter_height_options(
                 reactor_type, power_mwt, enrichment,
+                GEOMETRY_CONSTRAINT_CACHE_VERSION,
             )
             _diameter_options = list(_safe_geometry)
             if not _diameter_options:
