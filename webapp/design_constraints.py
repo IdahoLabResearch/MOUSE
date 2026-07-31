@@ -7,6 +7,18 @@ from collections.abc import Callable
 
 MIN_USEFUL_LIFETIME_DAYS = 90
 MAX_FUEL_LIFETIME_DAYS = 30 * 365
+MAX_EMERGENCY_STARTUP_DAYS = 180
+DAYS_PER_YEAR = 365
+
+
+def maximum_emergency_startup_days(shutdowns_per_year: float) -> int:
+    """Cap restart time so annual emergency downtime cannot exceed one year."""
+    if shutdowns_per_year <= 0:
+        return MAX_EMERGENCY_STARTUP_DAYS
+    return min(
+        MAX_EMERGENCY_STARTUP_DAYS,
+        int(DAYS_PER_YEAR // float(shutdowns_per_year)),
+    )
 
 
 def safe_height_interval(

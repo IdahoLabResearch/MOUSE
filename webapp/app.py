@@ -205,6 +205,7 @@ from webapp.hpmr_fuel_lifetime_estimator import (
     get_hpmr_leakage,
 )
 from webapp.design_constraints import (
+    maximum_emergency_startup_days,
     safe_height_interval,
 )
 from webapp.estimate_service import (
@@ -2506,15 +2507,31 @@ with streamlit_analytics.track():
         )
         emergency_shutdowns = st.slider(
             'Number of emergency shutdowns per year',
-            min_value=0.1, max_value=10.0, value=2.0, step=0.1, format='%.1f',
+            min_value=0.1, max_value=10.0, value=1.0, step=0.1, format='%.1f',
+            key='emergency_shutdowns_per_year',
             help=('Average number of unplanned shutdowns per year. Often higher '
                   'early in operation and decreases as operating experience accumulates.'),
         )
+        _max_emergency_startup_days = maximum_emergency_startup_days(
+            emergency_shutdowns,
+        )
+        _emergency_startup_key = 'startup_duration_emergency'
+        if _emergency_startup_key in st.session_state:
+            st.session_state[_emergency_startup_key] = min(
+                st.session_state[_emergency_startup_key],
+                _max_emergency_startup_days,
+            )
         startup_duration = st.slider(
             'Startup Duration after Emergency Shutdown (days)',
-            min_value=1, max_value=180, value=21, step=1,
+            min_value=1,
+            max_value=_max_emergency_startup_days,
+            value=min(21, _max_emergency_startup_days),
+            step=1,
+            key=_emergency_startup_key,
             help=('Days the reactor is offline after an unplanned emergency shutdown. '
-                  'Varies by event; this is a rough average.'),
+                  'Varies by event; this is a rough average. The maximum is '
+                  'dynamically limited so emergency downtime cannot exceed '
+                  '365 days per year.'),
         )
         startup_duration_refueling = st.slider(
             'Startup Duration after Refueling (days)',
