@@ -120,6 +120,131 @@ def calculate_accounts_31_32_75_central_facility_cost(df, params):
     return df
 
 
+def calculate_servicing_campus_derived_costs(df, params):
+    """Populate servicing-campus accounts whose costs are defined by ratios."""
+    cost_columns = [get_estimated_cost_column(df, option) for option in ('F', 'N')]
+
+    for cost_column in cost_columns:
+        direct_cost = df.loc[df['Account'] == 20, cost_column].sum()
+        staffing_cost = df.loc[df['Account'].isin([711, 712, 713, 714, 715]), cost_column].sum()
+
+        df.loc[df['Account'] == 30, cost_column] = (
+            params['SER Account 30 to Account 20 Ratio'] * direct_cost
+        )
+        df.loc[df['Account'] == 716, cost_column] = (
+            params['SER Account 716 to Accounts 711-715 Ratio'] * staffing_cost
+        )
+        df.loc[df['Account'] == 717, cost_column] = (
+            params['SER Account 717 to Accounts 711-715 Ratio'] * staffing_cost
+        )
+        df.loc[df['Account'] == 741, cost_column] = (
+            params['SER Account 741 to Account 20 Ratio'] * direct_cost
+        )
+        df.loc[df['Account'] == 742, cost_column] = (
+            params['SER Account 742 to Account 20 Ratio'] * direct_cost
+        )
+        df.loc[df['Account'] == 743, cost_column] = (
+            params['SER Account 743 to Account 20 Ratio'] * direct_cost
+        )
+        df.loc[df['Account'] == 747.1, cost_column] = (
+            params['SER Account 747.1 to Accounts 741-743 Ratio']
+            * df.loc[df['Account'].isin([741, 742, 743]), cost_column].sum()
+        )
+        df.loc[df['Account'] == 747.4, cost_column] = (
+            params['SER Account 747.4 to Account 20 Ratio'] * direct_cost
+        )
+
+    return df
+
+
+def calculate_interest_cost_servicing_campus(params, OCC):
+    """Calculate servicing-campus interest during construction."""
+    interest_rate = params['Interest Rate']
+    construction_duration = params['SER Construction Duration']
+    debt_to_equity_ratio = params['Debt To Equity Ratio']
+    debt_fraction = debt_to_equity_ratio / (1 + debt_to_equity_ratio)
+    B = 1 + np.exp(np.log(1 + interest_rate) * construction_duration / 12)
+    C = (np.log(1 + interest_rate) * (construction_duration / 12) / 3.14) ** 2 + 1
+    return debt_fraction * OCC * ((0.5 * B / C) - 1)
+
+
+def calculate_servicing_campus_capital_costs(df, params):
+    """Add OCC rows and Account 62 financing for the servicing campus."""
+    generating_sites = params['Generating Sites Count']
+    if generating_sites <= 0:
+        raise ValueError("'Generating Sites Count' must be greater than zero.")
+
+    df = pd.concat([
+        df,
+        pd.DataFrame([
+            {'Account': 'OCC', 'Account Title': 'Overnight Capital Cost'},
+            {'Account': 'OCC per reactor', 'Account Title': 'Overnight Capital Cost per Operating Reactor'},
+        ]),
+    ], ignore_index=True)
+
+    accounts_to_sum = [10, 20, 30, 40, 50]
+    for cost_column in [get_estimated_cost_column(df, option) for option in ('F', 'N')]:
+        occ_cost = df.loc[df['Account'].isin(accounts_to_sum), cost_column].sum()
+        df.loc[df['Account'] == 'OCC', cost_column] = occ_cost
+        df.loc[df['Account'] == 'OCC per reactor', cost_column] = occ_cost / generating_sites
+        df.loc[df['Account'] == 62, cost_column] = calculate_interest_cost_servicing_campus(params, occ_cost)
+
+    return df
+
+
+def calculate_servicing_campus_TCI(df, params):
+    """Add total capital investment rows for the servicing campus."""
+    generating_sites = params['Generating Sites Count']
+    df = pd.concat([
+        df,
+        pd.DataFrame([
+            {'Account': 'TCI', 'Account Title': 'Total Capital Investment'},
+            {'Account': 'TCI per reactor', 'Account Title': 'Total Capital Investment per Operating Reactor'},
+        ]),
+    ], ignore_index=True)
+
+    for cost_column in [get_estimated_cost_column(df, option) for option in ('F', 'N')]:
+        tci_cost = df.loc[df['Account'].isin(['OCC', 60]), cost_column].sum()
+        df.loc[df['Account'] == 'TCI', cost_column] = tci_cost
+        df.loc[df['Account'] == 'TCI per reactor', cost_column] = tci_cost / generating_sites
+
+    return df
+
+
+def energy_cost_levelized_servicing_campus(params, df):
+    """Add annual-cost summaries and the servicing contribution to fleet LCOE."""
+    generating_sites = params['Generating Sites Count']
+    annual_generation_per_site = params['Annual Generation']
+    fleet_annual_generation = generating_sites * annual_generation_per_site
+    if fleet_annual_generation <= 0:
+        raise ValueError("Fleet annual electricity generation must be greater than zero.")
+
+    df = pd.concat([
+        df,
+        pd.DataFrame([
+            {'Account': 'Annual Cost', 'Account Title': 'Annual Servicing Campus Cost'},
+            {'Account': 'Annual Cost per reactor', 'Account Title': 'Annual Servicing Campus Cost per Operating Reactor'},
+            {'Account': 'LCOE', 'Account Title': 'Servicing Campus Contribution to Fleet LCOE ($/MWh)'},
+        ]),
+    ], ignore_index=True)
+
+    lifetime = int(params['Levelization Period'])
+    discount_rate = params['Discount Rate']
+    discount_factors = np.array([(1 + discount_rate) ** -year for year in range(1, lifetime + 1)])
+    discounted_generation = fleet_annual_generation * discount_factors.sum()
+
+    for cost_column in [get_estimated_cost_column(df, option) for option in ('F', 'N')]:
+        annual_cost = df.loc[df['Account'] == 70, cost_column].sum()
+        capital_cost = df.loc[df['Account'] == 'TCI', cost_column].sum()
+        discounted_cost = capital_cost + annual_cost * discount_factors.sum()
+
+        df.loc[df['Account'] == 'Annual Cost', cost_column] = annual_cost
+        df.loc[df['Account'] == 'Annual Cost per reactor', cost_column] = annual_cost / generating_sites
+        df.loc[df['Account'] == 'LCOE', cost_column] = discounted_cost / discounted_generation
+
+    return df
+
+
 def calculate_decommissioning_cost(df, params):
     estimated_cost_col_F = get_estimated_cost_column(df, 'F')
     estimated_cost_col_N = get_estimated_cost_column(df, 'N')

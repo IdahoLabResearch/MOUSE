@@ -4,6 +4,11 @@ import numpy as np
 import pandas as pd
 from cost.sampling import sampler
 
+NONSTANDARD_COST_ACCOUNTS = {
+    222.11, 222.12, 222.13, 253, 711, 712, 713, 714, 715, 721, 744, 81
+}
+
+
 def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent, params):
     # pumps
     if account == 222.11 or account == 222.12:
@@ -42,13 +47,27 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
     elif account == 713:
         cost_multiplier = params['FTEs Per Security Staff (24/7)']
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
+    elif account == 714:
+        cost_multiplier = params['Shift To Headcount']
+        cost = cost_multiplier * unit_cost * pow(scaling_variable_value, exponent)
+    elif account == 715:
+        cost = unit_cost * pow(scaling_variable_value, exponent)
     elif account == 721:
         cost_multiplier = params['Annual Coolant Supply Frequency']
         cost = cost_multiplier * unit_cost * scaling_variable_value
+
+    # servicing-campus annual electricity consumption
+    elif account == 744:
+        annual_hours = 365 * 24
+        cost = unit_cost * scaling_variable_value * annual_hours
  
     elif account == 81:
         cost_multiplier =  params['FTEs Per Operator Per Year Per Refueling'] 
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value, exponent)
+    else:
+        raise NotImplementedError(
+            f"Nonstandard cost equation is missing for account {account}."
+        )
     return cost
 
 
@@ -97,7 +116,8 @@ def scale_cost(initial_database, params):
 
             if pd.notna(row['Fixed Cost ($)']):
                 if params['Number of Samples'] > 1:
-                    if fixed_cost_dist == 'Lognormal':
+                    if (fixed_cost_dist == 'Lognormal'
+                            and fixed_cost_lo > 0 and fixed_cost_hi > 0 and fixed_cost_0 > 0):
                         fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
                     elif fixed_cost_dist == 'Uniform': 
                         fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
@@ -115,7 +135,8 @@ def scale_cost(initial_database, params):
 
             if pd.notna(row['Unit Cost']):
                 if params['Number of Samples'] > 1:
-                    if unit_cost_dist == 'Lognormal':
+                    if (unit_cost_dist == 'Lognormal'
+                            and unit_cost_lo > 0 and unit_cost_hi > 0 and unit_cost_0 > 0):
                         unit_cost = sampler("Lognormal", low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
                     elif unit_cost_dist == 'Uniform': 
                         unit_cost = sampler('Uniform', low=unit_cost_lo, high=unit_cost_hi)
@@ -171,15 +192,19 @@ def scale_cost(initial_database, params):
     return scaled_cost
 
 
-def scale_central_facility_cost(initial_database, params):
+def scale_campus_cost(initial_database, params):
     """
-    Scale costs for central facility accounts.
-    Similar to scale_cost() but includes Count Scaling Variable support.
+    Scale costs for shared-campus accounts.
+
+    Campus databases can scale an individual item by size and then multiply it
+    by a separate count variable (for example, cost per vehicle times vehicle
+    count). This is also retained as the implementation behind the legacy
+    central-facility wrapper below.
     """
     scaled_cost = initial_database[['Account', 'Level', 'Account Title', 'FOAK to NOAK Multiplier Type',
                                     "Fixed Cost Low End", "Fixed Cost High End", "Fixed Cost Distribution",
                                     "Unit Cost Low End", "Unit Cost High End", "Unit Cost Distribution",
-                                    "Exponent std", "Exponent Max", "Exponent Min", "Exponent Distribution"]]
+                                    "Exponent std", "Exponent Max", "Exponent Min", "Exponent Distribution"]].copy()
 
     escalation_year = params['Escalation Year']
     params['Constant'] = 1
@@ -199,7 +224,8 @@ def scale_central_facility_cost(initial_database, params):
 
             if pd.notna(row['Fixed Cost ($)']):
                 if params['Number of Samples'] > 1:
-                    if fixed_cost_dist == 'Lognormal':
+                    if (fixed_cost_dist == 'Lognormal'
+                            and fixed_cost_lo > 0 and fixed_cost_hi > 0 and fixed_cost_0 > 0):
                         fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
                     elif fixed_cost_dist == 'Uniform':
                         fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
@@ -217,7 +243,8 @@ def scale_central_facility_cost(initial_database, params):
 
             if pd.notna(row['Unit Cost']):
                 if params['Number of Samples'] > 1:
-                    if unit_cost_dist == 'Lognormal':
+                    if (unit_cost_dist == 'Lognormal'
+                            and unit_cost_lo > 0 and unit_cost_hi > 0 and unit_cost_0 > 0):
                         unit_cost = sampler("Lognormal", low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
                     elif unit_cost_dist == 'Uniform':
                         unit_cost = sampler('Uniform', low=unit_cost_lo, high=unit_cost_hi)
@@ -244,7 +271,23 @@ def scale_central_facility_cost(initial_database, params):
                 else:
                     exponent = exponent_0
 
-            if row['Standard Cost Equation?'] == 'standard':
+            # Standard campus rows describe their relationship through scaling
+            # and count variables. Nonstandard rows must use an explicit
+            # account equation; they must never fall through to this formula.
+            uses_count_scaling = pd.notna(row['Count Scaling Variable'])
+            if row['Standard Cost Equation?'] == 'nonstandard':
+                if row['Account'] not in NONSTANDARD_COST_ACCOUNTS:
+                    raise NotImplementedError(
+                        f"Nonstandard cost equation is missing for account {row['Account']}."
+                    )
+                if pd.notna(row['Scaling Variable']) and scaling_variable_value == 0:
+                    estimated_cost = 0
+                else:
+                    estimated_cost = non_standard_cost_scale(
+                        row['Account'], unit_cost, scaling_variable_value, exponent, params
+                    )
+
+            elif row['Standard Cost Equation?'] == 'standard':
 
                 if pd.notna(row['Scaling Variable']) and scaling_variable_value == 0:
                     estimated_cost = 0
@@ -257,22 +300,21 @@ def scale_central_facility_cost(initial_database, params):
                         estimated_cost = fixed_cost + unit_cost * scaling_variable_value
 
                 # Apply count scaling if specified
-                if pd.notna(row['Count Scaling Variable']):
+                if uses_count_scaling:
                     if count_variable_value == 0:
                         estimated_cost = 0
                     else:
                         estimated_cost = estimated_cost * count_variable_value
 
-            elif row['Standard Cost Equation?'] == 'nonstandard':
-                if pd.notna(row['Scaling Variable']) and scaling_variable_value == 0:
-                    estimated_cost = 0
-                else:
-                    estimated_cost = non_standard_cost_scale(row['Account'],
-                                                             unit_cost, scaling_variable_value, exponent, params)
-
             scaled_cost.at[index, f'FOAK Estimated Cost (${escalation_year })'] = estimated_cost
         else:
-                # Explicitly assign 0 so these rows do not remain NaN
-                # and cause parent account aggregation to fail
-                scaled_cost.at[index, f'FOAK Estimated Cost (${escalation_year })'] = 0
+            # Parent accounts must remain NaN so the hierarchy aggregation step
+            # can recognize and populate them from their children. Leaf accounts
+            # without cost data are converted to zero by update_high_level_costs.
+            scaled_cost.at[index, f'FOAK Estimated Cost (${escalation_year })'] = np.nan
     return scaled_cost
+
+
+def scale_central_facility_cost(initial_database, params):
+    """Backward-compatible wrapper for the legacy central-facility workflow."""
+    return scale_campus_cost(initial_database, params)

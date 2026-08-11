@@ -5,12 +5,17 @@ import numpy as np
 import csv
 from cost.cost_escalation import escalate_cost_database
 from cost.code_of_account_processing import remove_irrelevant_account, get_estimated_cost_column, find_children_accounts, create_cost_dictionary
-from cost.cost_scaling import scale_cost, scale_redundant_BOP_and_primary_loop, scale_central_facility_cost
+from cost.cost_scaling import (scale_cost, scale_redundant_BOP_and_primary_loop,
+                               scale_campus_cost, scale_central_facility_cost)
 from cost.non_direct_cost import (validate_tax_credit_params, calculate_accounts_31_32_75_82_cost,
                                    calculate_decommissioning_cost, calculate_high_level_capital_costs,
                                    calculate_TCI, energy_cost_levelized,
                                    calculate_accounts_31_32_75_central_facility_cost,
-                                   calculate_high_level_capital_costs_central_facility, calculate_TCI_central)
+                                   calculate_high_level_capital_costs_central_facility, calculate_TCI_central,
+                                   calculate_servicing_campus_derived_costs,
+                                   calculate_servicing_campus_capital_costs,
+                                   calculate_servicing_campus_TCI,
+                                   energy_cost_levelized_servicing_campus)
 from cost.params_registry import PARAMS_REGISTRY, GROUP_ORDER
 from reactor_engineering_evaluation.operation import reactor_operation
 from cost.cost_drivers import cost_drivers_estimate
@@ -427,6 +432,65 @@ def bottom_up_cost_estimate_central(cost_database_filename, params):
     return reordered_df
 
 
+def bottom_up_cost_estimate_servicing_campus(cost_database_filename, params):
+    """Estimate the servicing campus when Fleet Mode is enabled.
+
+    The servicing database assumes no learning, so the public result contains a
+    single Value column rather than FOAK and NOAK columns. Two identical internal
+    columns are retained only to reuse the established account aggregation code.
+    """
+    if not params.get('Fleet Mode', False):
+        return None
+
+    escalated_cost = escalate_cost_database(
+        cost_database_filename,
+        params['Escalation Year'],
+        params,
+        sheet_name='Servicing Campus Database',
+    )
+    cleaned_cost = remove_irrelevant_account(escalated_cost, params)
+
+    samples = []
+    for sample in range(params['Number of Samples']):
+        if (sample + 1) % 100 == 0:
+            print(f"\n\nServicing campus sample #{sample + 1}")
+
+        scaled_cost = scale_campus_cost(cleaned_cost, params)
+        value_column = get_estimated_cost_column(scaled_cost, 'F')
+        internal_column = value_column.replace('FOAK', 'NOAK')
+        scaled_cost[internal_column] = scaled_cost[value_column]
+
+        # The servicing database intentionally contains empty placeholder
+        # accounts (for example 75 and 78), so suppress the generic missing-
+        # children warning while still aggregating all populated hierarchies.
+        aggregation_sample = sample + 1
+        updated_cost = update_high_level_costs(scaled_cost, 'base', aggregation_sample)
+        updated_cost = calculate_servicing_campus_derived_costs(updated_cost, params)
+        updated_cost = update_high_level_costs(updated_cost, 'other', aggregation_sample)
+        updated_cost = calculate_servicing_campus_capital_costs(updated_cost, params)
+        updated_cost = update_high_level_costs(updated_cost, 'finance', aggregation_sample)
+        updated_cost = calculate_servicing_campus_TCI(updated_cost, params)
+        updated_cost = update_high_level_costs(updated_cost, 'annual', aggregation_sample)
+        final_cost = energy_cost_levelized_servicing_campus(params, updated_cost)
+
+        sample_result = final_cost[['Account', 'Account Title', value_column]].copy()
+        sample_result.rename(columns={value_column: 'Value'}, inplace=True)
+        samples.append(sample_result)
+
+    concatenated = pd.concat(samples)
+    mean_values = concatenated[['Value']].groupby(concatenated.index).mean()
+    if params['Number of Samples'] > 1:
+        std_values = concatenated[['Value']].groupby(concatenated.index).std()
+    else:
+        std_values = concatenated[['Value']].groupby(concatenated.index).std(ddof=0)
+
+    mean_values['Value std'] = std_values['Value']
+    labels = concatenated[['Account', 'Account Title']].groupby(concatenated.index).first()
+    result = reorder_dataframe(mean_values.join(labels))
+    nonzero_mask = (result[['Value', 'Value std']] != 0).any(axis=1)
+    return result.loc[nonzero_mask].reset_index(drop=True)
+
+
 def parametric_studies(cost_database_filename, tracked_params_list):
     import inspect
 
@@ -474,6 +538,7 @@ def detailed_bottom_up_cost_estimate(cost_database_filename):
 
     detailed_cost_table = bottom_up_cost_estimate(cost_database_filename, params)
     detailed_central_cost_table = bottom_up_cost_estimate_central(cost_database_filename, params)
+    detailed_servicing_cost_table = bottom_up_cost_estimate_servicing_campus(cost_database_filename, params)
     pretty_df = transform_dataframe(detailed_cost_table)
 
     with pd.ExcelWriter(output_filename) as writer:
@@ -487,6 +552,18 @@ def detailed_bottom_up_cost_estimate(cost_database_filename):
                 print(detailed_central_cost_table[nan_mask][['Account', 'Account Title'] + list(numerical_columns)])
             pretty_central_df = transform_dataframe(detailed_central_cost_table)
             pretty_central_df.to_excel(writer, sheet_name="central facility cost estimate", index=False)
+
+        if detailed_servicing_cost_table is not None:
+            numerical_columns = detailed_servicing_cost_table.select_dtypes(include=[np.number]).columns
+            nan_mask = detailed_servicing_cost_table[numerical_columns].isna().any(axis=1)
+            if nan_mask.any():
+                print("WARNING: NaN values in servicing campus accounts:")
+                print(detailed_servicing_cost_table.loc[nan_mask, ['Account', 'Account Title'] + list(numerical_columns)])
+            detailed_servicing_cost_table.to_excel(
+                writer,
+                sheet_name="servicing campus cost estimate",
+                index=False,
+            )
 
         save_params_to_excel_file(writer, params)
 

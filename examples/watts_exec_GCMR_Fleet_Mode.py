@@ -2,19 +2,15 @@
 
 """
 This script performs a bottom-up cost estimate for a Gas Cooled Microreactor (GCMR)
-WITH Central Facility cost estimation enabled.
+with Fleet Mode enabled.
 
-This example extends the GCMR Design A example by adding central facility cost estimation.
-A central facility is shared infrastructure (e.g., fuel handling, waste processing, control center)
-that supports multiple reactor units deployed at the same site or region.
+Fleet Mode represents a reactor fleet supported by two shared campuses:
+  - Manufacturing Campus: manufactures and tests new reactor units.
+  - Servicing Campus: services operating reactors and manages fleet logistics.
 
-Key additions compared to watts_exec_GCMR_Design_A.py:
-  - 'Estimate Central Facility': True  — enables central facility cost calculation
-  - 'Maximum Number of Operating Reactors': 10  — number of reactors the facility supports
-  - 'Central Facility Construction Duration': 24 months  — construction time for the facility
-
-The output Excel file will contain an additional sheet "central facility cost estimate"
-with the breakdown of central facility costs.
+The fleet parameters are derived primarily from the annual reactor production rate.
+The cost-engine integration and separate campus outputs will be implemented
+independently from this example configuration.
 
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
@@ -312,299 +308,176 @@ update_params({
 })
 
 # **************************************************************************************************************************
-#                                           Sec. 11: Central Facility Costing
+#                                           Sec. 11: Fleet Mode
 # **************************************************************************************************************************
-# A central facility is shared infrastructure that supports multiple reactor units
-# deployed at the same site or region. This includes:
-#   - Servicing Facility: reactor refueling, defueling, and maintenance hot cells
-#   - Manufacturing/Factory Facility: reactor component fabrication
-#   - New Reactor Facility: fresh fuel storage, reactor fueling, and testing
-#   - Radioactive Waste Management Facility: waste processing and storage
-#   - Transportation infrastructure: vehicles and casks for reactor/fuel transport
-#
-# When 'Estimate Central Facility' is True, the cost estimation reads from the
-# "Central Facility Database" sheet in Cost_Database.xlsx and produces a separate
-# cost breakdown sheet in the output Excel file.
-#
-# All capacity/rate parameters for facilities and operations are assumed to be YEARLY
-# unless otherwise specified.
+# Fleet Mode estimates shared manufacturing and servicing campuses for a fleet of
+# GCMRs. Campus sizes and resource requirements are driven primarily by the annual
+# reactor production rate.
+params['Fleet Mode'] = True
 
-# --- Overall Central Facility Parameters ---
-update_params({
-    'Estimate Central Facility': True,  # Enable central facility cost estimation
+## User Inputs
 
-    # Maximum number of reactor units the central facility is designed to support.
-    # Used to calculate fleet-wide metrics and normalize costs per kW.
-    'Maximum Number of Operating Reactors': 100,  # total number of reactors served by all facilities
+params['Production Rate'] = 100 #Must be an integer.
 
-    # Construction duration for the central facility (may differ from reactor construction).
-    # Used for calculating financing costs (interest during construction).
-    'Central Facility Construction Duration': 120,  # months (this includes manufacturing facility and the service facility)
+params['Average Distance From Serv to GenSite'] = 1000 #miles (statutory miles)
 
-    # Total electrical capacity of the central facility itself (for its own operations).
-    'Central Facility Power MWe': 50,  # MWe
+# ***
+## END of User Inputs
+# ***
 
-    # Perimeter of the entire central facility site (for security fencing, etc.).
-    'Site Perimeter': 20000,  # meters
 
-    # Number of maintenance staff per shift at the central facility.
-    'Maintenance Staff Per Shift': 40,  # FTEs per shift
-})
+## CONSTANTS
 
-# Derived parameter: total thermal power of the operating reactor fleet
-params['Power Mwt of Operating Fleet'] = params['Power MWt'] * params['Maximum Number of Operating Reactors']
+params['m3_to_kg_He_RT_atmospheric'] = 0.1661 #kg/m^3
+params['Shift To Headcount'] = 5
 
-# --- Servicing Facility Parameters ---
-# The servicing facility handles reactor refueling, defueling, inspection, and maintenance.
-# It includes hot cells for handling irradiated components.
-update_params({
-    # Building volumes for servicing facility structures (concrete volumes in m^3)
-    'Servicing Building Roof Volume': 500,  # m^3
-    'Servicing Building Basement Volume': 500,  # m^3
-    'Servicing Building Walls Volume': 300,  # m^3
-    'Servicing Building Volume': 5000,  # m^3 (total enclosed volume)
 
-    'Helium Purification and Storage Building Roof Volume': 100,  # m^3
-    'Helium Purification and Storage Building Basement Volume': 100,  # m^3
-    'Helium Purification and Storage Building Walls Volume': 80,  # m^3
-    'Helium Purification and Storage Building Volume': 1000,  # m^3
+## GENERATING SITE
 
-    'Servicing Facility Integrated Control Room Roof Volume': 50,  # m^3 — mainly the hot cell
-    'Servicing Facility Integrated Control Room Basement Volume': 50,  # m^3
-    'Servicing Facility Integrated Control Room Walls Volume': 40,  # m^3
-    'Servicing Facility Integrated Control Room Volume': 500,  # m^3
+params['CoolantInventoryRPV_Mass'] = 40.5125 #kg
+params['Cycle Length'] = 3 #[years] This is a MOUSE ouput, and we're ignoring that value in order to be conservative.
+params['Fuel Mass In Core'] = 408.890 #[kgU] This is a MOUSE output.
+params['Water Supply Frequency'] = 4 #[year^-1]
+params['Maintenance Visit Frequency'] = 1 / (params['Cycle Length'] / 2)
+params['GenSite Downtime'] = 1/12
+params['Annual Generation'] = params['Power MWt'] * params['Thermal Efficiency'] * 0.9 * 8766
 
-    'Servicing Facility Admin Building Roof Volume': 80,  # m^3
-    'Servicing Facility Admin Building Basement Volume': 80,  # m^3
-    'Servicing Facility Admin Building Walls Volume': 60,  # m^3
-    'Servicing Facility Admin Building Volume': 800,  # m^3
+#To Discuss: Not Used in Cost Database at this time
+params['GenSite Operators Per Shift'] = 1
+params['GenSite Security Staff Per Shift'] = 1
+params['GenSite Shifts Per Day'] = 2
+params['GenSite Staff Rotation Working Fraction'] = 0.45
 
-    'Servicing Facility Security Building Roof Volume': 30,  # m^3
-    'Servicing Facility Security Building Basement Volume': 30,  # m^3
-    'Servicing Facility Security Building Walls Volume': 25,  # m^3
-    'Servicing Facility Security Building Volume': 300,  # m^3
 
-    # Perimeter of the servicing facility (for security fencing)
-    'Servicing Facility Perimeter': 2000,  # meters
+## FLEET
 
-    # Number of reactors serviced per year
-    'Total Servicing Rate': 50,  # reactors/year
+#ToDo: 9.231 and 10 should change with cycle length
+params['Generating Sites Count'] = int(np.floor(9.231*params['Production Rate']))
+params['Fleet'] = 10 * params['Production Rate']
+#/ThisSectionToDo
 
-    # Number of hot cells for reactor servicing operations
-    'Servicing Hot Cell Count': 10,  # number of hot cells ('Total Servicing Rate' divided by hot cell capacity)
 
-    # Volume of each servicing hot cell
-    'Servicing Hot Cell Volume': 500,  # m^3 per hot cell (empty interior volume)
+## MANUFACTURING CAMPUS
 
-    # Number of defueling/refueling lines (typically equals hot cell count)
-    'Defueling/Refueling Line Count': 10,  # number of lines
-})
+params['Manufacturing Campus Area'] = 56.1651 +	1.2066 * params['Production Rate'] ** 0.3919
 
-# Total volume of all servicing hot cells combined
-params['Total Servicing Hot Cell Volume'] = params['Servicing Hot Cell Count'] * params['Servicing Hot Cell Volume']
-# Thermal power processed by servicing facility (assumes 5% power for low-power testing per hot cell)
-params['Power Mwt Processed by Servicing'] = 0.05 * params['Power MWt'] * params['Servicing Hot Cell Count']
+params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * (params['Production Rate'] ** 0.0001)
+params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * (params['Production Rate'] ** 0.5539)
+params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * (params['Production Rate'] ** 0.4768)
+params['MFG Warehouse Staff'] = np.ceil( 0.8576 + 0.2539 * (params['Production Rate'] ** 0.6533) )
+params['MFG Security Staff Per Shift'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
+params['MFG Maintenance Staff Headcount'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
+params['MFG Local Transport Vehicle Count'] = np.rint( -4340.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
+params['MFG Utility Vehicle Count'] = np.rint( -4339.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
+# params['MFG Guard Station Count'] = 1.0000 + 1e-15 * (params['Production Rate'] ** 5.0000)
+if params['Production Rate'] <= 500:
+    params['MFG Guard Station Count'] = 1
 
-# --- Manufacturing/Factory Facility Parameters ---
-# The manufacturing facility fabricates reactor components and assembles new reactors.
-update_params({
-    # Building volumes for manufacturing facility structures
-    'Fabrication Building Roof Volume': 400,  # m^3
-    'Fabrication Building Basement Volume': 400,  # m^3
-    'Fabrication Building Walls Volume': 300,  # m^3
-    'Fabrication Building Volume': 4000,  # m^3
+elif params['Production Rate'] < 2000:
+    params['MFG Guard Station Count'] = 2
 
-    'Feed and Product Warehouse Building Roof Volume': 200,  # m^3
-    'Feed and Product Warehouse Building Basement Volume': 200,  # m^3
-    'Feed and Product Warehouse Building Walls Volume': 150,  # m^3
-    'Feed and Product Warehouse Building Volume': 2000,  # m^3
+else:
+    params['MFG Guard Station Count'] = np.rint(params['Production Rate']/1000)
 
-    'Manufacturing Facility Integrated Control Building Roof Volume': 50,  # m^3
-    'Manufacturing Facility Integrated Control Building Basement Volume': 50,  # m^3
-    'Manufacturing Facility Integrated Control Building Walls Volume': 40,  # m^3
-    'Manufacturing Facility Integrated Control Building Volume': 500,  # m^3
 
-    'Manufacturing Facility Admin Building Roof Volume': 80,  # m^3
-    'Manufacturing Facility Admin Building Basement Volume': 80,  # m^3
-    'Manufacturing Facility Admin Building Walls Volume': 60,  # m^3
-    'Manufacturing Facility Admin Building Volume': 800,  # m^3
+params['MFG Campus Power'] = 1.295614 +	0.00813495 * params['Production Rate'] **  0.620945 #MWe
+params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
 
-    'Manufacturing Facility Security Building Roof Volume': 30,  # m^3
-    'Manufacturing Facility Security Building Basement Volume': 30,  # m^3
-    'Manufacturing Facility Security Building Walls Volume': 25,  # m^3
-    'Manufacturing Facility Security Building Volume': 300,  # m^3
+params['MFG Testing Line Annual Rate'] = int(np.floor(8000/92))
+params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
+params['MFG Testing Engineering Headcount'] = 6 + ((params['MFG Testing Line Count'] - 1)*2)
+params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
 
-    # Perimeter of the manufacturing/factory facility
-    'Factory Perimeter': 3000,  # meters
 
-    # Number of new reactors produced per year
-    'New Reactor Production Rate': 20,  # reactors/year
-})
+#ToDo: Road Length and Site Perimeter shouldn't be the same.
+params['MFG Road Length'] =  -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
+params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
+params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (params['Production Rate'] ** 0.22340396387855505)
 
-# --- New Reactor Facility Parameters ---
-# The new reactor facility handles fresh fuel storage, initial fueling, and reactor testing
-# before deployment to field sites. # these are fresh reactors while the other servicing facility is for the used ones
-update_params({
-    # Building volumes for new reactor facility structures
-    'Fresh Fuel Storage and Inspection Building Roof Volume': 150,  # m^3
-    'Fresh Fuel Storage and Inspection Building Basement Volume': 150,  # m^3
-    'Fresh Fuel Storage and Inspection Building Walls Volume': 120,  # m^3
-    'Fresh Fuel Storage and Inspection Building Volume': 1500,  # m^3
+params['MFG Security Camera Count'] = 200 + -157.0909090909111 * (params['Production Rate'] ** -0.037788560889399164)
+params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (params['Production Rate'] ** 0.35218251811136164)
 
-    'Reactor Fueling Building Roof Volume': 200,  # m^3
-    'Reactor Fueling Building Basement Volume': 200,  # m^3
-    'Reactor Fueling Building Walls Volume': 150,  # m^3
-    'Reactor Fueling Building Volume': 2000,  # m^3
 
-    'Reactor Testing Building Roof Volume': 300,  # m^3
-    'Reactor Testing Building Basement Volume': 300,  # m^3
-    'Reactor Testing Building Walls Volume': 250,  # m^3
-    'Reactor Testing Building Volume': 3000,  # m^3
+## SERVICING CAMPUS
 
-    'New Reactor Fuel and Testing Facility Admin Building Roof Volume': 80,  # m^3
-    'New Reactor Fuel and Testing Facility Admin Building Basement Volume': 80,  # m^3
-    'New Reactor Fuel and Testing Facility Admin Building Walls Volume': 60,  # m^3
-    'New Reactor Fuel and Testing Facility Admin Building Volume': 800,  # m^3
+params['SER Construction Duration'] = 120 #months; carried over from the former central-facility assumption.
+params['Servicing Rate'] = params['Cycle Length'] * params['Production Rate']
 
-    'New Reactor Fuel and Testing Facility Security Building Roof Volume': 30,  # m^3
-    'New Reactor Fuel and Testing Facility Security Building Basement Volume': 30,  # m^3
-    'New Reactor Fuel and Testing Facility Security Building Walls Volume': 25,  # m^3
-    'New Reactor Fuel and Testing Facility Security Building Volume': 300,  # m^3
+params['SER Campus Area'] = (760 - 160.5) * (params['Servicing Rate'] - 30) / (300 - 30) + 160.5
+params['SER Campus Land Area'] = params['SER Campus Area']
 
-    # Perimeter of the new reactor facility
-    'New Reactor Facility Perimeter': 2500,  # meters
+scale_var_SER = np.rint(params['Servicing Rate'] / 3) #Value of 3 should remain hardcoded. Couldn't let production rate be the variable for the Servicing Campus directly, for flexibility, but the relationships were built based on production rate with our basic assumption of a 3:1 ratio between servicing rate and production rate. Simple fix was to define this variable (scale_var_SER).
 
-    # Number of fueling lines for new reactors
-    'New Reactor Fueling Line Count': 5,  # number of lines
+params['SER Switchyard Rating'] = 0 + 12 * scale_var_SER ** 0.698970
+params['SER Switchyard Average Power'] = params['SER Switchyard Rating']/2
 
-    # Number of testing lines/hot cells for new reactors
-    'New Reactor Testing Line Count': 10,  # number of lines
+params['Servicing Hot Cell Annual Rate'] = int(np.floor(365* (11/12) / 3 ))
+params['Servicing Hot Cell Count'] = np.ceil( params['Servicing Rate'] / params['Servicing Hot Cell Annual Rate'] )
+params['Radioactive Waste Processing Hot Cell Count'] = 1
+params['He Gas Replenishment Per Hot Cell'] = ((3*3*5) * 2 * params['Servicing Hot Cell Annual Rate'] * 2 + 0.1 * (10*30*7)*12) * params['m3_to_kg_He_RT_atmospheric']
+params['He Gas Replenishment'] = (params['Servicing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['Radioactive Waste Processing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['CoolantInventoryRPV_Mass'] * params['Servicing Rate'])
 
-    # Hot cell specifications for reactor testing
-    'New Reactor Testing Hot Cell Count': 10,  # number of hot cells
-    'New Reactor Testing Hot Cell Volume': 500,  # m^3 per hot cell
-})
+params['Operators per reactor monitored'] = 0.25
+params['Operator headcount per reactor monitored'] = params['Operators per reactor monitored'] * params['Shift To Headcount']
+params['SER Number of Operators Per Shift'] = np.ceil( 0.0 + 5.625 * (scale_var_SER ** 0.426) )
+params['SER Engineering Headcount'] = np.ceil( 0.0 + 20.0 * (scale_var_SER ** 0.301) )
+params['SER Maintenance Staff Per Shift'] = 40  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
+params['SER Security Staff Per Shift'] = 1  # REVIEW NEEDED: provisional value carried over from the old reactor-site staffing input.
 
-# Total volume of all new reactor testing hot cells
-params['New Reactor Testing Hot Cell Volume'] = params['New Reactor Testing Hot Cell Count'] * params['New Reactor Testing Hot Cell Volume']
+params['Roundtrip Time'] = 2*params['Average Distance From Serv to GenSite'] / 40 / (8760/2) #[years] based on average speed of 40 miles/hour, 12 hours of driving per day
+params['Roundtrip Time Reactor Transport'] = 2*params['Average Distance From Serv to GenSite'] / 15 / (8760/2) #[years] based on average speed of 15 miles/hour, 12 hours of driving per day
+params['Dwell Time GenSite'] = 1/365 #[years]
+params['Dwell Time Serv'] = 1/365 #[years]
+params['Dwell Time Reactor Transport GenSite'] = 2/365 #[years]
+params['Dwell Time Reactor Transport Serv'] = 2/365 #[years]
 
-# Total electrical capacity processed by new reactor facility (production rate × reactor power)
-params['Power Mwe Processed by New Reactor Facility'] = params['Power MWe'] * params['New Reactor Production Rate']
+#ToDo: Road Length and Site Perimeter shouldn't be the same.
+params['SER Road Length'] = -1539388.0000975644 + 1540607.3153829477 * (scale_var_SER ** 8.588964624690402e-05)
+params['SER Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (scale_var_SER ** 8.588964624690402e-05)
+params['SER Controlled Perimeter'] = 0
+params['SER Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (scale_var_SER ** 0.22340396387855505)
 
-# --- Radioactive Waste Management Facility Parameters ---
-# The radioactive waste management facility handles processing and storage of
-# radioactive waste from reactor operations and servicing.
-update_params({
-    # Building volumes for waste management facility structures
-    'Radioactive Waste Processing Building Roof Volume': 200,  # m^3
-    'Radioactive Waste Processing Building Basement Volume': 200,  # m^3
-    'Radioactive Waste Processing Building Walls Volume': 150,  # m^3
-    'Radioactive Waste Processing Building Volume': 2000,  # m^3
+params['Used Fuel Storage Lifetime Capacity'] = params['Generating Sites Count'] * 50 / (params['Cycle Length'] + params['GenSite Downtime']) * params['Fuel Mass In Core']
 
-    'Radioactive Waste Storage Building Roof Volume': 300,  # m^3
-    'Radioactive Waste Storage Building Basement Volume': 300,  # m^3
-    'Radioactive Waste Storage Building Walls Volume': 250,  # m^3
-    'Radioactive Waste Storage Building Volume': 3000,  # m^3
+params['SER Security Building Area'] = 8775 / (3.2808 ** 2)
+params['SER Administration Building Area'] = 258000 / (3.2808 ** 2)
 
-    'Radioactive Waste Management Facility Integrated Control Room Roof Volume': 50,  # m^3
-    'Radioactive Waste Management Facility Integrated Control Room Basement Volume': 50,  # m^3
-    'Radioactive Waste Management Facility Integrated Control Room Walls Volume': 40,  # m^3
-    'Radioactive Waste Management Facility Integrated Control Room Volume': 500,  # m^3
+params['SER Helium Flowrate'] = params['He Gas Replenishment'] / (0.9 * 8766 * 3600)
 
-    'Radioactive Waste Management Facility Admin Building Roof Volume': 80,  # m^3
-    'Radioactive Waste Management Facility Admin Building Basement Volume': 80,  # m^3
-    'Radioactive Waste Management Facility Admin Building Walls Volume': 60,  # m^3
-    'Radioactive Waste Management Facility Admin Building Volume': 800,  # m^3
+params['SER Local Transport Vehicle Count'] = 80  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
+params['SER Utility Vehicle Count'] = 100  # REVIEW NEEDED: provisional value based on the old general transport vehicle count.
+params['Reactor Transport Vehicle Count'] = np.ceil((params['Fleet'] / params['Cycle Length']) * (params['Roundtrip Time Reactor Transport']+params['Dwell Time Reactor Transport GenSite']+params['Dwell Time Reactor Transport Serv']) + 1)
+params['Helium Transport Truck Count'] = np.ceil(params['Fleet'] * params['Annual Coolant Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
+params['Water Tanker Truck Count'] = np.ceil(params['Fleet'] * params['Water Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
+params['Maintenance Truck Count'] = np.ceil(params['Fleet'] * params['Maintenance Visit Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
 
-    'Radioactive Waste Management Facility Security Building Roof Volume': 30,  # m^3
-    'Radioactive Waste Management Facility Security Building Basement Volume': 30,  # m^3
-    'Radioactive Waste Management Facility Security Building Walls Volume': 25,  # m^3
-    'Radioactive Waste Management Facility Security Building Volume': 300,  # m^3
+params['SER Radiation Monitor Count'] = np.ceil(params['SER Site Perimeter'] / 1000 * 1.2)
+params['SER Security Camera Count'] = np.ceil(params['SER Campus Area'] / params['Manufacturing Campus Area'] * params['MFG Security Camera Count'])
+params['SER Motion Detector Count'] = np.ceil(params['SER Campus Area'] / params['Manufacturing Campus Area'] * params['MFG Motion Detector Count'])
 
-    # Perimeter of the radioactive waste management facility
-    'Radioactive Waste Management Facility Perimeter': 2000,  # meters
-})
+params['Reactor Transport Cask Count'] = round(params['Fleet'] * ((4 / 12) / params['Cycle Length']) * 1.5, -1)
+params['Annual Used Fuel Cask Consumption'] = 1 * params['Servicing Rate']
+params['Annual Reactor Cask Replacement'] = np.ceil(0.05 * params['Reactor Transport Cask Count'])
+params['Annual Radwaste Cask Consumption'] = 0.5 * params['Servicing Rate']
 
-# --- Transportation Parameters --- 
-# Vehicles and equipment for transporting reactors, fuel, and waste between facilities.
-update_params({
-    # Local transport vehicles (within the central facility complex)
-    'Local Transport Vehicle Count': 80,  # number of vehicles inside the facility
-
-    # Vehicles for transporting complete reactor units to/from field sites
-    'Reactor Transport Vehicle Count': 20,  # number of vehicles
-
-    # Vehicles for transporting spare parts and radioactive waste
-    'Spares/Waste Transport Vehicle Count': 50,  # number of vehicles
-
-    # General purpose transport vehicles
-    'General Transport Vehicle Count': 100,  # number of vehicles
-})
-
-# --- Cask Parameters ---
-# Specialized containers for transporting spent fuel, reactors, and radioactive waste inside facility
-# These are consumable items that need periodic replacement.
-update_params({
-    # Annual replacement rate for spent fuel transport casks
-    'Annual Spent Fuel Cask Replacement': 20,  # casks/year — 20 casks are used and disposed of annually for spent fuel transport
-
-    # Annual replacement rate for reactor transport casks
-    'Annual Reactor Cask Replacement': 10,  # casks/year
-
-    # Annual replacement rate for radioactive waste transport casks
-    'Annual Rad Waste Cask Replacement': 50,  # casks/year
-})
-
-# --- PTC (Production Tax Credit) ---
-# The PTC is a per-MWh credit earned for every MWh of electricity produced and sold
-# during the credit period. Under the IRA (Section 45Y), advanced nuclear facilities
-# placed in service after Dec 31, 2024 may qualify for the Clean Electricity PTC.
-# Note: ITC and PTC are mutually exclusive — only one can be selected per project.
-
-# Base credit rate ($/MWh):
-#   - $3/MWh  if prevailing wage requirements are NOT met
-#   - $15/MWh if prevailing wage + apprenticeship requirements ARE met (5x multiplier)
-# Assumed here: $15/MWh (prevailing wage requirements met)
-# Units: $/MWh
-params['PTC credit value'] = 15.0  # $/MWh
-
-# Duration of the PTC credit period.
-# Under the IRA Section 45Y, the credit is available for 10 years after the facility
-# is placed in service.
-# Units: years
-# Typical value: 10 years
-params['PTC credit period'] = 10  # years
-
-# --- PTC Bonus Multipliers (optional, stackable) ---
-# Under the IRA, additional bonus credits can be stacked on top of the base PTC
-# if the project meets certain criteria. Each bonus is expressed as a fraction
-# added to the base multiplier of 1.0.
-# - domestic_content_bonus: +10% if the facility uses US-made iron, steel, and
-#   manufactured products (Section 45Y domestic content adder)
-#   Typical value: 0.10 (10%)
-# - energy_community_bonus: +10% if the facility is sited in an "energy community"
-#   (areas affected by coal plant closures or fossil fuel employment decline)
-#   Typical value: 0.10 (10%)
-# To disable bonuses, set both to 0.0 or remove them entirely.
-params['domestic_content_bonus'] = 0.10   # fraction — assumes domestic content standard is met
-params['energy_community_bonus'] = 0.10   # fraction — assumes facility is in an energy community
-
-# --- Corporate Tax Rate ---
-# The US federal corporate tax rate used to gross up the PTC tax credit to its
-# before-tax revenue equivalent in the LCOE calculation. Since MOUSE uses a
-# before-tax LCOE, the PTC must be converted to a before-tax equivalent.
-# The current US federal corporate tax rate is 21% (as of 2024).
-# Municipal utilities and non-profit cooperatives may use 0.0 (tax-exempt).
-# Units: fraction (e.g. 0.21 for 21%)
-# Typical values: 0.21 (federal only), 0.27 (federal + average state)
-params['Tax Rate'] = 0.21  # fraction
+params['Servicing Hot Cell Building Area'] = 0.0 + 411.428571 * (scale_var_SER ** 0.942)
+params['Helium Purification and Storage Building Area'] = 0.0 + 72.0 * (scale_var_SER ** 0.6198)
+params['SER Local Control Building Area'] = 40 * scale_var_SER
+params['SER Remote Control Building Area'] = 40 * scale_var_SER
+params['SER Rad Waste Management Building Area'] = 0.0 + 40.5 * (scale_var_SER ** 0.7447)
+params['Radwaste Storage Warehouses Area'] = 0.0 + 15422.94 * (scale_var_SER ** 0.994)
+params['SER Emergency Generator Power'] = 0.0 + 3.266667 * (scale_var_SER ** 0.632)
+params['Parts Service Center and Warehouse Building Area'] = 0.0 + 675.0 * (scale_var_SER ** 0.6021)
+params['Service Air Water Building Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
+params['SER Fire Station Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
+params['SER Guard Station Count'] = np.rint( 0.0 + 1.0 * (scale_var_SER ** 0.301) )
+params['Helicopter Count'] = np.rint( 0.0 + 0.5 * (scale_var_SER ** 0.301) )
 
 # **************************************************************************************************************************
 #                                           Sec. 12: Post Processing
 # **************************************************************************************************************************
 params['Number of Samples'] = 100  # number of samples for cost uncertainty analysis
 # Estimate costs using the cost database file and save the output to an Excel file
-# Note: Output will include both reactor costs and central facility costs (separate sheets).
 estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx')
 elapsed_time = (time.time() - time_start) / 60  # calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')

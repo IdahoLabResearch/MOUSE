@@ -8,7 +8,11 @@ import numpy as np
 
 
 def calculate_inflation_multiplier(file_path, base_dollar_year, cost_type, escalation_year):
-    
+    if pd.isna(base_dollar_year):
+        raise ValueError("Dollar Year is missing.")
+    if pd.isna(cost_type) or (isinstance(cost_type, str) and not cost_type.strip()):
+        raise ValueError("Inflation Type is missing.")
+
     base_dollar_year = int(base_dollar_year)
     escalation_year  = int(escalation_year)
     
@@ -22,22 +26,30 @@ def calculate_inflation_multiplier(file_path, base_dollar_year, cost_type, escal
     df = df.dropna(subset=['Year'])
     df['Year'] = df['Year'].astype(int)
 
+    valid_cost_types = [column for column in df.columns if column != 'Year']
+    if not isinstance(cost_type, str) or cost_type not in valid_cost_types:
+        raise ValueError(
+            f"Inflation Type '{cost_type}' is invalid. "
+            f"Expected exactly one of: {', '.join(valid_cost_types)}."
+        )
+
     # --- DEBUG: remove after issue is resolved ---
     # print("Year column dtype:", df['Year'].dtype)
     # print("Year values:", df['Year'].values)
     # print("Looking for:", base_dollar_year, type(base_dollar_year))
 
     if base_dollar_year not in df['Year'].values:
-        print(f"\033[91mBase Year : {base_dollar_year} not found in the Excel file.\033[0m")
+        raise ValueError(
+            f"Dollar Year {base_dollar_year} is not available in the Inflation Adjustment sheet."
+        )
 
     if escalation_year not in df['Year'].values:
-        print(f"\033[91mEscalation Year:  {escalation_year} not found in the Excel file.\033[0m")
+        raise ValueError(
+            f"Escalation Year {escalation_year} is not available in the Inflation Adjustment sheet."
+        )
 
-    if cost_type == 'NA':
-        multiplier = 1
-    else:    
-        multiplier = df.loc[df['Year'] == base_dollar_year, cost_type].values[0] / \
-                     df.loc[df['Year'] == escalation_year, cost_type].values[0]
+    multiplier = df.loc[df['Year'] == base_dollar_year, cost_type].values[0] / \
+                 df.loc[df['Year'] == escalation_year, cost_type].values[0]
 
     return multiplier
 
@@ -106,12 +118,17 @@ def escalate_cost_database(file_name, escalation_year, params, sheet_name="Cost 
     # Iterate through each row in the DataFrame
     for _, row in df.iterrows():
         if not pd.isna(row['Fixed Cost ($)']) or not pd.isna(row['Unit Cost']):
-            multiplier = calculate_inflation_multiplier(
-                file_name,
-                row['Dollar Year'],
-                row['Type'],
-                escalation_year
-            )
+            try:
+                multiplier = calculate_inflation_multiplier(
+                    file_name,
+                    row['Dollar Year'],
+                    row['Type'],
+                    escalation_year
+                )
+            except ValueError as error:
+                raise ValueError(
+                    f"{sheet_name} account {row['Account']}: {error}"
+                ) from error
         else:
             multiplier = 0
 
@@ -137,4 +154,3 @@ def escalate_cost_database(file_name, escalation_year, params, sheet_name="Cost 
         params[parameter] = value
 
     return df
-
