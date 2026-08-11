@@ -17,6 +17,7 @@ def servicing_params():
     params = {
         "Power MWt": 15.0,
         "Thermal Efficiency": 0.4,
+        "Annual Electricity Production": 15.0 * 0.4 * 0.9 * 365 * 24,
         "Annual Coolant Supply Frequency": 1,
         "Escalation Year": 2025,
         "Number of Samples": 1,
@@ -76,18 +77,27 @@ class ServicingCampusCostTest(unittest.TestCase):
             expected,
         )
 
-    def test_lcoe_uses_generating_sites_count(self):
+    def test_lcoe_uses_fleet_annual_electricity_production(self):
         years = self.params["Levelization Period"]
         rate = self.params["Discount Rate"]
         discount_sum = sum((1 + rate) ** -year for year in range(1, years + 1))
         annual_generation = (
-            self.params["Generating Sites Count"] * self.params["Annual Generation"]
+            self.params["Fleet"] * self.params["Annual Electricity Production"]
         )
         expected = (
             self.value("TCI") + self.value("Annual Cost") * discount_sum
         ) / (annual_generation * discount_sum)
         self.assertTrue(np.isfinite(self.value("LCOE")))
         self.assertAlmostEqual(self.value("LCOE"), expected, places=8)
+
+    def test_missing_annual_electricity_production_raises_clear_error(self):
+        params = dict(self.params)
+        del params["Annual Electricity Production"]
+        with self.assertRaisesRegex(
+            KeyError,
+            "Annual Electricity Production.*reactor operation calculation",
+        ):
+            bottom_up_cost_estimate_servicing_campus(str(DATABASE), params)
 
     def test_fleet_mode_false_skips_servicing_estimate(self):
         params = dict(self.params)

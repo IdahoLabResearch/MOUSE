@@ -214,8 +214,9 @@ def calculate_servicing_campus_TCI(df, params):
 def energy_cost_levelized_servicing_campus(params, df):
     """Add annual-cost summaries and the servicing contribution to fleet LCOE."""
     generating_sites = params['Generating Sites Count']
-    annual_generation_per_site = params['Annual Generation']
-    fleet_annual_generation = generating_sites * annual_generation_per_site
+    fleet_size = params['Fleet']
+    annual_generation_per_reactor = params['Annual Electricity Production']
+    fleet_annual_generation = fleet_size * annual_generation_per_reactor
     if fleet_annual_generation <= 0:
         raise ValueError("Fleet annual electricity generation must be greater than zero.")
 

@@ -442,6 +442,12 @@ def bottom_up_cost_estimate_servicing_campus(cost_database_filename, params):
     if not params.get('Fleet Mode', False):
         return None
 
+    if 'Annual Electricity Production' not in params:
+        raise KeyError(
+            "'Annual Electricity Production' is missing. The reactor operation "
+            "calculation must run before the servicing-campus estimate."
+        )
+
     escalated_cost = escalate_cost_database(
         cost_database_filename,
         params['Escalation Year'],

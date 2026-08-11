@@ -25,7 +25,6 @@ params['Fuel Mass In Core'] = 408.890 #[kgU] This is a MOUSE output.
 params['Water Supply Frequency'] = 4 #[year^-1]
 params['Maintenance Visit Frequency'] = 1 / (params['Cycle Length'] / 2)
 params['GenSite Downtime'] = 1/12
-params['Annual Generation'] = params['Power MWt'] * params['Thermal Efficiency'] * 0.9 * 8766
 
 #To Discuss: Not Used in Cost Database at this time
 params['GenSite Operators Per Shift'] = 1
