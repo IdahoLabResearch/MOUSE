@@ -137,7 +137,7 @@ params['Shutdown Margin Calc'] = False  # True or False
 # coefficient is then calculated in units of pcm/K.
 # A negative coefficient indicates the reactor is self-stabilizing (desired behavior).
 # Recommended: True for safety analysis; can be set to False to save computation time.
-params['Isothermal Temperature Coefficients'] = True  # True or False
+# params['Isothermal Temperature Coefficients'] = True  # True or False
 
 # --- Temperature Perturbation ---
 # The temperature step (in Kelvin) used for the isothermal temperature coefficient calculation.
@@ -147,10 +147,15 @@ params['Isothermal Temperature Coefficients'] = True  # True or False
 # avoiding nonlinear effects. 
 # Units: Kelvin
 # This parameter is REQUIRED only when 'Isothermal Temperature Coefficients' is True.
-params['Temperature Perturbation'] = 100  # K
+# params['Temperature Perturbation'] = 100  # K
 
 heat_flux_monitor = monitor_heat_flux(params)
-run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
+# run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
+params['Fuel Lifetime'] = 2003 # days
+params['Mass U235'] = 80972 # grams
+params['Mass U238'] = 327919 # grams
+params['Uranium Mass'] = 409 # Kg
+
 fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # **************************************************************************************************************************
@@ -317,7 +322,11 @@ params['Fleet Mode'] = True
 
 ## User Inputs
 
-params['Production Rate'] = 100 #Must be an integer.
+params['Production Rate'] = 100 #reactors per year
+params['Deployment Period'] = 10 # years
+params['Fleet'] = params['Deployment Period'] * params['Production Rate']
+params['Generating Sites Count'] = params['Fleet']  # i think that there was something here to account for capacity factor or something but ..
+#my concern here is that we are double counting since the capacity factor is already included in the electricity generation estimation
 
 params['Average Distance From Serv to GenSite'] = 1000 #miles (statutory miles)
 
@@ -335,64 +344,60 @@ params['Shift To Headcount'] = 5
 ## GENERATING SITE
 
 params['CoolantInventoryRPV_Mass'] = 40.5125 #kg
-params['Cycle Length'] = 3 #[years] This is a MOUSE ouput, and we're ignoring that value in order to be conservative.
-params['Fuel Mass In Core'] = 408.890 #[kgU] This is a MOUSE output.
+params['Cycle Length'] =params['Fuel Lifetime']+ params['Refueling Period']   #3 #[years] This is a MOUSE ouput, and we're ignoring that value in order to be conservative.
+params['Fuel Mass In Core'] = params['Uranium Mass'] #[kgU] This is a MOUSE output.
 params['Water Supply Frequency'] = 4 #[year^-1]
 params['Maintenance Visit Frequency'] = 1 / (params['Cycle Length'] / 2)
-params['GenSite Downtime'] = 1/12
-params['Annual Generation'] = params['Power MWt'] * params['Thermal Efficiency'] * 0.9 * 8766
+params['GenSite Downtime'] = 1/12 # years (one month)
+params['Annual Generation'] =  params['Annual Electricity Production']
 
 #To Discuss: Not Used in Cost Database at this time
-params['GenSite Operators Per Shift'] = 1
-params['GenSite Security Staff Per Shift'] = 1
-params['GenSite Shifts Per Day'] = 2
-params['GenSite Staff Rotation Working Fraction'] = 0.45
+# params['GenSite Operators Per Shift'] = 1
+# params['GenSite Security Staff Per Shift'] = 1
+# params['GenSite Shifts Per Day'] = 2
+# params['GenSite Staff Rotation Working Fraction'] = 0.45
 
 
 ## FLEET
 
-#ToDo: 9.231 and 10 should change with cycle length
-params['Generating Sites Count'] = int(np.floor(9.231*params['Production Rate']))
-params['Fleet'] = 10 * params['Production Rate']
-#/ThisSectionToDo
 
 
 ## MANUFACTURING CAMPUS
 
 params['Manufacturing Campus Area'] = 56.1651 +	1.2066 * params['Production Rate'] ** 0.3919
 
-params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * (params['Production Rate'] ** 0.0001)
-params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * (params['Production Rate'] ** 0.5539)
-params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * (params['Production Rate'] ** 0.4768)
-params['MFG Warehouse Staff'] = np.ceil( 0.8576 + 0.2539 * (params['Production Rate'] ** 0.6533) )
-params['MFG Security Staff Per Shift'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
-params['MFG Maintenance Staff Headcount'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
-params['MFG Local Transport Vehicle Count'] = np.rint( -4340.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
-params['MFG Utility Vehicle Count'] = np.rint( -4339.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
-# params['MFG Guard Station Count'] = 1.0000 + 1e-15 * (params['Production Rate'] ** 5.0000)
-if params['Production Rate'] <= 500:
-    params['MFG Guard Station Count'] = 1
+# params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * (params['Production Rate'] ** 0.0001)
+# params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * (params['Production Rate'] ** 0.5539)
+# params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * (params['Production Rate'] ** 0.4768)
+# params['MFG Warehouse Staff'] = np.ceil( 0.8576 + 0.2539 * (params['Production Rate'] ** 0.6533) )
+# params['MFG Security Staff Per Shift'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
+# params['MFG Maintenance Staff Headcount'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
+# params['MFG Local Transport Vehicle Count'] = np.rint( -4340.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
+# params['MFG Utility Vehicle Count'] = np.rint( -4339.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
+# # params['MFG Guard Station Count'] = 1.0000 + 1e-15 * (params['Production Rate'] ** 5.0000)
+# if params['Production Rate'] <= 500:
+#     params['MFG Guard Station Count'] = 1
 
-elif params['Production Rate'] < 2000:
-    params['MFG Guard Station Count'] = 2
+# elif params['Production Rate'] < 2000:
+#     params['MFG Guard Station Count'] = 2
 
-else:
-    params['MFG Guard Station Count'] = np.rint(params['Production Rate']/1000)
+# else:
+#     params['MFG Guard Station Count'] = np.rint(params['Production Rate']/1000)
 
 
-params['MFG Campus Power'] = 1.295614 +	0.00813495 * params['Production Rate'] **  0.620945 #MWe
-params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
+# params['MFG Campus Power'] = 1.295614 +	0.00813495 * params['Production Rate'] **  0.620945 #MWe
+# params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
 
-params['MFG Testing Line Annual Rate'] = int(np.floor(8000/92))
-params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
-params['MFG Testing Engineering Headcount'] = 6 + ((params['MFG Testing Line Count'] - 1)*2)
-params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
+# params['MFG Testing Line Annual Rate'] = int(np.floor(8000/92))
+# params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
+# params['MFG Testing Engineering Headcount'] = 6 + ((params['MFG Testing Line Count'] - 1)*2)
+# params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
 
 
 #ToDo: Road Length and Site Perimeter shouldn't be the same.
-params['MFG Road Length'] =  -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
-params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
-params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (params['Production Rate'] ** 0.22340396387855505)
+# params['MFG Road Length'] =  -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
+# params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
+# params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (params['Production Rate'] ** 0.22340396387855505)
 
 params['MFG Security Camera Count'] = 200 + -157.0909090909111 * (params['Production Rate'] ** -0.037788560889399164)
 params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (params['Production Rate'] ** 0.35218251811136164)
@@ -417,8 +422,8 @@ params['Radioactive Waste Processing Hot Cell Count'] = 1
 params['He Gas Replenishment Per Hot Cell'] = ((3*3*5) * 2 * params['Servicing Hot Cell Annual Rate'] * 2 + 0.1 * (10*30*7)*12) * params['m3_to_kg_He_RT_atmospheric']
 params['He Gas Replenishment'] = (params['Servicing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['Radioactive Waste Processing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['CoolantInventoryRPV_Mass'] * params['Servicing Rate'])
 
-params['Operators per reactor monitored'] = 0.25
-params['Operator headcount per reactor monitored'] = params['Operators per reactor monitored'] * params['Shift To Headcount']
+# params['Operators per reactor monitored'] = 0.25
+# params['Operator headcount per reactor monitored'] = params['Operators per reactor monitored'] * params['Shift To Headcount']
 params['SER Number of Operators Per Shift'] = np.ceil( 0.0 + 5.625 * (scale_var_SER ** 0.426) )
 params['SER Engineering Headcount'] = np.ceil( 0.0 + 20.0 * (scale_var_SER ** 0.301) )
 params['SER Maintenance Staff Per Shift'] = 40  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
