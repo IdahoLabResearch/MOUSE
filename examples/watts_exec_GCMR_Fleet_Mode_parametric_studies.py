@@ -4,7 +4,8 @@
 This script performs a parametric cost study for a Gas Cooled Microreactor (GCMR)
 with Fleet Mode enabled. Each run records the standard reactor cost metrics and,
 automatically, the servicing-campus OCC, TCI, annual cost, LCOE, per-reactor
-metrics, and their standard deviations.
+metrics, high-level accounts 10, 20, 30, 40, 60, and 70, and their standard
+deviations.
 
 Fleet Mode represents a reactor fleet supported by two shared campuses:
   - Manufacturing Campus: manufactures and tests new reactor units.

@@ -555,8 +555,14 @@ def bottom_up_cost_estimate_servicing_campus(cost_database_filename, params):
 
 
 def create_servicing_campus_cost_dictionary(df):
-    """Extract Fleet Mode summary metrics for a parametric-study CSV row."""
+    """Extract Fleet Mode summary and high-level accounts for a CSV row."""
     accounts = {
+        10: 'Capitalized Pre-Construction Costs',
+        20: 'Capitalized Direct Costs',
+        30: 'Capitalized Indirect Services Cost',
+        40: 'Capitalized Training Costs',
+        60: 'Capitalized Financial Costs',
+        70: 'Annualized O&M Cost',
         'OCC': 'OCC',
         'OCC per reactor': 'OCC per reactor',
         'TCI': 'TCI',
@@ -571,7 +577,7 @@ def create_servicing_campus_cost_dictionary(df):
         matching_rows = df.loc[df['Account'] == account]
         if matching_rows.empty:
             raise KeyError(
-                f"Servicing-campus result is missing required summary account '{account}'."
+                f"Servicing-campus result is missing required tracked account '{account}'."
             )
         row = matching_rows.iloc[0]
         tracked_costs[f'Servicing Campus {label}'] = row['Value']
