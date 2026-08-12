@@ -3,8 +3,13 @@ import unittest
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
-from cost.cost_estimation import bottom_up_cost_estimate_servicing_campus
+from cost.cost_estimation import (
+    bottom_up_cost_estimate_servicing_campus,
+    create_servicing_campus_cost_dictionary,
+    format_servicing_campus_output,
+)
 from cost.cost_scaling import non_standard_cost_scale
 
 
@@ -55,6 +60,56 @@ class ServicingCampusCostTest(unittest.TestCase):
         for account in ["OCC", "OCC per reactor", "TCI", "TCI per reactor",
                         "Annual Cost", "Annual Cost per reactor", "LCOE"]:
             self.assertTrue((self.result["Account"] == account).any())
+
+    def test_excel_output_has_dynamic_integer_cost_and_lcoe_columns(self):
+        output = format_servicing_campus_output(self.result, self.params)
+        cost_column = "Estimated Cost ($ 2025)"
+        std_column = "Estimated Cost std ($ 2025)"
+        lcoe_column = "LCOE Contribution ($/MWh)"
+
+        self.assertNotIn("Value", output.columns)
+        self.assertNotIn("Value std", output.columns)
+        self.assertIn(cost_column, output.columns)
+        self.assertIn(std_column, output.columns)
+        self.assertIn(lcoe_column, output.columns)
+        self.assertEqual(str(output[cost_column].dtype), "Int64")
+        self.assertEqual(str(output[std_column].dtype), "Int64")
+        self.assertEqual(str(output[lcoe_column].dtype), "Int64")
+
+        account_10 = output.loc[output["Account"] == 10, lcoe_column].iloc[0]
+        discount_sum = sum(
+            (1 + self.params["Discount Rate"]) ** -year
+            for year in range(1, self.params["Levelization Period"] + 1)
+        )
+        discounted_generation = (
+            self.params["Fleet"]
+            * self.params["Annual Electricity Production"]
+            * discount_sum
+        )
+        self.assertEqual(account_10, int(self.value(10) / discounted_generation))
+
+        account_711 = output.loc[output["Account"] == 711, lcoe_column].iloc[0]
+        fleet_annual_generation = (
+            self.params["Fleet"] * self.params["Annual Electricity Production"]
+        )
+        self.assertEqual(account_711, int(self.value(711) / fleet_annual_generation))
+
+    def test_parametric_summary_tracks_servicing_values_without_foak_noak(self):
+        summary = pd.DataFrame({
+            "Account": [
+                "OCC", "OCC per reactor", "TCI", "TCI per reactor",
+                "Annual Cost", "Annual Cost per reactor", "LCOE",
+            ],
+            "Value": [100, 10, 120, 12, 20, 2, 3],
+            "Value std": [5, 0.5, 6, 0.6, 1, 0.1, 0.2],
+        })
+        tracked = create_servicing_campus_cost_dictionary(summary)
+
+        self.assertEqual(tracked["Servicing Campus OCC"], 100)
+        self.assertEqual(tracked["Servicing Campus OCC std"], 5)
+        self.assertEqual(tracked["Servicing Campus LCOE"], 3)
+        self.assertEqual(tracked["Servicing Campus LCOE std"], 0.2)
+        self.assertFalse(any("FOAK" in key or "NOAK" in key for key in tracked))
 
     def test_database_ratios_populate_derived_accounts(self):
         direct_cost = self.value(20)

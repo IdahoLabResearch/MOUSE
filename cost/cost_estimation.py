@@ -264,6 +264,63 @@ def transform_dataframe(df):
     return df
 
 
+def format_servicing_campus_output(df, params):
+    """Prepare the servicing-campus table for its Excel output sheet.
+
+    The estimator retains floating-point precision internally.  This formatter
+    adds per-account contributions to fleet LCOE, gives the cost columns
+    escalation-year-specific names, and converts displayed numerical results to
+    integers without changing the values used by later calculations.
+    """
+    output = df.copy()
+    escalation_year = params['Escalation Year']
+    cost_column = f'Estimated Cost ($ {escalation_year})'
+    cost_std_column = f'Estimated Cost std ($ {escalation_year})'
+    lcoe_column = 'LCOE Contribution ($/MWh)'
+
+    lifetime = int(params['Levelization Period'])
+    discount_rate = params['Discount Rate']
+    discount_sum = sum(
+        (1 + discount_rate) ** -year
+        for year in range(1, lifetime + 1)
+    )
+    fleet_annual_generation = (
+        params['Fleet'] * params['Annual Electricity Production']
+    )
+    discounted_generation = fleet_annual_generation * discount_sum
+    if discounted_generation <= 0:
+        raise ValueError("Fleet discounted electricity generation must be greater than zero.")
+
+    account_prefix = output['Account'].astype(str).str[0]
+    capital_mask = account_prefix.isin(['1', '2', '3', '4', '5', '6'])
+    annual_mask = account_prefix.isin(['7', '8'])
+
+    output[lcoe_column] = np.nan
+    output.loc[capital_mask, lcoe_column] = (
+        output.loc[capital_mask, 'Value'] / discounted_generation
+    )
+    output.loc[annual_mask, lcoe_column] = (
+        output.loc[annual_mask, 'Value'] * discount_sum / discounted_generation
+    )
+
+    output.rename(
+        columns={
+            'Value': cost_column,
+            'Value std': cost_std_column,
+        },
+        inplace=True,
+    )
+
+    # Use pandas' nullable integer type so blank LCOE cells remain blank in
+    # Excel while every displayed numerical result has no fractional part.
+    for column in (cost_column, cost_std_column, lcoe_column):
+        output[column] = output[column].apply(
+            lambda value: int(value) if pd.notna(value) else pd.NA
+        ).astype('Int64')
+
+    return output
+
+
 def learning_rate_multiplier(learning_rate, number_of_units):
     return pow(1-learning_rate, np.log2(min(100, number_of_units)))
 
@@ -497,6 +554,32 @@ def bottom_up_cost_estimate_servicing_campus(cost_database_filename, params):
     return result.loc[nonzero_mask].reset_index(drop=True)
 
 
+def create_servicing_campus_cost_dictionary(df):
+    """Extract Fleet Mode summary metrics for a parametric-study CSV row."""
+    accounts = {
+        'OCC': 'OCC',
+        'OCC per reactor': 'OCC per reactor',
+        'TCI': 'TCI',
+        'TCI per reactor': 'TCI per reactor',
+        'Annual Cost': 'Annual Cost',
+        'Annual Cost per reactor': 'Annual Cost per reactor',
+        'LCOE': 'LCOE',
+    }
+    tracked_costs = {}
+
+    for account, label in accounts.items():
+        matching_rows = df.loc[df['Account'] == account]
+        if matching_rows.empty:
+            raise KeyError(
+                f"Servicing-campus result is missing required summary account '{account}'."
+            )
+        row = matching_rows.iloc[0]
+        tracked_costs[f'Servicing Campus {label}'] = row['Value']
+        tracked_costs[f'Servicing Campus {label} std'] = row['Value std']
+
+    return tracked_costs
+
+
 def parametric_studies(cost_database_filename, tracked_params_list):
     import inspect
 
@@ -513,6 +596,18 @@ def parametric_studies(cost_database_filename, tracked_params_list):
 
     detailed_cost_table = bottom_up_cost_estimate(cost_database_filename, params)
     tracked_costs = create_cost_dictionary(detailed_cost_table, params, tracked_params_list)
+
+    # Fleet Mode adds its shared-campus results automatically, just as the
+    # existing workflow automatically adds the reactor summary accounts.  The
+    # user's tracked_params_list remains reserved for input/design parameters.
+    if params.get('Fleet Mode', False):
+        servicing_cost_table = bottom_up_cost_estimate_servicing_campus(
+            cost_database_filename,
+            params,
+        )
+        tracked_costs.update(
+            create_servicing_campus_cost_dictionary(servicing_cost_table)
+        )
 
     file_exists = os.path.isfile(output_csv_filename)
 
@@ -565,7 +660,11 @@ def detailed_bottom_up_cost_estimate(cost_database_filename):
             if nan_mask.any():
                 print("WARNING: NaN values in servicing campus accounts:")
                 print(detailed_servicing_cost_table.loc[nan_mask, ['Account', 'Account Title'] + list(numerical_columns)])
-            detailed_servicing_cost_table.to_excel(
+            servicing_output = format_servicing_campus_output(
+                detailed_servicing_cost_table,
+                params,
+            )
+            servicing_output.to_excel(
                 writer,
                 sheet_name="servicing campus cost estimate",
                 index=False,
