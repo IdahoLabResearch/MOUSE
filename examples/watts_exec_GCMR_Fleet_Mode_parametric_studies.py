@@ -67,12 +67,12 @@ update_params({
     'Common Temperature': 850,  # Kelvins
     'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
     'Control Drum Reflector': 'Graphite',  # The reflector material in the control drums
-    'HX Material': 'SS316', 
+    'HX Material': 'SS316',
 })
 
 # **************************************************************************************************************************
 #                                           Sec. 2: Geometry: Fuel Pins, Moderator Pins, Coolant, Hexagonal Lattice
-# **************************************************************************************************************************  
+# **************************************************************************************************************************
 
 update_params({
     # fuel pin details
@@ -80,7 +80,7 @@ update_params({
     'Fuel Pin Radii': [0.0250, 0.0350, 0.0390, 0.0425, 0.0465],  # cm # https://art.inl.gov/NRC%20Training%202019/04_TRISO_Fuel.pdf
     'Compact Fuel Radius': 0.6225,  # cm # The radius of the area that is occupied by the TRISO particles (fuel compact/ fuel element)
     'Packing Fraction': 0.3,
-    
+
     # Coolant channel and booster dimensions
     'Coolant Channel Radius': 0.35,  # cm
     'Moderator Booster Radii': [0.55],  # cm
@@ -96,19 +96,19 @@ params['Active Height'] = 250
 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
-# ************************************************************************************************************************** 
+# **************************************************************************************************************************
 update_params({
-    'Drum Radius': 9, # cm   
+    'Drum Radius': 9, # cm
     'Drum Absorber Thickness': 1, # cm
     'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
     })
 calculate_drums_volumes_and_masses(params)
-calculate_reflector_mass_GCMR(params)          
-calculate_moderator_mass_GCMR(params) 
+calculate_reflector_mass_GCMR(params)
+calculate_moderator_mass_GCMR(params)
 
 # **************************************************************************************************************************
 #                                           Sec. 4: Overall System
-# ************************************************************************************************************************** 
+# **************************************************************************************************************************
 update_params({
     'Power MWt': 15,  # MWt
     'Thermal Efficiency': 0.4,
@@ -117,7 +117,7 @@ update_params({
                      30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 120.0]  # MWd_per_Kg
     })
 
-params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency'] 
+params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency']
 params['Heat Flux'] = calculate_heat_flux_TRISO(params) # MW/m^2
 
 # **************************************************************************************************************************
@@ -146,7 +146,7 @@ params['Shutdown Margin Calc'] = False  # True or False
 # Must be large enough to produce a keff difference above OpenMC Monte Carlo statistical
 # noise, but small enough to stay in the linear reactivity regime.
 # Typical range: 50–300 K. 100 K is chosen here as a balance between accuracy and
-# avoiding nonlinear effects. 
+# avoiding nonlinear effects.
 # Units: Kelvin
 # This parameter is REQUIRED only when 'Isothermal Temperature Coefficients' is True.
 # params['Temperature Perturbation'] = 100  # K
@@ -162,7 +162,7 @@ fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # **************************************************************************************************************************
 #                                         Sec. 6: Primary Loop + Balance of Plant
-# ************************************************************************************************************************** 
+# **************************************************************************************************************************
 params.update({
     'Primary Loop Purification': True,
     'Secondary HX Mass': 0,
@@ -197,7 +197,7 @@ GCMR_integrated_heat_transfer_vessel(params)
 
 # **************************************************************************************************************************
 #                                           Sec. 7 : Shielding
-# ************************************************************************************************************************** 
+# **************************************************************************************************************************
 update_params({
     'In Vessel Shield Thickness': 0,  # cm (no shield in vessel for GCMR)
     'In Vessel Shield Inner Radius': params['Core Radius'],
@@ -210,7 +210,7 @@ params['In Vessel Shield Outer Radius'] = params['Core Radius'] + params['In Ves
 
 # **************************************************************************************************************************
 #                                           Sec. 8 : Vessels Calculations
-# ************************************************************************************************************************** 
+# **************************************************************************************************************************
 update_params({
     'Vessel Radius': params['Core Radius'] + params['In Vessel Shield Thickness'],
     'Vessel Thickness': 3,  # cm — ASME Sec III Div 1 thin-shell with 4 MPa He, R=60-100 cm, S=138 MPa SA-508 at 350°C, +3 mm corrosion (was 1, below ASME pressure-driven minimum)
@@ -320,162 +320,164 @@ update_params({
 # Fleet Mode estimates shared manufacturing and servicing campuses for a fleet of
 # GCMRs. Campus sizes and resource requirements are driven primarily by the annual
 # reactor production rate.
-params['Fleet Mode'] = True
+def update_fleet_mode_params(production_rate):
+    """Recalculate every Fleet Mode parameter for one production-rate case."""
+    params['Fleet Mode'] = True
 
-## User Inputs
+    ## User Inputs
 
-params['Production Rate'] = 100 #reactors per year
-params['Deployment Period'] = 10 # years
-params['Fleet'] = params['Deployment Period'] * params['Production Rate']
-params['Generating Sites Count'] = params['Fleet']  # i think that there was something here to account for capacity factor or something but ..
-#my concern here is that we are double counting since the capacity factor is already included in the electricity generation estimation
+    params['Production Rate'] = production_rate #reactors per year
+    params['Deployment Period'] = 10 # years
+    params['Fleet'] = params['Deployment Period'] * params['Production Rate']
+    params['Generating Sites Count'] = params['Fleet']  # i think that there was something here to account for capacity factor or something but ..
+    #my concern here is that we are double counting since the capacity factor is already included in the electricity generation estimation
 
-params['Average Distance From Serv to GenSite'] = 1000 #miles (statutory miles)
+    params['Average Distance From Serv to GenSite'] = 1000 #miles (statutory miles)
 
-# ***
-## END of User Inputs
-# ***
-
-
-## CONSTANTS
-
-params['m3_to_kg_He_RT_atmospheric'] = 0.1661 #kg/m^3
-params['Shift To Headcount'] = 5
+    # ***
+    ## END of User Inputs
+    # ***
 
 
-## GENERATING SITE
+    ## CONSTANTS
 
-params['CoolantInventoryRPV_Mass'] = 40.5125 #kg
-params['Cycle Length'] = (params['Fuel Lifetime'] + params['Refueling Period']) / 365  # years
-params['Fuel Mass In Core'] = params['Uranium Mass'] #[kgU] This is a MOUSE output.
-params['Water Supply Frequency'] = 4 #[year^-1]
-params['Maintenance Visit Frequency'] = 1 / (params['Cycle Length'] / 2)
-params['GenSite Downtime'] = 1/12 # years (one month)
-
-#To Discuss: Not Used in Cost Database at this time
-# params['GenSite Operators Per Shift'] = 1
-# params['GenSite Security Staff Per Shift'] = 1
-# params['GenSite Shifts Per Day'] = 2
-# params['GenSite Staff Rotation Working Fraction'] = 0.45
+    params['m3_to_kg_He_RT_atmospheric'] = 0.1661 #kg/m^3
+    params['Shift To Headcount'] = 5
 
 
-## FLEET
+    ## GENERATING SITE
+
+    params['CoolantInventoryRPV_Mass'] = 40.5125 #kg
+    params['Cycle Length'] = (params['Fuel Lifetime'] + params['Refueling Period']) / 365  # years
+    params['Fuel Mass In Core'] = params['Uranium Mass'] #[kgU] This is a MOUSE output.
+    params['Water Supply Frequency'] = 4 #[year^-1]
+    params['Maintenance Visit Frequency'] = 1 / (params['Cycle Length'] / 2)
+    params['GenSite Downtime'] = 1/12 # years (one month)
+
+    #To Discuss: Not Used in Cost Database at this time
+    # params['GenSite Operators Per Shift'] = 1
+    # params['GenSite Security Staff Per Shift'] = 1
+    # params['GenSite Shifts Per Day'] = 2
+    # params['GenSite Staff Rotation Working Fraction'] = 0.45
+
+
+    ## FLEET
 
 
 
-## MANUFACTURING CAMPUS
+    ## MANUFACTURING CAMPUS
 
-params['Manufacturing Campus Area'] = 56.1651 +	1.2066 * params['Production Rate'] ** 0.3919
+    params['Manufacturing Campus Area'] = 56.1651 +	1.2066 * params['Production Rate'] ** 0.3919
 
-# params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * (params['Production Rate'] ** 0.0001)
-# params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * (params['Production Rate'] ** 0.5539)
-# params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * (params['Production Rate'] ** 0.4768)
-# params['MFG Warehouse Staff'] = np.ceil( 0.8576 + 0.2539 * (params['Production Rate'] ** 0.6533) )
-# params['MFG Security Staff Per Shift'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
-# params['MFG Maintenance Staff Headcount'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
-# params['MFG Local Transport Vehicle Count'] = np.rint( -4340.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
-# params['MFG Utility Vehicle Count'] = np.rint( -4339.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
-# # params['MFG Guard Station Count'] = 1.0000 + 1e-15 * (params['Production Rate'] ** 5.0000)
-# if params['Production Rate'] <= 500:
-#     params['MFG Guard Station Count'] = 1
+    # params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * (params['Production Rate'] ** 0.0001)
+    # params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * (params['Production Rate'] ** 0.5539)
+    # params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * (params['Production Rate'] ** 0.4768)
+    # params['MFG Warehouse Staff'] = np.ceil( 0.8576 + 0.2539 * (params['Production Rate'] ** 0.6533) )
+    # params['MFG Security Staff Per Shift'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
+    # params['MFG Maintenance Staff Headcount'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
+    # params['MFG Local Transport Vehicle Count'] = np.rint( -4340.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
+    # params['MFG Utility Vehicle Count'] = np.rint( -4339.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
+    # # params['MFG Guard Station Count'] = 1.0000 + 1e-15 * (params['Production Rate'] ** 5.0000)
+    # if params['Production Rate'] <= 500:
+    #     params['MFG Guard Station Count'] = 1
 
-# elif params['Production Rate'] < 2000:
-#     params['MFG Guard Station Count'] = 2
+    # elif params['Production Rate'] < 2000:
+    #     params['MFG Guard Station Count'] = 2
 
-# else:
-#     params['MFG Guard Station Count'] = np.rint(params['Production Rate']/1000)
-
-
-# params['MFG Campus Power'] = 1.295614 +	0.00813495 * params['Production Rate'] **  0.620945 #MWe
-# params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
-
-# params['MFG Testing Line Annual Rate'] = int(np.floor(8000/92))
-# params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
-# params['MFG Testing Engineering Headcount'] = 6 + ((params['MFG Testing Line Count'] - 1)*2)
-# params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
+    # else:
+    #     params['MFG Guard Station Count'] = np.rint(params['Production Rate']/1000)
 
 
-#ToDo: Road Length and Site Perimeter shouldn't be the same.
-# params['MFG Road Length'] =  -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
-# params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
-# params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (params['Production Rate'] ** 0.22340396387855505)
+    # params['MFG Campus Power'] = 1.295614 +	0.00813495 * params['Production Rate'] **  0.620945 #MWe
+    # params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
 
-params['MFG Security Camera Count'] = 200 + -157.0909090909111 * (params['Production Rate'] ** -0.037788560889399164)
-params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (params['Production Rate'] ** 0.35218251811136164)
+    # params['MFG Testing Line Annual Rate'] = int(np.floor(8000/92))
+    # params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
+    # params['MFG Testing Engineering Headcount'] = 6 + ((params['MFG Testing Line Count'] - 1)*2)
+    # params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
 
 
-## SERVICING CAMPUS
+    #ToDo: Road Length and Site Perimeter shouldn't be the same.
+    # params['MFG Road Length'] =  -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
+    # params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
+    # params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (params['Production Rate'] ** 0.22340396387855505)
 
-params['SER Construction Duration'] = 120 #months; carried over from the former central-facility assumption.
-params['Servicing Rate'] = params['Fleet'] / params['Cycle Length']  # reactors/year
+    params['MFG Security Camera Count'] = 200 + -157.0909090909111 * (params['Production Rate'] ** -0.037788560889399164)
+    params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (params['Production Rate'] ** 0.35218251811136164)
 
-params['SER Campus Area'] = (760 - 160.5) * (params['Servicing Rate'] - 30) / (300 - 30) + 160.5
-params['SER Campus Land Area'] = params['SER Campus Area']
 
-scale_var_SER = np.rint(params['Servicing Rate'] / 3) #Value of 3 should remain hardcoded. Couldn't let production rate be the variable for the Servicing Campus directly, for flexibility, but the relationships were built based on production rate with our basic assumption of a 3:1 ratio between servicing rate and production rate. Simple fix was to define this variable (scale_var_SER).
+    ## SERVICING CAMPUS
 
-params['SER Switchyard Rating'] = 0 + 12 * scale_var_SER ** 0.698970
-params['SER Switchyard Average Power'] = params['SER Switchyard Rating']/2
+    params['SER Construction Duration'] = 120 #months; carried over from the former central-facility assumption.
+    params['Servicing Rate'] = params['Fleet'] / params['Cycle Length']  # reactors/year
 
-params['Servicing Hot Cell Annual Rate'] = int(np.floor(365* (11/12) / 3 ))
-params['Servicing Hot Cell Count'] = np.ceil( params['Servicing Rate'] / params['Servicing Hot Cell Annual Rate'] )
-params['Radioactive Waste Processing Hot Cell Count'] = 1
-params['He Gas Replenishment Per Hot Cell'] = ((3*3*5) * 2 * params['Servicing Hot Cell Annual Rate'] * 2 + 0.1 * (10*30*7)*12) * params['m3_to_kg_He_RT_atmospheric']
-params['He Gas Replenishment'] = (params['Servicing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['Radioactive Waste Processing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['CoolantInventoryRPV_Mass'] * params['Servicing Rate'])
+    params['SER Campus Area'] = (760 - 160.5) * (params['Servicing Rate'] - 30) / (300 - 30) + 160.5
+    params['SER Campus Land Area'] = params['SER Campus Area']
 
-params['SER Number of Operators Per Shift'] = np.ceil( 0.0 + 5.625 * (scale_var_SER ** 0.426) )
-params['SER Engineering Headcount'] = np.ceil( 0.0 + 20.0 * (scale_var_SER ** 0.301) )
-params['SER Maintenance Staff Per Shift'] = 40  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
-params['SER Security Staff Per Shift'] = 1  # REVIEW NEEDED: provisional value carried over from the old reactor-site staffing input.
+    scale_var_SER = np.rint(params['Servicing Rate'] / 3) #Value of 3 should remain hardcoded. Couldn't let production rate be the variable for the Servicing Campus directly, for flexibility, but the relationships were built based on production rate with our basic assumption of a 3:1 ratio between servicing rate and production rate. Simple fix was to define this variable (scale_var_SER).
 
-params['Roundtrip Time'] = 2*params['Average Distance From Serv to GenSite'] / 40 / (8760/2) #[years] based on average speed of 40 miles/hour, 12 hours of driving per day
-params['Roundtrip Time Reactor Transport'] = 2*params['Average Distance From Serv to GenSite'] / 15 / (8760/2) #[years] based on average speed of 15 miles/hour, 12 hours of driving per day
-params['Dwell Time GenSite'] = 1/365 #[years]
-params['Dwell Time Serv'] = 1/365 #[years]
-params['Dwell Time Reactor Transport GenSite'] = 2/365 #[years]
-params['Dwell Time Reactor Transport Serv'] = 2/365 #[years]
+    params['SER Switchyard Rating'] = 0 + 12 * scale_var_SER ** 0.698970
+    params['SER Switchyard Average Power'] = params['SER Switchyard Rating']/2
 
-#ToDo: Road Length and Site Perimeter shouldn't be the same.
-params['SER Road Length'] = -1539388.0000975644 + 1540607.3153829477 * (scale_var_SER ** 8.588964624690402e-05)
-params['SER Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (scale_var_SER ** 8.588964624690402e-05)
-params['SER Controlled Perimeter'] = 0
-params['SER Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (scale_var_SER ** 0.22340396387855505)
+    params['Servicing Hot Cell Annual Rate'] = int(np.floor(365* (11/12) / 3 ))
+    params['Servicing Hot Cell Count'] = np.ceil( params['Servicing Rate'] / params['Servicing Hot Cell Annual Rate'] )
+    params['Radioactive Waste Processing Hot Cell Count'] = 1
+    params['He Gas Replenishment Per Hot Cell'] = ((3*3*5) * 2 * params['Servicing Hot Cell Annual Rate'] * 2 + 0.1 * (10*30*7)*12) * params['m3_to_kg_He_RT_atmospheric']
+    params['He Gas Replenishment'] = (params['Servicing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['Radioactive Waste Processing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['CoolantInventoryRPV_Mass'] * params['Servicing Rate'])
 
-params['Used Fuel Storage Lifetime Capacity'] = params['Generating Sites Count'] * 50 / (params['Cycle Length'] + params['GenSite Downtime']) * params['Fuel Mass In Core']
+    params['SER Number of Operators Per Shift'] = np.ceil( 0.0 + 5.625 * (scale_var_SER ** 0.426) )
+    params['SER Engineering Headcount'] = np.ceil( 0.0 + 20.0 * (scale_var_SER ** 0.301) )
+    params['SER Maintenance Staff Per Shift'] = 40  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
+    params['SER Security Staff Per Shift'] = 1  # REVIEW NEEDED: provisional value carried over from the old reactor-site staffing input.
 
-params['SER Security Building Area'] = 8775 / (3.2808 ** 2)
-params['SER Administration Building Area'] = 258000 / (3.2808 ** 2)
+    params['Roundtrip Time'] = 2*params['Average Distance From Serv to GenSite'] / 40 / (8760/2) #[years] based on average speed of 40 miles/hour, 12 hours of driving per day
+    params['Roundtrip Time Reactor Transport'] = 2*params['Average Distance From Serv to GenSite'] / 15 / (8760/2) #[years] based on average speed of 15 miles/hour, 12 hours of driving per day
+    params['Dwell Time GenSite'] = 1/365 #[years]
+    params['Dwell Time Serv'] = 1/365 #[years]
+    params['Dwell Time Reactor Transport GenSite'] = 2/365 #[years]
+    params['Dwell Time Reactor Transport Serv'] = 2/365 #[years]
 
-params['SER Helium Flowrate'] = params['He Gas Replenishment'] / (0.9 * 8766 * 3600)
+    #ToDo: Road Length and Site Perimeter shouldn't be the same.
+    params['SER Road Length'] = -1539388.0000975644 + 1540607.3153829477 * (scale_var_SER ** 8.588964624690402e-05)
+    params['SER Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (scale_var_SER ** 8.588964624690402e-05)
+    params['SER Controlled Perimeter'] = 0
+    params['SER Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (scale_var_SER ** 0.22340396387855505)
 
-params['SER Local Transport Vehicle Count'] = 80  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
-params['SER Utility Vehicle Count'] = 100  # REVIEW NEEDED: provisional value based on the old general transport vehicle count.
-params['Reactor Transport Vehicle Count'] = np.ceil((params['Fleet'] / params['Cycle Length']) * (params['Roundtrip Time Reactor Transport']+params['Dwell Time Reactor Transport GenSite']+params['Dwell Time Reactor Transport Serv']) + 1)
-params['Helium Transport Truck Count'] = np.ceil(params['Fleet'] * params['Annual Coolant Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
-params['Water Tanker Truck Count'] = np.ceil(params['Fleet'] * params['Water Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
-params['Maintenance Truck Count'] = np.ceil(params['Fleet'] * params['Maintenance Visit Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
+    params['Used Fuel Storage Lifetime Capacity'] = params['Generating Sites Count'] * 50 / (params['Cycle Length'] + params['GenSite Downtime']) * params['Fuel Mass In Core']
 
-params['SER Radiation Monitor Count'] = np.ceil(params['SER Site Perimeter'] / 1000 * 1.2)
-params['SER Security Camera Count'] = np.ceil(params['SER Campus Area'] / params['Manufacturing Campus Area'] * params['MFG Security Camera Count'])
-params['SER Motion Detector Count'] = np.ceil(params['SER Campus Area'] / params['Manufacturing Campus Area'] * params['MFG Motion Detector Count'])
+    params['SER Security Building Area'] = 8775 / (3.2808 ** 2)
+    params['SER Administration Building Area'] = 258000 / (3.2808 ** 2)
 
-params['Reactor Transport Cask Count'] = round(params['Fleet'] * ((4 / 12) / params['Cycle Length']) * 1.5, -1)
-params['Annual Used Fuel Cask Consumption'] = 1 * params['Servicing Rate']
-params['Annual Reactor Cask Replacement'] = np.ceil(0.05 * params['Reactor Transport Cask Count'])
-params['Annual Radwaste Cask Consumption'] = 0.5 * params['Servicing Rate']
+    params['SER Helium Flowrate'] = params['He Gas Replenishment'] / (0.9 * 8766 * 3600)
 
-params['Servicing Hot Cell Building Area'] = 0.0 + 411.428571 * (scale_var_SER ** 0.942)
-params['Helium Purification and Storage Building Area'] = 0.0 + 72.0 * (scale_var_SER ** 0.6198)
-params['SER Local Control Building Area'] = 40 * scale_var_SER
-params['SER Remote Control Building Area'] = 40 * scale_var_SER
-params['SER Rad Waste Management Building Area'] = 0.0 + 40.5 * (scale_var_SER ** 0.7447)
-params['Radwaste Storage Warehouses Area'] = 0.0 + 15422.94 * (scale_var_SER ** 0.994)
-params['SER Emergency Generator Power'] = 0.0 + 3.266667 * (scale_var_SER ** 0.632)
-params['Parts Service Center and Warehouse Building Area'] = 0.0 + 675.0 * (scale_var_SER ** 0.6021)
-params['Service Air Water Building Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
-params['SER Fire Station Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
-params['SER Guard Station Count'] = np.rint( 0.0 + 1.0 * (scale_var_SER ** 0.301) )
-params['Helicopter Count'] = np.rint( 0.0 + 0.5 * (scale_var_SER ** 0.301) )
+    params['SER Local Transport Vehicle Count'] = 80  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
+    params['SER Utility Vehicle Count'] = 100  # REVIEW NEEDED: provisional value based on the old general transport vehicle count.
+    params['Reactor Transport Vehicle Count'] = np.ceil((params['Fleet'] / params['Cycle Length']) * (params['Roundtrip Time Reactor Transport']+params['Dwell Time Reactor Transport GenSite']+params['Dwell Time Reactor Transport Serv']) + 1)
+    params['Helium Transport Truck Count'] = np.ceil(params['Fleet'] * params['Annual Coolant Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
+    params['Water Tanker Truck Count'] = np.ceil(params['Fleet'] * params['Water Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
+    params['Maintenance Truck Count'] = np.ceil(params['Fleet'] * params['Maintenance Visit Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
+
+    params['SER Radiation Monitor Count'] = np.ceil(params['SER Site Perimeter'] / 1000 * 1.2)
+    params['SER Security Camera Count'] = np.ceil(params['SER Campus Area'] / params['Manufacturing Campus Area'] * params['MFG Security Camera Count'])
+    params['SER Motion Detector Count'] = np.ceil(params['SER Campus Area'] / params['Manufacturing Campus Area'] * params['MFG Motion Detector Count'])
+
+    params['Reactor Transport Cask Count'] = round(params['Fleet'] * ((4 / 12) / params['Cycle Length']) * 1.5, -1)
+    params['Annual Used Fuel Cask Consumption'] = 1 * params['Servicing Rate']
+    params['Annual Reactor Cask Replacement'] = np.ceil(0.05 * params['Reactor Transport Cask Count'])
+    params['Annual Radwaste Cask Consumption'] = 0.5 * params['Servicing Rate']
+
+    params['Servicing Hot Cell Building Area'] = 0.0 + 411.428571 * (scale_var_SER ** 0.942)
+    params['Helium Purification and Storage Building Area'] = 0.0 + 72.0 * (scale_var_SER ** 0.6198)
+    params['SER Local Control Building Area'] = 40 * scale_var_SER
+    params['SER Remote Control Building Area'] = 40 * scale_var_SER
+    params['SER Rad Waste Management Building Area'] = 0.0 + 40.5 * (scale_var_SER ** 0.7447)
+    params['Radwaste Storage Warehouses Area'] = 0.0 + 15422.94 * (scale_var_SER ** 0.994)
+    params['SER Emergency Generator Power'] = 0.0 + 3.266667 * (scale_var_SER ** 0.632)
+    params['Parts Service Center and Warehouse Building Area'] = 0.0 + 675.0 * (scale_var_SER ** 0.6021)
+    params['Service Air Water Building Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
+    params['SER Fire Station Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
+    params['SER Guard Station Count'] = np.rint( 0.0 + 1.0 * (scale_var_SER ** 0.301) )
+    params['Helicopter Count'] = np.rint( 0.0 + 0.5 * (scale_var_SER ** 0.301) )
 
 # **************************************************************************************************************************
 #                                           Sec. 12: Post Processing
@@ -493,8 +495,10 @@ tracked_params_list = [
     'Generating Sites Count',
 ]
 
-# Each parametric case appends one row to this example's output CSV. Derived
-# Fleet Mode quantities above are recalculated whenever the full case is run.
-parametric_studies('cost/Cost_Database.xlsx', tracked_params_list)
+# Each case recalculates all Fleet Mode dependencies and appends one row to this
+# example's output CSV.
+for production_rate in [1, 10, 100, 500, 1000]:
+    update_fleet_mode_params(production_rate)
+    parametric_studies('cost/Cost_Database.xlsx', tracked_params_list)
 elapsed_time = (time.time() - time_start) / 60  # calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')
