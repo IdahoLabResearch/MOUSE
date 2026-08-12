@@ -9,7 +9,14 @@ NONSTANDARD_COST_ACCOUNTS = {
 }
 
 
-def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent, params):
+def non_standard_cost_scale(
+    account,
+    unit_cost,
+    scaling_variable_value,
+    exponent,
+    params,
+    count_variable_value=None,
+):
     # pumps
     if account == 222.11 or account == 222.12:
         cost_multiplier = (0.2 / (1 - params['Pump Isentropic Efficiency'])) + 1
@@ -43,7 +50,22 @@ def non_standard_cost_scale(account, unit_cost, scaling_variable_value, exponent
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
     elif account == 712:
         cost_multiplier = params['FTEs Per Offsite Operator (24/7)']
-        cost = cost_multiplier * unit_cost * pow(1 / scaling_variable_value, exponent) 
+        if count_variable_value is None:
+            # Legacy reactor estimate: the scaling variable itself is
+            # Reactors Monitored Per Operator, so it is used as a divisor.
+            cost = cost_multiplier * unit_cost * pow(1 / scaling_variable_value, exponent)
+        else:
+            # Servicing-campus estimate: the database scaling variable is the
+            # fleet reactor/site count and the database count variable is
+            # Reactors Monitored Per Operator.
+            if count_variable_value <= 0:
+                raise ValueError(
+                    "'Reactors Monitored Per Operator' must be greater than zero."
+                )
+            operator_positions = (
+                pow(scaling_variable_value, exponent) / count_variable_value
+            )
+            cost = cost_multiplier * unit_cost * operator_positions
     elif account == 713:
         cost_multiplier = params['FTEs Per Security Staff (24/7)']
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
@@ -284,7 +306,12 @@ def scale_campus_cost(initial_database, params):
                     estimated_cost = 0
                 else:
                     estimated_cost = non_standard_cost_scale(
-                        row['Account'], unit_cost, scaling_variable_value, exponent, params
+                        row['Account'],
+                        unit_cost,
+                        scaling_variable_value,
+                        exponent,
+                        params,
+                        count_variable_value=count_variable_value,
                     )
 
             elif row['Standard Cost Equation?'] == 'standard':

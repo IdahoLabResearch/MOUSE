@@ -103,8 +103,6 @@ params['Radioactive Waste Processing Hot Cell Count'] = 1
 params['He Gas Replenishment Per Hot Cell'] = ((3*3*5) * 2 * params['Servicing Hot Cell Annual Rate'] * 2 + 0.1 * (10*30*7)*12) * params['m3_to_kg_He_RT_atmospheric']
 params['He Gas Replenishment'] = (params['Servicing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['Radioactive Waste Processing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['CoolantInventoryRPV_Mass'] * params['Servicing Rate'])
 
-params['Operators per reactor monitored'] = 0.25
-params['Operator headcount per reactor monitored'] = params['Operators per reactor monitored'] * params['Shift To Headcount']
 params['SER Number of Operators Per Shift'] = np.ceil( 0.0 + 5.625 * (scale_var_SER ** 0.426) )
 params['SER Engineering Headcount'] = np.ceil( 0.0 + 20.0 * (scale_var_SER ** 0.301) )
 params['SER Maintenance Staff Per Shift'] = 40  # REVIEW NEEDED: provisional value carried over from the old central-facility example.

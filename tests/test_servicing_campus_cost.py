@@ -19,6 +19,7 @@ def servicing_params():
         "Thermal Efficiency": 0.4,
         "Annual Electricity Production": 15.0 * 0.4 * 0.9 * 365 * 24,
         "Annual Coolant Supply Frequency": 1,
+        "Reactors Monitored Per Operator": 10,
         "Escalation Year": 2025,
         "Number of Samples": 1,
         "Interest Rate": 0.07,

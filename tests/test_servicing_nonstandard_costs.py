@@ -23,11 +23,37 @@ class ServicingNonstandardCostTest(unittest.TestCase):
             2.5 * 100.0 * 4.0,
         )
 
-    def test_account_712_uses_old_remote_monitoring_equation(self):
+    def test_account_712_preserves_old_reactor_equation(self):
         self.assertEqual(
             non_standard_cost_scale(712, 100.0, 8.0, 1.0, self.params),
             5.0 * 100.0 * (1.0 / 8.0),
         )
+
+    def test_account_712_uses_servicing_database_fleet_variables(self):
+        self.assertEqual(
+            non_standard_cost_scale(
+                712,
+                100.0,
+                1000.0,
+                1.0,
+                self.params,
+                count_variable_value=10.0,
+            ),
+            100.0 * (1000.0 / 10.0) * 5.0,
+        )
+
+    def test_account_712_rejects_zero_reactors_per_operator(self):
+        with self.assertRaisesRegex(
+            ValueError, "Reactors Monitored Per Operator.*greater than zero"
+        ):
+            non_standard_cost_scale(
+                712,
+                100.0,
+                1000.0,
+                1.0,
+                self.params,
+                count_variable_value=0.0,
+            )
 
     def test_account_713_uses_old_security_equation(self):
         self.assertEqual(
