@@ -42,6 +42,12 @@ class ServicingCampusCostTest(unittest.TestCase):
     def value(self, account):
         return self.result.loc[self.result["Account"] == account, "Value"].iloc[0]
 
+    def test_servicing_rate_is_fleet_divided_by_cycle_length(self):
+        self.assertAlmostEqual(
+            self.params["Servicing Rate"],
+            self.params["Fleet"] / self.params["Cycle Length"],
+        )
+
     def test_output_uses_single_value_columns(self):
         self.assertIn("Value", self.result.columns)
         self.assertIn("Value std", self.result.columns)

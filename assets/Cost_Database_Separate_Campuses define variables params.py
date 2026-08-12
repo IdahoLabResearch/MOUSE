@@ -87,7 +87,7 @@ params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (
 ## SERVICING CAMPUS
 
 params['SER Construction Duration'] = 120 #months; carried over from the former central-facility assumption.
-params['Servicing Rate'] = params['Cycle Length'] * params['Production Rate']
+params['Servicing Rate'] = params['Fleet'] / params['Cycle Length']  # reactors/year
 
 params['SER Campus Area'] = (760 - 160.5) * (params['Servicing Rate'] - 30) / (300 - 30) + 160.5
 params['SER Campus Land Area'] = params['SER Campus Area']

@@ -344,7 +344,7 @@ params['Shift To Headcount'] = 5
 ## GENERATING SITE
 
 params['CoolantInventoryRPV_Mass'] = 40.5125 #kg
-params['Cycle Length'] =params['Fuel Lifetime']+ params['Refueling Period']   #3 #[years] This is a MOUSE ouput, and we're ignoring that value in order to be conservative.
+params['Cycle Length'] = (params['Fuel Lifetime'] + params['Refueling Period']) / 365  # years
 params['Fuel Mass In Core'] = params['Uranium Mass'] #[kgU] This is a MOUSE output.
 params['Water Supply Frequency'] = 4 #[year^-1]
 params['Maintenance Visit Frequency'] = 1 / (params['Cycle Length'] / 2)
@@ -405,7 +405,7 @@ params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (
 ## SERVICING CAMPUS
 
 params['SER Construction Duration'] = 120 #months; carried over from the former central-facility assumption.
-params['Servicing Rate'] = params['Cycle Length'] * params['Production Rate']
+params['Servicing Rate'] = params['Fleet'] / params['Cycle Length']  # reactors/year
 
 params['SER Campus Area'] = (760 - 160.5) * (params['Servicing Rate'] - 30) / (300 - 30) + 160.5
 params['SER Campus Land Area'] = params['SER Campus Area']
