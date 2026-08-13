@@ -641,8 +641,8 @@ def bottom_up_cost_estimate_manufacturing_campus(cost_database_filename, params,
     return result.loc[nonzero_mask].reset_index(drop=True)
 
 
-def create_servicing_campus_cost_dictionary(df):
-    """Extract Fleet Mode summary and high-level accounts for a CSV row."""
+def create_campus_cost_dictionary(df, campus_name):
+    """Extract shared-campus summary and high-level accounts for a CSV row."""
     accounts = {
         10: 'Capitalized Pre-Construction Costs',
         20: 'Capitalized Direct Costs',
@@ -664,13 +664,21 @@ def create_servicing_campus_cost_dictionary(df):
         matching_rows = df.loc[df['Account'] == account]
         if matching_rows.empty:
             raise KeyError(
-                f"Servicing-campus result is missing required tracked account '{account}'."
+                f"{campus_name} result is missing required tracked account '{account}'."
             )
         row = matching_rows.iloc[0]
-        tracked_costs[f'Servicing Campus {label}'] = row['Value']
-        tracked_costs[f'Servicing Campus {label} std'] = row['Value std']
+        tracked_costs[f'{campus_name} {label}'] = row['Value']
+        tracked_costs[f'{campus_name} {label} std'] = row['Value std']
 
     return tracked_costs
+
+
+def create_servicing_campus_cost_dictionary(df):
+    return create_campus_cost_dictionary(df, 'Servicing Campus')
+
+
+def create_manufacturing_campus_cost_dictionary(df):
+    return create_campus_cost_dictionary(df, 'Manufacturing Campus')
 
 
 def parametric_studies(cost_database_filename, tracked_params_list):
@@ -700,6 +708,14 @@ def parametric_studies(cost_database_filename, tracked_params_list):
         )
         tracked_costs.update(
             create_servicing_campus_cost_dictionary(servicing_cost_table)
+        )
+        manufacturing_cost_table = bottom_up_cost_estimate_manufacturing_campus(
+            cost_database_filename,
+            params,
+            detailed_cost_table,
+        )
+        tracked_costs.update(
+            create_manufacturing_campus_cost_dictionary(manufacturing_cost_table)
         )
 
     file_exists = os.path.isfile(output_csv_filename)

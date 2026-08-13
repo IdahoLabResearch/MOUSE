@@ -3,9 +3,9 @@
 """
 This script performs a parametric cost study for a Gas Cooled Microreactor (GCMR)
 with Fleet Mode enabled. Each run records the standard reactor cost metrics and,
-automatically, the servicing-campus OCC, TCI, annual cost, LCOE, per-reactor
-metrics, high-level accounts 10, 20, 30, 40, 60, and 70, and their standard
-deviations.
+automatically, the manufacturing- and servicing-campus OCC, TCI, annual cost,
+LCOE, per-reactor metrics, high-level accounts 10, 20, 30, 40, 60, and 70,
+and their standard deviations.
 
 Fleet Mode represents a reactor fleet supported by two shared campuses:
   - Manufacturing Campus: manufactures and tests new reactor units.
@@ -406,6 +406,39 @@ def update_fleet_mode_params(production_rate):
     params['MFG Security Camera Count'] = 200 + -157.0909090909111 * (params['Production Rate'] ** -0.037788560889399164)
     params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (params['Production Rate'] ** 0.35218251811136164)
 
+    # Manufacturing-campus inputs required by the cost database. These must be
+    # recalculated inside the loop for every production-rate case.
+    params['MFG Construction Duration'] = 120  # months; REVIEW NEEDED.
+    params['MFG Campus Land Area'] = params['Manufacturing Campus Area']
+    params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * params['Production Rate'] ** 0.0001
+    params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * params['Production Rate'] ** 0.5539
+    params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * params['Production Rate'] ** 0.4768
+    params['MFG Warehouse Staff'] = np.ceil(0.8576 + 0.2539 * params['Production Rate'] ** 0.6533)
+    params['MFG Security Staff Per Shift'] = np.ceil(2.9981 + 0.3340 * params['Production Rate'] ** 0.4768)
+    params['MFG Maintenance Staff Headcount'] = np.ceil(2.9981 + 0.3340 * params['Production Rate'] ** 0.4768)
+    params['MFG Local Transport Vehicle Count'] = np.rint(-4340.5105 + 4340.5109 * params['Production Rate'] ** 0.0001)
+    params['MFG Utility Vehicle Count'] = np.rint(-4339.5105 + 4340.5109 * params['Production Rate'] ** 0.0001)
+    params['MFG Fire Station Count'] = 1  # REVIEW NEEDED.
+    if params['Production Rate'] <= 500:
+        params['MFG Guard Station Count'] = 1
+    elif params['Production Rate'] < 2000:
+        params['MFG Guard Station Count'] = 2
+    else:
+        params['MFG Guard Station Count'] = np.rint(params['Production Rate'] / 1000)
+
+    params['MFG Campus Power'] = 1.295614 + 0.00813495 * params['Production Rate'] ** 0.620945
+    params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
+    params['MFG Testing Line Annual Rate'] = int(np.floor(8000 / 92))
+    params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
+    params['MFG Testing Engineering Headcount'] = 6 + (params['MFG Testing Line Count'] - 1) * 2
+    params['MFG Testing Number of Operators'] = 5 * params['MFG Testing Line Count']  # REVIEW NEEDED.
+    params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
+    params['MFG Local Control Building Area'] = 40 * params['MFG Testing Line Count']  # m^2; REVIEW NEEDED.
+    params['MFG Security Building Area'] = 8775 / (3.2808 ** 2)  # m^2; REVIEW NEEDED.
+    params['MFG Road Length'] = -1539388.0000975644 + 1540607.3153829477 * params['Production Rate'] ** 8.588964624690402e-05
+    params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * params['Production Rate'] ** 8.588964624690402e-05
+    params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * params['Production Rate'] ** 0.22340396387855505
+
 
     ## SERVICING CAMPUS
 
@@ -485,7 +518,7 @@ def update_fleet_mode_params(production_rate):
 # **************************************************************************************************************************
 params['Number of Samples'] = 100  # number of samples for cost uncertainty analysis
 # Inputs/design outputs to include alongside the automatically tracked reactor
-# and servicing-campus cost results. Add or remove parameter names as needed.
+# and manufacturing/servicing-campus cost results. Add or remove parameter names as needed.
 tracked_params_list = [
     'Production Rate',
     'Deployment Period',
