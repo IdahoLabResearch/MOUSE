@@ -15,7 +15,12 @@ from cost.non_direct_cost import (validate_tax_credit_params, calculate_accounts
                                    calculate_servicing_campus_derived_costs,
                                    calculate_servicing_campus_capital_costs,
                                    calculate_servicing_campus_TCI,
-                                   energy_cost_levelized_servicing_campus)
+                                   energy_cost_levelized_servicing_campus,
+                                   calculate_manufacturing_campus_derived_costs,
+                                   calculate_manufacturing_campus_ratio_costs,
+                                   calculate_manufacturing_campus_capital_costs,
+                                   calculate_manufacturing_campus_TCI,
+                                   energy_cost_levelized_manufacturing_campus)
 from cost.params_registry import PARAMS_REGISTRY, GROUP_ORDER
 from reactor_engineering_evaluation.operation import reactor_operation
 from cost.cost_drivers import cost_drivers_estimate
@@ -264,8 +269,8 @@ def transform_dataframe(df):
     return df
 
 
-def format_servicing_campus_output(df, params):
-    """Prepare the servicing-campus table for its Excel output sheet.
+def format_campus_output(df, params, annual_cost_period):
+    """Prepare a shared-campus table for its Excel output sheet.
 
     The estimator retains floating-point precision internally.  This formatter
     adds per-account contributions to fleet LCOE, gives the cost columns
@@ -279,10 +284,15 @@ def format_servicing_campus_output(df, params):
     lcoe_column = 'LCOE Contribution ($/MWh)'
 
     lifetime = int(params['Levelization Period'])
+    annual_cost_period = int(annual_cost_period)
     discount_rate = params['Discount Rate']
     discount_sum = sum(
         (1 + discount_rate) ** -year
         for year in range(1, lifetime + 1)
+    )
+    annual_cost_discount_sum = sum(
+        (1 + discount_rate) ** -year
+        for year in range(1, annual_cost_period + 1)
     )
     fleet_annual_generation = (
         params['Fleet'] * params['Annual Electricity Production']
@@ -300,7 +310,7 @@ def format_servicing_campus_output(df, params):
         output.loc[capital_mask, 'Value'] / discounted_generation
     )
     output.loc[annual_mask, lcoe_column] = (
-        output.loc[annual_mask, 'Value'] * discount_sum / discounted_generation
+        output.loc[annual_mask, 'Value'] * annual_cost_discount_sum / discounted_generation
     )
 
     output.rename(
@@ -319,6 +329,14 @@ def format_servicing_campus_output(df, params):
         ).astype('Int64')
 
     return output
+
+
+def format_servicing_campus_output(df, params):
+    return format_campus_output(df, params, params['Levelization Period'])
+
+
+def format_manufacturing_campus_output(df, params):
+    return format_campus_output(df, params, params['Deployment Period'])
 
 
 def learning_rate_multiplier(learning_rate, number_of_units):
@@ -554,6 +572,75 @@ def bottom_up_cost_estimate_servicing_campus(cost_database_filename, params):
     return result.loc[nonzero_mask].reset_index(drop=True)
 
 
+def bottom_up_cost_estimate_manufacturing_campus(cost_database_filename, params, reactor_cost_table):
+    """Estimate the manufacturing campus when Fleet Mode is enabled."""
+    if not params.get('Fleet Mode', False):
+        return None
+    if 'Annual Electricity Production' not in params:
+        raise KeyError(
+            "'Annual Electricity Production' is missing. The reactor operation "
+            "calculation must run before the manufacturing-campus estimate."
+        )
+    if reactor_cost_table is None:
+        raise ValueError(
+            "The reactor cost table is required to calculate manufacturing account 223."
+        )
+
+    reactor_value_column = get_estimated_cost_column(reactor_cost_table, 'F')
+    reactor_occ_rows = reactor_cost_table.loc[reactor_cost_table['Account'] == 'OCC']
+    if reactor_occ_rows.empty:
+        raise KeyError("The reactor cost table is missing the OCC summary account.")
+    reactor_occ = reactor_occ_rows.iloc[0][reactor_value_column]
+
+    escalated_cost = escalate_cost_database(
+        cost_database_filename,
+        params['Escalation Year'],
+        params,
+        sheet_name='Manufacturing Campus Database',
+    )
+    cleaned_cost = remove_irrelevant_account(escalated_cost, params)
+
+    samples = []
+    for sample in range(params['Number of Samples']):
+        if (sample + 1) % 100 == 0:
+            print(f"\n\nManufacturing campus sample #{sample + 1}")
+
+        scaled_cost = scale_campus_cost(cleaned_cost, params, campus_type='manufacturing')
+        value_column = get_estimated_cost_column(scaled_cost, 'F')
+        internal_column = value_column.replace('FOAK', 'NOAK')
+        scaled_cost[internal_column] = scaled_cost[value_column]
+
+        scaled_cost = calculate_manufacturing_campus_derived_costs(
+            scaled_cost, params, reactor_occ
+        )
+        aggregation_sample = sample + 1
+        updated_cost = update_high_level_costs(scaled_cost, 'base', aggregation_sample)
+        updated_cost = calculate_manufacturing_campus_ratio_costs(updated_cost, params)
+        updated_cost = update_high_level_costs(updated_cost, 'other', aggregation_sample)
+        updated_cost = calculate_manufacturing_campus_capital_costs(updated_cost, params)
+        updated_cost = update_high_level_costs(updated_cost, 'finance', aggregation_sample)
+        updated_cost = calculate_manufacturing_campus_TCI(updated_cost, params)
+        updated_cost = update_high_level_costs(updated_cost, 'annual', aggregation_sample)
+        final_cost = energy_cost_levelized_manufacturing_campus(params, updated_cost)
+
+        sample_result = final_cost[['Account', 'Account Title', value_column]].copy()
+        sample_result.rename(columns={value_column: 'Value'}, inplace=True)
+        samples.append(sample_result)
+
+    concatenated = pd.concat(samples)
+    mean_values = concatenated[['Value']].groupby(concatenated.index).mean()
+    if params['Number of Samples'] > 1:
+        std_values = concatenated[['Value']].groupby(concatenated.index).std()
+    else:
+        std_values = concatenated[['Value']].groupby(concatenated.index).std(ddof=0)
+
+    mean_values['Value std'] = std_values['Value']
+    labels = concatenated[['Account', 'Account Title']].groupby(concatenated.index).first()
+    result = reorder_dataframe(mean_values.join(labels))
+    nonzero_mask = (result[['Value', 'Value std']] != 0).any(axis=1)
+    return result.loc[nonzero_mask].reset_index(drop=True)
+
+
 def create_servicing_campus_cost_dictionary(df):
     """Extract Fleet Mode summary and high-level accounts for a CSV row."""
     accounts = {
@@ -646,6 +733,11 @@ def detailed_bottom_up_cost_estimate(cost_database_filename):
     detailed_cost_table = bottom_up_cost_estimate(cost_database_filename, params)
     detailed_central_cost_table = bottom_up_cost_estimate_central(cost_database_filename, params)
     detailed_servicing_cost_table = bottom_up_cost_estimate_servicing_campus(cost_database_filename, params)
+    detailed_manufacturing_cost_table = bottom_up_cost_estimate_manufacturing_campus(
+        cost_database_filename,
+        params,
+        detailed_cost_table,
+    )
     pretty_df = transform_dataframe(detailed_cost_table)
 
     with pd.ExcelWriter(output_filename) as writer:
@@ -673,6 +765,22 @@ def detailed_bottom_up_cost_estimate(cost_database_filename):
             servicing_output.to_excel(
                 writer,
                 sheet_name="servicing campus cost estimate",
+                index=False,
+            )
+
+        if detailed_manufacturing_cost_table is not None:
+            numerical_columns = detailed_manufacturing_cost_table.select_dtypes(include=[np.number]).columns
+            nan_mask = detailed_manufacturing_cost_table[numerical_columns].isna().any(axis=1)
+            if nan_mask.any():
+                print("WARNING: NaN values in manufacturing campus accounts:")
+                print(detailed_manufacturing_cost_table.loc[nan_mask, ['Account', 'Account Title'] + list(numerical_columns)])
+            manufacturing_output = format_manufacturing_campus_output(
+                detailed_manufacturing_cost_table,
+                params,
+            )
+            manufacturing_output.to_excel(
+                writer,
+                sheet_name="manufacturing campus cost estimate",
                 index=False,
             )
 

@@ -16,6 +16,7 @@ def non_standard_cost_scale(
     exponent,
     params,
     count_variable_value=None,
+    campus_type=None,
 ):
     # pumps
     if account == 222.11 or account == 222.12:
@@ -46,15 +47,21 @@ def non_standard_cost_scale(
             raise ValueError("Enrichment is too high")
         cost = cost_premium * unit_cost *pow(scaling_variable_value,exponent) 
     elif account == 711:
-        cost_multiplier = params['FTEs Per Onsite Operator Per Year'] 
-        cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
+        if campus_type == 'manufacturing':
+            cost = unit_cost * pow(scaling_variable_value, exponent)
+        else:
+            cost_multiplier = params['FTEs Per Onsite Operator Per Year']
+            cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)
     elif account == 712:
-        cost_multiplier = params['FTEs Per Offsite Operator (24/7)']
-        if count_variable_value is None:
+        if campus_type == 'manufacturing':
+            cost = unit_cost * pow(scaling_variable_value, exponent)
+        elif count_variable_value is None:
+            cost_multiplier = params['FTEs Per Offsite Operator (24/7)']
             # Legacy reactor estimate: the scaling variable itself is
             # Reactors Monitored Per Operator, so it is used as a divisor.
             cost = cost_multiplier * unit_cost * pow(1 / scaling_variable_value, exponent)
         else:
+            cost_multiplier = params['FTEs Per Offsite Operator (24/7)']
             # Servicing-campus estimate: the database scaling variable is the
             # fleet reactor/site count and the database count variable is
             # Reactors Monitored Per Operator.
@@ -67,10 +74,14 @@ def non_standard_cost_scale(
             )
             cost = cost_multiplier * unit_cost * operator_positions
     elif account == 713:
-        cost_multiplier = params['FTEs Per Security Staff (24/7)']
+        cost_multiplier = (
+            params['Shift To Headcount']
+            if campus_type == 'manufacturing'
+            else params['FTEs Per Security Staff (24/7)']
+        )
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value,exponent)       
     elif account == 714:
-        cost_multiplier = params['Shift To Headcount']
+        cost_multiplier = 1 if campus_type == 'manufacturing' else params['Shift To Headcount']
         cost = cost_multiplier * unit_cost * pow(scaling_variable_value, exponent)
     elif account == 715:
         cost = unit_cost * pow(scaling_variable_value, exponent)
@@ -214,7 +225,7 @@ def scale_cost(initial_database, params):
     return scaled_cost
 
 
-def scale_campus_cost(initial_database, params):
+def scale_campus_cost(initial_database, params, campus_type=None):
     """
     Scale costs for shared-campus accounts.
 
@@ -283,6 +294,7 @@ def scale_campus_cost(initial_database, params):
             exponent_max = row['Exponent Max']
             exponent_std = row['Exponent std']
             exponent_dist = row['Exponent Distribution']
+            exponent = exponent_0 if pd.notna(exponent_0) else 1
 
             if pd.notna(row['Exponent']):
                 if params['Number of Samples'] > 1:
@@ -312,6 +324,7 @@ def scale_campus_cost(initial_database, params):
                         exponent,
                         params,
                         count_variable_value=count_variable_value,
+                        campus_type=campus_type,
                     )
 
             elif row['Standard Cost Equation?'] == 'standard':

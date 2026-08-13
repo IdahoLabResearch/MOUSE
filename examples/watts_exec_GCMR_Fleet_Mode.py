@@ -9,8 +9,8 @@ Fleet Mode represents a reactor fleet supported by two shared campuses:
   - Servicing Campus: services operating reactors and manages fleet logistics.
 
 The fleet parameters are derived primarily from the annual reactor production rate.
-The cost-engine integration and separate campus outputs will be implemented
-independently from this example configuration.
+Reactor, manufacturing-campus, and servicing-campus costs are written to separate
+output sheets.
 
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
@@ -363,40 +363,39 @@ params['GenSite Downtime'] = 1/12 # years (one month)
 
 ## MANUFACTURING CAMPUS
 
-params['Manufacturing Campus Area'] = 56.1651 +	1.2066 * params['Production Rate'] ** 0.3919
+params['MFG Construction Duration'] = 120  # months; REVIEW NEEDED: provisional campus construction duration.
+params['Manufacturing Campus Area'] = 56.1651 + 1.2066 * params['Production Rate'] ** 0.3919
+params['MFG Campus Land Area'] = params['Manufacturing Campus Area']
+params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * params['Production Rate'] ** 0.0001
+params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * params['Production Rate'] ** 0.5539
+params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * params['Production Rate'] ** 0.4768
+params['MFG Warehouse Staff'] = np.ceil(0.8576 + 0.2539 * params['Production Rate'] ** 0.6533)
+params['MFG Security Staff Per Shift'] = np.ceil(2.9981 + 0.3340 * params['Production Rate'] ** 0.4768)
+params['MFG Maintenance Staff Headcount'] = np.ceil(2.9981 + 0.3340 * params['Production Rate'] ** 0.4768)
+params['MFG Local Transport Vehicle Count'] = np.rint(-4340.5105 + 4340.5109 * params['Production Rate'] ** 0.0001)
+params['MFG Utility Vehicle Count'] = np.rint(-4339.5105 + 4340.5109 * params['Production Rate'] ** 0.0001)
+params['MFG Fire Station Count'] = 1  # REVIEW NEEDED: provisional assumption; absent from the source parameter file.
+if params['Production Rate'] <= 500:
+    params['MFG Guard Station Count'] = 1
+elif params['Production Rate'] < 2000:
+    params['MFG Guard Station Count'] = 2
+else:
+    params['MFG Guard Station Count'] = np.rint(params['Production Rate'] / 1000)
 
-# params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * (params['Production Rate'] ** 0.0001)
-# params['MFG Warehouse Building Area'] = 5598.3987 + 70.3374 * (params['Production Rate'] ** 0.5539)
-# params['MFG Administration Building Area'] = 3947.3106 + 77.6167 * (params['Production Rate'] ** 0.4768)
-# params['MFG Warehouse Staff'] = np.ceil( 0.8576 + 0.2539 * (params['Production Rate'] ** 0.6533) )
-# params['MFG Security Staff Per Shift'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
-# params['MFG Maintenance Staff Headcount'] = np.ceil( 2.9981 + 0.3340 * (params['Production Rate'] ** 0.4768) )
-# params['MFG Local Transport Vehicle Count'] = np.rint( -4340.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
-# params['MFG Utility Vehicle Count'] = np.rint( -4339.5105 + 4340.5109 * (params['Production Rate'] ** 0.0001) )
-# # params['MFG Guard Station Count'] = 1.0000 + 1e-15 * (params['Production Rate'] ** 5.0000)
-# if params['Production Rate'] <= 500:
-#     params['MFG Guard Station Count'] = 1
+params['MFG Campus Power'] = 1.295614 + 0.00813495 * params['Production Rate'] ** 0.620945  # MWe
+params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
+params['MFG Testing Line Annual Rate'] = int(np.floor(8000 / 92))
+params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
+params['MFG Testing Engineering Headcount'] = 6 + (params['MFG Testing Line Count'] - 1) * 2
+params['MFG Testing Number of Operators'] = 5 * params['MFG Testing Line Count']  # REVIEW NEEDED: five total operators per testing line.
+params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
+params['MFG Local Control Building Area'] = 40 * params['MFG Testing Line Count']  # m^2; REVIEW NEEDED.
+params['MFG Security Building Area'] = 8775 / (3.2808 ** 2)  # m^2; REVIEW NEEDED: uses servicing security-building area.
 
-# elif params['Production Rate'] < 2000:
-#     params['MFG Guard Station Count'] = 2
-
-# else:
-#     params['MFG Guard Station Count'] = np.rint(params['Production Rate']/1000)
-
-
-# params['MFG Campus Power'] = 1.295614 +	0.00813495 * params['Production Rate'] **  0.620945 #MWe
-# params['MFG Switchyard Rating'] = np.ceil(params['MFG Campus Power'] * 2)
-
-# params['MFG Testing Line Annual Rate'] = int(np.floor(8000/92))
-# params['MFG Testing Line Count'] = np.ceil(params['Production Rate'] / params['MFG Testing Line Annual Rate'])
-# params['MFG Testing Engineering Headcount'] = 6 + ((params['MFG Testing Line Count'] - 1)*2)
-# params['MFG Testing Coolant Allotment'] = 0.15 * (1 * 24.417 + 9 * 11.114) * 8.2402
-
-
-#ToDo: Road Length and Site Perimeter shouldn't be the same.
-# params['MFG Road Length'] =  -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
-# params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * (params['Production Rate'] ** 8.588964624690402e-05)
-# params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * (params['Production Rate'] ** 0.22340396387855505)
+# ToDo: Road Length and Site Perimeter should not use the same relationship.
+params['MFG Road Length'] = -1539388.0000975644 + 1540607.3153829477 * params['Production Rate'] ** 8.588964624690402e-05
+params['MFG Site Perimeter'] = -1539388.0000975644 + 1540607.3153829477 * params['Production Rate'] ** 8.588964624690402e-05
+params['MFG Protected Perimeter'] = 1421.7487567019996 + 60.41360643368738 * params['Production Rate'] ** 0.22340396387855505
 
 params['MFG Security Camera Count'] = 200 + -157.0909090909111 * (params['Production Rate'] ** -0.037788560889399164)
 params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (params['Production Rate'] ** 0.35218251811136164)

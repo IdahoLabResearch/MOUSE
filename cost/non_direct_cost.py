@@ -157,10 +157,60 @@ def calculate_servicing_campus_derived_costs(df, params):
     return df
 
 
+def calculate_manufacturing_campus_derived_costs(df, params, reactor_occ):
+    """Populate manufacturing accounts defined by explicit database ratios."""
+    cost_columns = [get_estimated_cost_column(df, option) for option in ('F', 'N')]
+
+    for cost_column in cost_columns:
+        df.loc[df['Account'] == 223, cost_column] = (
+            params['MFG Account 223 to Reactor OCC per Testing Line Ratio']
+            * reactor_occ
+            * params['MFG Testing Line Count']
+        )
+
+    # Account 223 is a child of Account 22 and therefore must be included before
+    # the direct-cost hierarchy is aggregated.
+    return df
+
+
+def calculate_manufacturing_campus_ratio_costs(df, params):
+    """Populate manufacturing indirect and annual ratio-based accounts."""
+    cost_columns = [get_estimated_cost_column(df, option) for option in ('F', 'N')]
+
+    for cost_column in cost_columns:
+        direct_cost = df.loc[df['Account'] == 20, cost_column].sum()
+        staffing_cost = df.loc[df['Account'].isin([711, 712, 713, 714, 715]), cost_column].sum()
+
+        df.loc[df['Account'] == 30, cost_column] = params['MFG Account 30 to Account 20 Ratio'] * direct_cost
+        df.loc[df['Account'] == 716, cost_column] = params['MFG Account 716 to Accounts 711-715 Ratio'] * staffing_cost
+        df.loc[df['Account'] == 717, cost_column] = params['MFG Account 717 to Accounts 711-715 Ratio'] * staffing_cost
+        df.loc[df['Account'] == 741, cost_column] = params['MFG Account 741 to Account 20 Ratio'] * direct_cost
+        df.loc[df['Account'] == 742, cost_column] = params['MFG Account 742 to Account 20 Ratio'] * direct_cost
+        df.loc[df['Account'] == 743, cost_column] = params['MFG Account 743 to Account 20 Ratio'] * direct_cost
+        df.loc[df['Account'] == 747.1, cost_column] = (
+            params['MFG Account 747.1 to Accounts 741-743 Ratio']
+            * df.loc[df['Account'].isin([741, 742, 743]), cost_column].sum()
+        )
+        df.loc[df['Account'] == 747.4, cost_column] = params['MFG Account 747.4 to Account 20 Ratio'] * direct_cost
+
+    return df
+
+
 def calculate_interest_cost_servicing_campus(params, OCC):
     """Calculate servicing-campus interest during construction."""
     interest_rate = params['Interest Rate']
     construction_duration = params['SER Construction Duration']
+    debt_to_equity_ratio = params['Debt To Equity Ratio']
+    debt_fraction = debt_to_equity_ratio / (1 + debt_to_equity_ratio)
+    B = 1 + np.exp(np.log(1 + interest_rate) * construction_duration / 12)
+    C = (np.log(1 + interest_rate) * (construction_duration / 12) / 3.14) ** 2 + 1
+    return debt_fraction * OCC * ((0.5 * B / C) - 1)
+
+
+def calculate_interest_cost_manufacturing_campus(params, OCC):
+    """Calculate manufacturing-campus interest during construction."""
+    interest_rate = params['Interest Rate']
+    construction_duration = params['MFG Construction Duration']
     debt_to_equity_ratio = params['Debt To Equity Ratio']
     debt_fraction = debt_to_equity_ratio / (1 + debt_to_equity_ratio)
     B = 1 + np.exp(np.log(1 + interest_rate) * construction_duration / 12)
@@ -207,6 +257,83 @@ def calculate_servicing_campus_TCI(df, params):
         tci_cost = df.loc[df['Account'].isin(['OCC', 60]), cost_column].sum()
         df.loc[df['Account'] == 'TCI', cost_column] = tci_cost
         df.loc[df['Account'] == 'TCI per reactor', cost_column] = tci_cost / generating_sites
+
+    return df
+
+
+def calculate_manufacturing_campus_capital_costs(df, params):
+    """Add manufacturing OCC rows and Account 62 financing."""
+    fleet_size = params['Fleet']
+    if fleet_size <= 0:
+        raise ValueError("'Fleet' must be greater than zero.")
+
+    df = pd.concat([
+        df,
+        pd.DataFrame([
+            {'Account': 'OCC', 'Account Title': 'Overnight Capital Cost'},
+            {'Account': 'OCC per reactor', 'Account Title': 'Overnight Capital Cost per Manufactured Reactor'},
+        ]),
+    ], ignore_index=True)
+
+    for cost_column in [get_estimated_cost_column(df, option) for option in ('F', 'N')]:
+        occ_cost = df.loc[df['Account'].isin([10, 20, 30, 40, 50]), cost_column].sum()
+        df.loc[df['Account'] == 'OCC', cost_column] = occ_cost
+        df.loc[df['Account'] == 'OCC per reactor', cost_column] = occ_cost / fleet_size
+        df.loc[df['Account'] == 62, cost_column] = calculate_interest_cost_manufacturing_campus(params, occ_cost)
+
+    return df
+
+
+def calculate_manufacturing_campus_TCI(df, params):
+    """Add manufacturing total-capital-investment rows."""
+    fleet_size = params['Fleet']
+    df = pd.concat([
+        df,
+        pd.DataFrame([
+            {'Account': 'TCI', 'Account Title': 'Total Capital Investment'},
+            {'Account': 'TCI per reactor', 'Account Title': 'Total Capital Investment per Manufactured Reactor'},
+        ]),
+    ], ignore_index=True)
+
+    for cost_column in [get_estimated_cost_column(df, option) for option in ('F', 'N')]:
+        tci_cost = df.loc[df['Account'].isin(['OCC', 60]), cost_column].sum()
+        df.loc[df['Account'] == 'TCI', cost_column] = tci_cost
+        df.loc[df['Account'] == 'TCI per reactor', cost_column] = tci_cost / fleet_size
+
+    return df
+
+
+def energy_cost_levelized_manufacturing_campus(params, df):
+    """Add manufacturing summaries, limiting annual costs to deployment years."""
+    production_rate = params['Production Rate']
+    fleet_size = params['Fleet']
+    fleet_annual_generation = fleet_size * params['Annual Electricity Production']
+    if production_rate <= 0 or fleet_annual_generation <= 0:
+        raise ValueError("Production rate and fleet annual generation must be greater than zero.")
+
+    df = pd.concat([
+        df,
+        pd.DataFrame([
+            {'Account': 'Annual Cost', 'Account Title': 'Annual Manufacturing Campus Cost During Deployment'},
+            {'Account': 'Annual Cost per reactor', 'Account Title': 'Annual Manufacturing Cost per Reactor Produced'},
+            {'Account': 'LCOE', 'Account Title': 'Manufacturing Campus Contribution to Fleet LCOE ($/MWh)'},
+        ]),
+    ], ignore_index=True)
+
+    discount_rate = params['Discount Rate']
+    deployment_years = int(params['Deployment Period'])
+    levelization_years = int(params['Levelization Period'])
+    deployment_discount_sum = sum((1 + discount_rate) ** -year for year in range(1, deployment_years + 1))
+    generation_discount_sum = sum((1 + discount_rate) ** -year for year in range(1, levelization_years + 1))
+    discounted_generation = fleet_annual_generation * generation_discount_sum
+
+    for cost_column in [get_estimated_cost_column(df, option) for option in ('F', 'N')]:
+        annual_cost = df.loc[df['Account'] == 70, cost_column].sum()
+        capital_cost = df.loc[df['Account'] == 'TCI', cost_column].sum()
+        discounted_cost = capital_cost + annual_cost * deployment_discount_sum
+        df.loc[df['Account'] == 'Annual Cost', cost_column] = annual_cost
+        df.loc[df['Account'] == 'Annual Cost per reactor', cost_column] = annual_cost / production_rate
+        df.loc[df['Account'] == 'LCOE', cost_column] = discounted_cost / discounted_generation
 
     return df
 
