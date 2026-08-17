@@ -123,10 +123,18 @@ def calculate_accounts_31_32_75_central_facility_cost(df, params):
 def calculate_servicing_campus_derived_costs(df, params):
     """Populate servicing-campus accounts whose costs are defined by ratios."""
     cost_columns = [get_estimated_cost_column(df, option) for option in ('F', 'N')]
+    spare_parts_equipment_accounts = [
+        23.1, 23.2, 23.4, 23.5, 23.6,
+        281, 285,
+        288.1, 288.2, 288.3, 288.5,
+    ]
 
     for cost_column in cost_columns:
         direct_cost = df.loc[df['Account'] == 20, cost_column].sum()
         staffing_cost = df.loc[df['Account'].isin([711, 712, 713, 714, 715]), cost_column].sum()
+        spare_parts_equipment_cost = df.loc[
+            df['Account'].isin(spare_parts_equipment_accounts), cost_column
+        ].sum()
 
         df.loc[df['Account'] == 30, cost_column] = (
             params['SER Account 30 to Account 20 Ratio'] * direct_cost
@@ -141,7 +149,8 @@ def calculate_servicing_campus_derived_costs(df, params):
             params['SER Account 741 to Account 20 Ratio'] * direct_cost
         )
         df.loc[df['Account'] == 742, cost_column] = (
-            params['SER Account 742 to Account 20 Ratio'] * direct_cost
+            params['SER Account 742 to Account 20 Ratio']
+            * spare_parts_equipment_cost
         )
         df.loc[df['Account'] == 743, cost_column] = (
             params['SER Account 743 to Account 20 Ratio'] * direct_cost

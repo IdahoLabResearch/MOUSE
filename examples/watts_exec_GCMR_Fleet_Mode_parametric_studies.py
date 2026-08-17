@@ -505,7 +505,7 @@ def update_fleet_mode_params(production_rate):
     params['SER Local Control Building Area'] = 40 * scale_var_SER
     params['SER Remote Control Building Area'] = 40 * scale_var_SER
     params['SER Rad Waste Management Building Area'] = 0.0 + 40.5 * (scale_var_SER ** 0.7447)
-    params['Radwaste Storage Warehouses Area'] = 0.0 + 15422.94 * (scale_var_SER ** 0.994)
+    params['Radwaste Storage Warehouses Area'] = (0.0 + 15422.94 * (scale_var_SER ** 0.994)) / (3.2808 ** 2)  # This needs to be reviewed.
     params['SER Emergency Generator Power'] = 0.0 + 3.266667 * (scale_var_SER ** 0.632)
     params['Parts Service Center and Warehouse Building Area'] = 0.0 + 675.0 * (scale_var_SER ** 0.6021)
     params['Service Air Water Building Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
