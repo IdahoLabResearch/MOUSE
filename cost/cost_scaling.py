@@ -225,7 +225,13 @@ def scale_cost(initial_database, params):
     return scaled_cost
 
 
-def scale_campus_cost(initial_database, params, campus_type=None):
+def scale_campus_cost(
+    initial_database,
+    params,
+    campus_type=None,
+    sampled_cost_inputs=None,
+    return_sampled_inputs=False,
+):
     """
     Scale costs for shared-campus accounts.
 
@@ -241,6 +247,7 @@ def scale_campus_cost(initial_database, params, campus_type=None):
 
     escalation_year = params['Escalation Year']
     params['Constant'] = 1
+    sampled_values = {}
 
     for index, row in initial_database.iterrows():
 
@@ -250,60 +257,65 @@ def scale_campus_cost(initial_database, params, campus_type=None):
             count_variable_value = (params[row['Count Scaling Variable']] * row['Count per Variable']
                                     if pd.notna(row['Count Scaling Variable']) else 0)
 
-            fixed_cost_0 = row['Adjusted Fixed Cost ($)']
-            fixed_cost_lo = row['Adjusted Fixed Cost Low End ($)']
-            fixed_cost_hi = row['Adjusted Fixed Cost High End ($)']
-            fixed_cost_dist = row['Fixed Cost Distribution']
+            scaling_variable_ref_value = row['Scaling Variable Ref Value']
+            exponent_0 = row['Exponent']
+            if sampled_cost_inputs is not None:
+                fixed_cost, unit_cost, exponent = sampled_cost_inputs[index]
+            else:
+                fixed_cost_0 = row['Adjusted Fixed Cost ($)']
+                fixed_cost_lo = row['Adjusted Fixed Cost Low End ($)']
+                fixed_cost_hi = row['Adjusted Fixed Cost High End ($)']
+                fixed_cost_dist = row['Fixed Cost Distribution']
 
-            if pd.notna(row['Fixed Cost ($)']):
-                if params['Number of Samples'] > 1:
-                    if (fixed_cost_dist == 'Lognormal'
-                            and fixed_cost_lo > 0 and fixed_cost_hi > 0 and fixed_cost_0 > 0):
-                        fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
-                    elif fixed_cost_dist == 'Uniform':
-                        fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
+                if pd.notna(row['Fixed Cost ($)']):
+                    if params['Number of Samples'] > 1:
+                        if (fixed_cost_dist == 'Lognormal'
+                                and fixed_cost_lo > 0 and fixed_cost_hi > 0 and fixed_cost_0 > 0):
+                            fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
+                        elif fixed_cost_dist == 'Uniform':
+                            fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
+                        else:
+                            fixed_cost = fixed_cost_0
                     else:
                         fixed_cost = fixed_cost_0
                 else:
-                    fixed_cost = fixed_cost_0
-            else:
-                fixed_cost = 0
+                    fixed_cost = 0
 
-            unit_cost_0 = row['Adjusted Unit Cost ($)']
-            unit_cost_lo = row['Adjusted Unit Cost Low End ($)']
-            unit_cost_hi = row['Adjusted Unit Cost High End ($)']
-            unit_cost_dist = row['Unit Cost Distribution']
+                unit_cost_0 = row['Adjusted Unit Cost ($)']
+                unit_cost_lo = row['Adjusted Unit Cost Low End ($)']
+                unit_cost_hi = row['Adjusted Unit Cost High End ($)']
+                unit_cost_dist = row['Unit Cost Distribution']
 
-            if pd.notna(row['Unit Cost']):
-                if params['Number of Samples'] > 1:
-                    if (unit_cost_dist == 'Lognormal'
-                            and unit_cost_lo > 0 and unit_cost_hi > 0 and unit_cost_0 > 0):
-                        unit_cost = sampler("Lognormal", low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
-                    elif unit_cost_dist == 'Uniform':
-                        unit_cost = sampler('Uniform', low=unit_cost_lo, high=unit_cost_hi)
+                if pd.notna(row['Unit Cost']):
+                    if params['Number of Samples'] > 1:
+                        if (unit_cost_dist == 'Lognormal'
+                                and unit_cost_lo > 0 and unit_cost_hi > 0 and unit_cost_0 > 0):
+                            unit_cost = sampler("Lognormal", low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
+                        elif unit_cost_dist == 'Uniform':
+                            unit_cost = sampler('Uniform', low=unit_cost_lo, high=unit_cost_hi)
+                        else:
+                            unit_cost = unit_cost_0
                     else:
                         unit_cost = unit_cost_0
                 else:
-                    unit_cost = unit_cost_0
-            else:
-                unit_cost = 0
+                    unit_cost = 0
 
-            scaling_variable_ref_value = row['Scaling Variable Ref Value']
-            exponent_0 = row['Exponent']
-            exponent_min = row['Exponent Min']
-            exponent_max = row['Exponent Max']
-            exponent_std = row['Exponent std']
-            exponent_dist = row['Exponent Distribution']
-            exponent = exponent_0 if pd.notna(exponent_0) else 1
+                exponent_min = row['Exponent Min']
+                exponent_max = row['Exponent Max']
+                exponent_std = row['Exponent std']
+                exponent_dist = row['Exponent Distribution']
+                exponent = exponent_0 if pd.notna(exponent_0) else 1
 
-            if pd.notna(row['Exponent']):
-                if params['Number of Samples'] > 1:
-                    if exponent_dist == 'Truncated Normal':
-                        exponent = sampler("Truncated Normal", mean=exponent_0, std=exponent_std, lower_bound=exponent_min, upper_bound=exponent_max)
+                if pd.notna(row['Exponent']):
+                    if params['Number of Samples'] > 1:
+                        if exponent_dist == 'Truncated Normal':
+                            exponent = sampler("Truncated Normal", mean=exponent_0, std=exponent_std, lower_bound=exponent_min, upper_bound=exponent_max)
+                        else:
+                            exponent = exponent_0
                     else:
                         exponent = exponent_0
-                else:
-                    exponent = exponent_0
+
+            sampled_values[index] = (fixed_cost, unit_cost, exponent)
 
             # Standard campus rows describe their relationship through scaling
             # and count variables. Nonstandard rows must use an explicit
@@ -352,6 +364,8 @@ def scale_campus_cost(initial_database, params, campus_type=None):
             # can recognize and populate them from their children. Leaf accounts
             # without cost data are converted to zero by update_high_level_costs.
             scaled_cost.at[index, f'FOAK Estimated Cost (${escalation_year })'] = np.nan
+    if return_sampled_inputs:
+        return scaled_cost, sampled_values
     return scaled_cost
 
 

@@ -575,11 +575,77 @@ def bottom_up_cost_estimate_central(cost_database_filename, params):
     return reordered_df
 
 
+def _calculate_servicing_campus_sample(
+    cleaned_cost,
+    params,
+    aggregation_sample,
+    sampled_cost_inputs=None,
+    return_sampled_inputs=False,
+):
+    scaled_result = scale_campus_cost(
+        cleaned_cost,
+        params,
+        sampled_cost_inputs=sampled_cost_inputs,
+        return_sampled_inputs=return_sampled_inputs,
+    )
+    if return_sampled_inputs:
+        scaled_cost, sampled_values = scaled_result
+    else:
+        scaled_cost = scaled_result
+        sampled_values = None
+
+    value_column = get_estimated_cost_column(scaled_cost, 'F')
+    internal_column = value_column.replace('FOAK', 'NOAK')
+    scaled_cost[internal_column] = scaled_cost[value_column]
+
+    updated_cost = update_high_level_costs(scaled_cost, 'base', aggregation_sample)
+    updated_cost = calculate_servicing_campus_derived_costs(updated_cost, params)
+    updated_cost = update_high_level_costs(updated_cost, 'other', aggregation_sample)
+    updated_cost = calculate_servicing_campus_capital_costs(updated_cost, params)
+    updated_cost = update_high_level_costs(updated_cost, 'finance', aggregation_sample)
+    updated_cost = calculate_servicing_campus_TCI(updated_cost, params)
+    updated_cost = update_high_level_costs(updated_cost, 'annual', aggregation_sample)
+    updated_cost = _calculate_servicing_campus_annual_totals(updated_cost)
+    final_cost = energy_cost_levelized_servicing_campus(params, updated_cost)
+
+    sample_result = final_cost[['Account', 'Account Title', value_column]].copy()
+    sample_result.rename(columns={value_column: 'Value'}, inplace=True)
+    if return_sampled_inputs:
+        return sample_result, sampled_values
+    return sample_result
+
+
+def _calculate_servicing_campus_annual_totals(df):
+    """Include the orphaned 747.x hierarchy in servicing Accounts 74 and 70.
+
+    The servicing worksheet has Accounts 747.1 through 747.5 at Level 3 but no
+    Level-2 Account 747 parent. Generic hierarchy aggregation therefore omits
+    every 747.x cost from Account 74. Aggregate the intended hierarchy
+    explicitly until the database gains that missing parent row.
+    """
+    account_747_children = [747.1, 747.2, 747.3, 747.4, 747.5]
+    for option in ('F', 'N'):
+        cost_column = get_estimated_cost_column(df, option)
+        account_747_cost = df.loc[
+            df['Account'].isin(account_747_children), cost_column
+        ].sum()
+        account_74_cost = (
+            df.loc[df['Account'].isin([741, 742, 743, 744]), cost_column].sum()
+            + account_747_cost
+        )
+        df.loc[df['Account'] == 74, cost_column] = account_74_cost
+        df.loc[df['Account'] == 70, cost_column] = (
+            df.loc[df['Account'].isin([71, 74, 75, 78]), cost_column].sum()
+        )
+    return df
+
+
 def bottom_up_cost_estimate_servicing_campus(
     cost_database_filename,
     params,
     return_samples=False,
     sample_seeds=None,
+    return_cost_realizations=False,
 ):
     """Estimate the servicing campus when Fleet Mode is enabled.
 
@@ -605,32 +671,28 @@ def bottom_up_cost_estimate_servicing_campus(
     cleaned_cost = remove_irrelevant_account(escalated_cost, params)
 
     samples = []
+    cost_realizations = []
     for sample in range(params['Number of Samples']):
         if (sample + 1) % 100 == 0:
             print(f"\n\nServicing campus sample #{sample + 1}")
 
         seed = sample_seeds[sample] if sample_seeds is not None else None
         with _numpy_sample_seed(seed):
-            scaled_cost = scale_campus_cost(cleaned_cost, params)
-            value_column = get_estimated_cost_column(scaled_cost, 'F')
-            internal_column = value_column.replace('FOAK', 'NOAK')
-            scaled_cost[internal_column] = scaled_cost[value_column]
-
-            # The servicing database intentionally contains empty placeholder
-            # accounts (for example 75 and 78), so suppress the generic missing-
-            # children warning while still aggregating all populated hierarchies.
             aggregation_sample = sample + 1
-            updated_cost = update_high_level_costs(scaled_cost, 'base', aggregation_sample)
-            updated_cost = calculate_servicing_campus_derived_costs(updated_cost, params)
-            updated_cost = update_high_level_costs(updated_cost, 'other', aggregation_sample)
-            updated_cost = calculate_servicing_campus_capital_costs(updated_cost, params)
-            updated_cost = update_high_level_costs(updated_cost, 'finance', aggregation_sample)
-            updated_cost = calculate_servicing_campus_TCI(updated_cost, params)
-            updated_cost = update_high_level_costs(updated_cost, 'annual', aggregation_sample)
-            final_cost = energy_cost_levelized_servicing_campus(params, updated_cost)
-
-            sample_result = final_cost[['Account', 'Account Title', value_column]].copy()
-            sample_result.rename(columns={value_column: 'Value'}, inplace=True)
+            if return_cost_realizations:
+                sample_result, sampled_values = _calculate_servicing_campus_sample(
+                    cleaned_cost,
+                    params,
+                    aggregation_sample,
+                    return_sampled_inputs=True,
+                )
+                cost_realizations.append(sampled_values)
+            else:
+                sample_result = _calculate_servicing_campus_sample(
+                    cleaned_cost,
+                    params,
+                    aggregation_sample,
+                )
         samples.append(sample_result)
 
     concatenated = pd.concat(samples)
@@ -645,6 +707,8 @@ def bottom_up_cost_estimate_servicing_campus(
     result = reorder_dataframe(mean_values.join(labels))
     nonzero_mask = (result[['Value', 'Value std']] != 0).any(axis=1)
     result = result.loc[nonzero_mask].reset_index(drop=True)
+    if return_samples and return_cost_realizations:
+        return result, samples, cost_realizations
     if return_samples:
         return result, samples
     return result
@@ -1061,18 +1125,31 @@ def build_fleet_annual_cash_flow(
 def build_servicing_annual_cost_samples(
     cost_database_filename,
     params,
-    sample_seeds,
+    cost_realizations,
+    servicing_samples,
 ):
     """Calculate each sample's servicing cost in every fleet operating year.
 
-    The same seed is reused for all operating states within one sample. Thus a
-    sampled wage, equipment price, or material price remains the same over that
-    sample's complete project life while fleet activity changes by year.
+    Each realization contains wages, equipment prices, material prices, and
+    scaling exponents sampled once by the standalone campus estimate. Those
+    sampled inputs are reused over the complete project life while only the
+    fleet activity variables change by year.
     """
     schedule = _fleet_cohort_schedule(params)
-    sample_count = len(sample_seeds)
+    sample_count = len(cost_realizations)
+    if len(servicing_samples) != sample_count:
+        raise ValueError(
+            "servicing_samples and cost_realizations must have the same length."
+        )
     annual_cost_samples = np.zeros((sample_count, len(schedule)))
     state_cache = {}
+    escalated_cost = escalate_cost_database(
+        cost_database_filename,
+        params['Escalation Year'],
+        params,
+        sheet_name='Servicing Campus Database',
+    )
+    cleaned_cost = remove_irrelevant_account(escalated_cost, params)
 
     for row_index, row in schedule.iterrows():
         operating_reactors = int(row['Operating Reactors'])
@@ -1085,16 +1162,44 @@ def build_servicing_annual_cost_samples(
                 params, operating_reactors, service_events
             )
             state_params['Number of Samples'] = sample_count
-            _, state_samples = bottom_up_cost_estimate_servicing_campus(
-                cost_database_filename,
-                state_params,
-                return_samples=True,
-                sample_seeds=sample_seeds,
-            )
-            state_cache[state_key] = np.asarray([
-                _result_value(sample_table, 'Annual Cost')
-                for sample_table in state_samples
-            ])
+            state_costs = []
+            for sample, sampled_values in enumerate(cost_realizations):
+                state_scaled = scale_campus_cost(
+                    cleaned_cost,
+                    state_params,
+                    sampled_cost_inputs=sampled_values,
+                )
+                state_column = get_estimated_cost_column(state_scaled, 'F')
+
+                # Recalculate only annual accounts whose equations depend on
+                # operating reactors or servicing events. The facility-sized
+                # annual accounts remain fixed at their once-sampled values.
+                dynamic_accounts = [
+                    711, 712, 713, 714, 715, 744,
+                    747.21, 747.22, 747.23, 747.3,
+                    747.51, 747.52, 747.53, 747.54,
+                ]
+                dynamic_cost = state_scaled.loc[
+                    state_scaled['Account'].isin(dynamic_accounts), state_column
+                ].sum()
+                staffing_cost = state_scaled.loc[
+                    state_scaled['Account'].isin([711, 712, 713, 714, 715]),
+                    state_column,
+                ].sum()
+                dynamic_cost += (
+                    params['SER Account 716 to Accounts 711-715 Ratio']
+                    + params['SER Account 717 to Accounts 711-715 Ratio']
+                ) * staffing_cost
+
+                fixed_annual_accounts = [
+                    741, 742, 743, 747.1, 747.4, 75, 78,
+                ]
+                fixed_annual_cost = servicing_samples[sample].loc[
+                    servicing_samples[sample]['Account'].isin(fixed_annual_accounts),
+                    'Value',
+                ].sum()
+                state_costs.append(dynamic_cost + fixed_annual_cost)
+            state_cache[state_key] = np.asarray(state_costs)
         annual_cost_samples[:, row_index] = state_cache[state_key]
 
     return annual_cost_samples
@@ -1320,11 +1425,14 @@ def estimate_fleet_mode_costs(cost_database_filename, params):
         return_samples=True,
         sample_seeds=reactor_seeds,
     )
-    servicing_result, servicing_samples = bottom_up_cost_estimate_servicing_campus(
-        cost_database_filename,
-        params,
-        return_samples=True,
-        sample_seeds=servicing_seeds,
+    servicing_result, servicing_samples, servicing_cost_realizations = (
+        bottom_up_cost_estimate_servicing_campus(
+            cost_database_filename,
+            params,
+            return_samples=True,
+            sample_seeds=servicing_seeds,
+            return_cost_realizations=True,
+        )
     )
     manufacturing_result, manufacturing_samples = (
         bottom_up_cost_estimate_manufacturing_campus(
@@ -1340,7 +1448,8 @@ def estimate_fleet_mode_costs(cost_database_filename, params):
     servicing_annual_samples = build_servicing_annual_cost_samples(
         cost_database_filename,
         params,
-        servicing_seeds,
+        servicing_cost_realizations,
+        servicing_samples,
     )
     cash_flow_samples = []
     total_cost_samples = []
