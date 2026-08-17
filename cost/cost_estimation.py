@@ -33,12 +33,22 @@ FLEET_MODE_REACTOR_EXCLUDED_ACCOUNTS = (
     213.2,   # Control Building
     214.11,  # Refueling Building
     214.12,  # Spent Fuel Building
+    214.81,  # Manipulator Building
+    215.1,   # Storage Building
+    215.4,   # Radwaste Building
     221.211, # Reactivity Control System Fabrication
     221.212, # Reactivity Control System Installation
+    26,      # Miscellaneous Equipment (Cranes)
     712,     # Remote Monitoring Technicians
     721,     # Coolant
+    81,      # Refueling Operations
     83,      # Spent Fuel Management
 )
+
+FLEET_MODE_REACTOR_COST_FACTORS = {
+    31: 0.5,  # Retain the field-related half of indirect costs.
+    32: 0.5,  # Retain the construction-related half of supervision.
+}
 
 
 @contextmanager
@@ -79,6 +89,43 @@ def remove_fleet_mode_reactor_accounts(df):
                 indices_to_drop.add(df.index[child_position])
 
     return df.drop(index=list(indices_to_drop)).copy()
+
+
+def apply_fleet_mode_reactor_cost_factors(df, params):
+    """Apply Fleet Mode reductions to retained per-reactor accounts."""
+    if not params.get('Fleet Mode', False):
+        return df
+
+    account_numbers = pd.to_numeric(df['Account'], errors='coerce')
+    cost_columns = [get_estimated_cost_column(df, option) for option in ('F', 'N')]
+    for account, factor in FLEET_MODE_REACTOR_COST_FACTORS.items():
+        account_mask = np.isclose(
+            account_numbers.to_numpy(dtype=float), account, equal_nan=False
+        )
+        df.loc[account_mask, cost_columns] *= factor
+
+    fleet_size = params.get('Fleet')
+    if fleet_size is None or fleet_size <= 0:
+        raise ValueError("'Fleet' must be greater than zero when Fleet Mode is enabled.")
+
+    # Account 73 is one fixed regulatory cost shared by the entire fleet. It
+    # remains visible in each reactor estimate as that reactor's allocated
+    # share, so summing all reactor costs recovers the fixed fleet total.
+    regulatory_mask = np.isclose(
+        account_numbers.to_numpy(dtype=float), 73, equal_nan=False
+    )
+    df.loc[regulatory_mask, cost_columns] /= fleet_size
+
+    # Capitalized training (Account 40) is represented by its cost-bearing
+    # child, Account 41. Half remains site-specific and half is a single
+    # shared fleet-training program allocated across all reactors.
+    training_factor = 0.5 + 0.5 / fleet_size
+    training_mask = np.isclose(
+        account_numbers.to_numpy(dtype=float), 41, equal_nan=False
+    )
+    df.loc[training_mask, cost_columns] *= training_factor
+
+    return df
 
 
 
@@ -483,6 +530,9 @@ def bottom_up_cost_estimate(
 
             updated_cost = update_high_level_costs(scaled_cost, 'base', i)
             updated_cost_with_indirect_cost = calculate_accounts_31_32_75_82_cost(updated_cost, params)
+            updated_cost_with_indirect_cost = apply_fleet_mode_reactor_cost_factors(
+                updated_cost_with_indirect_cost, params
+            )
             cost_with_decommissioning = calculate_decommissioning_cost(updated_cost_with_indirect_cost, params)
             updated_accounts_10_40 = update_high_level_costs(cost_with_decommissioning, 'other', i)
             high_Level_capital_cost = calculate_high_level_capital_costs(updated_accounts_10_40, params)
