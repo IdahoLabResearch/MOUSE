@@ -104,7 +104,7 @@ def build_openmc_model_GCMR(params):
         return openmc.Universe(cells=cells)
 
 
-     def create_shutdown_pin_universe(
+    def create_shutdown_pin_universe(
         params,
         rod_radius,
         rod_name,
@@ -187,7 +187,18 @@ def build_openmc_model_GCMR(params):
         )
    
 
-    def create_assembly(num_rings, lattice_pitch, inner_fill, fuel_pin , moderator_pin, outer_ring=None, simplified_output=True):
+    def create_assembly(
+        num_rings,
+        lattice_pitch,
+        inner_fill,
+        fuel_pin,
+        moderator_pin,
+        shutdown_pin=None,
+        shutdown_ring=None,
+        number_of_shutdown_rods=0,
+        outer_ring=None,
+        simplified_output=True,
+    ):
         # Create a hexagonal lattice for the assembly
         assembly = openmc.HexLattice()
         # Set the center of the hexagonal lattice
