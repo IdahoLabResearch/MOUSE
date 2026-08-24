@@ -48,6 +48,14 @@ class ServicingCampusCostTest(unittest.TestCase):
             self.params["Fleet"] / self.params["Cycle Length"],
         )
 
+    def test_radwaste_warehouse_area_is_converted_from_ft2_to_m2(self):
+        servicing_scale = np.rint(self.params["Servicing Rate"] / 3)
+        source_area_ft2 = 15422.94 * servicing_scale ** 0.994
+        self.assertAlmostEqual(
+            self.params["Radwaste Storage Warehouses Area"],
+            source_area_ft2 / 3.2808 ** 2,
+        )
+
     def test_output_uses_single_value_columns(self):
         self.assertIn("Value", self.result.columns)
         self.assertIn("Value std", self.result.columns)
