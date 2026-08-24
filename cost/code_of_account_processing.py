@@ -9,9 +9,12 @@ def remove_irrelevant_account(df, params):
     for index, row in df.iterrows():
         def _optional_matches(param_val, expected_val):
             """Return True if param_val equals expected_val, or if param_val is a list that contains expected_val."""
+            def _normalized(value):
+                return value.strip() if isinstance(value, str) else value
+
             if isinstance(param_val, list):
-                return expected_val in param_val
-            return param_val == expected_val
+                return _normalized(expected_val) in [_normalized(value) for value in param_val]
+            return _normalized(param_val) == _normalized(expected_val)
 
         # Check for 'Optional Variable'
         if not pd.isna(row['Optional Variable']):

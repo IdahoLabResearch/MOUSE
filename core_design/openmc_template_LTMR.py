@@ -691,9 +691,9 @@ def build_openmc_model_LTMR(params):
         )
 
     # Create shutdown-rod universe
-    shutdown_rod_universe = create_shutdown_rod_universe(params,materials_database) 
+    shutdown_rod_universe = create_shutdown_rod_universe(params, materials_database)
 
-     if params['plotting'] == "Y":
+    if params['plotting'] == "Y":
         create_universe_plot(
             materials_database,
             shutdown_rod_universe,
@@ -703,7 +703,7 @@ def build_openmc_model_LTMR(params):
             title="Shutdown Rod Universe",
             fig_size=8,
             output_file_name="shutdown_rod_universe.png"
-        )   
+        )
 
     # Coolant universe
     coolant_cell = openmc.Cell(fill=coolant)
@@ -720,7 +720,7 @@ def build_openmc_model_LTMR(params):
         params,
         fuel_pin_universe,
         moderator_pin_universe,
-        shutdown_rod_universe
+        shutdown_rod_universe,
         pin_pitch,
         reflector,
         coolant_universe
