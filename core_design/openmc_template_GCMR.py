@@ -103,6 +103,90 @@ def build_openmc_model_GCMR(params):
         cells.append(openmc.Cell(region=+surfs[-1] & -active_core_maxz & +active_core_minz, fill=outer_material))
         return openmc.Universe(cells=cells)
 
+
+     def create_shutdown_pin_universe(
+        params,
+        rod_radius,
+        rod_name,
+        active_core_maxz,
+        active_core_minz,
+        absorber_material,
+        coolant_material,
+        outer_material
+    ):
+        """
+        Simplified movable shutdown channel.
+
+        ARO:
+            Rod withdrawn; channel contains helium.
+
+        ARI:
+            Enriched B4C rod inserted.
+        """
+
+        if rod_radius <= 0.0:
+            raise ValueError(
+                f"{rod_name} radius must be greater than zero."
+            )
+
+        max_radius = 0.5 * params['Lattice Pitch']
+
+        if rod_radius >= max_radius:
+            raise ValueError(
+                f"{rod_name} radius ({rod_radius} cm) must be smaller "
+                f"than half the lattice pitch ({max_radius} cm)."
+            )
+
+        rod_surface = openmc.ZCylinder(
+            r=rod_radius,
+            name=f'{rod_name}_surface'
+        )
+
+        inside_region = (
+            -rod_surface
+            & -active_core_maxz
+            & +active_core_minz
+        )
+
+        outside_region = (
+            +rod_surface
+            & -active_core_maxz
+            & +active_core_minz
+        )
+
+        if params['Shutdown Margin Calc']:
+            print(
+                f">>> {rod_name}: INSERTED B4C, "
+                f"radius = {rod_radius} cm"
+            )
+            inner_material = absorber_material
+            inner_name = f'{rod_name}_inserted'
+        else:
+            print(
+                f">>> {rod_name}: WITHDRAWN Helium, "
+                f"radius = {rod_radius} cm"
+            )
+            inner_material = coolant_material
+            inner_name = f'{rod_name}_withdrawn'
+
+        inner_cell = openmc.Cell(
+            name=inner_name,
+            fill=inner_material,
+            region=inside_region
+        )
+
+        outer_cell = openmc.Cell(
+            name=f'{rod_name}_outer_graphite',
+            fill=outer_material,
+            region=outside_region
+        )
+
+        return openmc.Universe(
+            name=f'{rod_name}_universe',
+            cells=[inner_cell, outer_cell]
+        )
+   
+
     def create_assembly(num_rings, lattice_pitch, inner_fill, fuel_pin , moderator_pin, outer_ring=None, simplified_output=True):
         # Create a hexagonal lattice for the assembly
         assembly = openmc.HexLattice()
@@ -120,10 +204,45 @@ def build_openmc_model_GCMR(params):
         # Initialize the count of fuel cells
         fuel_cells = 1
         # Loop to create the rings of fuel pins around the center
-        for n in range(1, num_rings-1):
-            ring_cells = 6*n
-            rings.insert(0, [fuel_pin]*ring_cells)
-            fuel_cells += ring_cells
+        # for n in range(1, num_rings-1):
+        #     ring_cells = 6*n
+        #     rings.insert(0, [fuel_pin]*ring_cells)
+        #     fuel_cells += ring_cells
+
+        for n in range(1, num_rings - 1):
+            ring_cells = 6 * n
+            ring = [fuel_pin] * ring_cells
+
+            if (
+                shutdown_pin is not None
+                and shutdown_ring is not None
+                and n == shutdown_ring
+                and number_of_shutdown_rods > 0
+            ):
+                if ring_cells % number_of_shutdown_rods != 0:
+                    raise ValueError(
+                        f"Cannot distribute {number_of_shutdown_rods} shutdown rods "
+                        f"uniformly over assembly ring {n}, which contains "
+                        f"{ring_cells} positions."
+                    )
+
+                spacing = ring_cells // number_of_shutdown_rods
+
+                for rod_number in range(number_of_shutdown_rods):
+                    index = rod_number * spacing
+                    ring[index] = shutdown_pin
+
+                fuel_cells += ring_cells - number_of_shutdown_rods
+
+                print(
+                    f">>> Added {number_of_shutdown_rods} shutdown positions "
+                    f"to assembly ring {n}"
+                )
+
+            else:
+                fuel_cells += ring_cells
+
+            rings.insert(0, ring)
 
         if outer_ring:
             rings.insert(0, outer_ring)
@@ -250,6 +369,52 @@ def build_openmc_model_GCMR(params):
     params['Hex Lattice Radius'] = params['Lattice Pitch'] /np.sqrt(3)
     # Define the boundary of the hexagonal prism with the given edge length
     hex_boundary = openmc.model.hexagonal_prism(edge_length= params['Hex Lattice Radius'])
+
+     # Central-assembly shutdown pin
+    central_shutdown_pin_universe = create_shutdown_pin_universe(
+        params=params,
+        rod_radius=params['Central Shutdown Rod Radius'],
+        rod_name='central_shutdown_rod',
+        active_core_maxz=active_core_maxz,
+        active_core_minz=active_core_minz,
+        absorber_material=control_drum_absorber,
+        coolant_material=coolant,
+        outer_material=materials_database[params['Moderator']]
+    )
+
+    central_shutdown_lattice_hex = openmc.Universe(
+        name='central_shutdown_lattice_hex',
+        cells=[
+            openmc.Cell(
+                name='central_shutdown_lattice_cell',
+                fill=central_shutdown_pin_universe,
+                region=hex_boundary
+            )
+        ]
+    )
+
+    # Surrounding-assembly shutdown pin
+    surrounding_shutdown_pin_universe = create_shutdown_pin_universe(
+        params=params,
+        rod_radius=params['Surrounding Shutdown Rod Radius'],
+        rod_name='surrounding_shutdown_rod',
+        active_core_maxz=active_core_maxz,
+        active_core_minz=active_core_minz,
+        absorber_material=control_drum_absorber,
+        coolant_material=coolant,
+        outer_material=materials_database[params['Moderator']]
+    )
+
+    surrounding_shutdown_lattice_hex = openmc.Universe(
+        name='surrounding_shutdown_lattice_hex',
+        cells=[
+            openmc.Cell(
+                name='surrounding_shutdown_lattice_cell',
+                fill=surrounding_shutdown_pin_universe,
+                region=hex_boundary
+            )
+        ]
+    )
     # Create an instance of HexLattice
     fuel_lattice = openmc.HexLattice()
     # Set the center of the hexagonal lattice
@@ -281,9 +446,75 @@ def build_openmc_model_GCMR(params):
     #                                                Sec. 3 : Fuel ASSEMBLY 
     # **************************************************************************************************************************
 
-    assembly_universe, assembly_fuel_cells = create_assembly(params['Assembly Rings'] , params['Lattice Pitch'],\
-     openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]),\
-     fuel_lattice_hex, booster_lattice_hex, outer_ring=None, simplified_output=False)
+    # assembly_universe, assembly_fuel_cells = create_assembly(params['Assembly Rings'] , params['Lattice Pitch'],\
+    #  openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]),\
+    #  fuel_lattice_hex, booster_lattice_hex, outer_ring=None, simplified_output=False)
+
+    assembly_inner_fill = openmc.Universe(
+        cells=[
+            openmc.Cell(
+                fill=materials_database[params['Moderator']]
+            )
+        ]
+    )
+    
+    assembly_universe, assembly_fuel_cells = create_assembly(
+        num_rings=params['Assembly Rings'],
+        lattice_pitch=params['Lattice Pitch'],
+        inner_fill=assembly_inner_fill,
+        fuel_pin=fuel_lattice_hex,
+        moderator_pin=booster_lattice_hex,
+        outer_ring=None,
+        simplified_output=False
+    )
+
+    central_shutdown_assembly_universe, central_shutdown_fuel_cells = (
+        create_assembly(
+            num_rings=params['Assembly Rings'],
+            lattice_pitch=params['Lattice Pitch'],
+            inner_fill=assembly_inner_fill,
+            fuel_pin=fuel_lattice_hex,
+            moderator_pin=booster_lattice_hex,
+            shutdown_pin=central_shutdown_lattice_hex,
+            shutdown_ring=params['Central Shutdown Rod Ring'],
+            number_of_shutdown_rods=params[
+                'Central Shutdown Rod Count'
+            ],
+            outer_ring=None,
+            simplified_output=False
+        )
+    )
+
+    surrounding_shutdown_assembly_universe, surrounding_shutdown_fuel_cells = (
+        create_assembly(
+            num_rings=params['Assembly Rings'],
+            lattice_pitch=params['Lattice Pitch'],
+            inner_fill=assembly_inner_fill,
+            fuel_pin=fuel_lattice_hex,
+            moderator_pin=booster_lattice_hex,
+            shutdown_pin=surrounding_shutdown_lattice_hex,
+            shutdown_ring=params['Surrounding Shutdown Rod Ring'],
+            number_of_shutdown_rods=params[
+                'Surrounding Shutdown Rod Count'
+            ],
+            outer_ring=None,
+            simplified_output=False
+        )
+    )
+
+    print(
+        "Normal assembly fuel positions:",
+        assembly_fuel_cells
+    )
+    print(
+        "Central shutdown assembly fuel positions:",
+        central_shutdown_fuel_cells
+    )
+    print(
+        "Surrounding shutdown assembly fuel positions:",
+        surrounding_shutdown_fuel_cells
+    )
+
     
     if params['plotting'] == "Y":
     # plotting 
@@ -370,11 +601,35 @@ def build_openmc_model_GCMR(params):
     active_core.pitch = (params['Assembly FTF'],)
     active_core.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Radial Reflector']])])  # reflector Area
 
-    rings = [[assembly_universe]]
+    # rings = [[assembly_universe]]
+    # assembly_number = 1
+    # for n in range(1,  params['Core Rings']-1):
+    #     ring_cells = 6*n
+    #     rings.insert(0, [assembly_universe]*ring_cells)
+    #     assembly_number += ring_cells
+
+     # Center: one assembly with 12 large shutdown rods
+    rings = [[central_shutdown_assembly_universe]]
+
     assembly_number = 1
-    for n in range(1,  params['Core Rings']-1):
-        ring_cells = 6*n
-        rings.insert(0, [assembly_universe]*ring_cells)
+
+    for n in range(1, params['Core Rings'] - 1):
+        ring_cells = 6 * n
+
+        if n == 1:
+            # First core ring: six assemblies, each containing
+            # six smaller shutdown rods.
+            rings.insert(
+                0,
+                [surrounding_shutdown_assembly_universe] * ring_cells
+            )
+        else:
+            # All remaining inner-core assemblies are normal.
+            rings.insert(
+                0,
+                [assembly_universe] * ring_cells
+            )
+
         assembly_number += ring_cells
 
     rings.insert(0, flatten_list([[ca] + [ea]*( params['Core Rings']-2)\
@@ -388,23 +643,63 @@ def build_openmc_model_GCMR(params):
     active_core_cell = openmc.Cell(fill=active_core, region=-outer_surface & -active_core_maxz & +active_core_minz)
     active_core_universe = openmc.Universe(cells=[active_core_cell])
 
-    if params['plotting'] == "Y":
-            create_universe_plot(materials_database, active_core_universe, 
-            plot_width = 2.2 * params['Core Radius'],
-            num_pixels = 500, 
-            font_size = 32,
-            title = "Core", 
-            fig_size = 8, 
-            output_file_name = "Core.png")
 
     if params['plotting'] == "Y":
-            create_universe_plot(materials_database, active_core_universe, 
-            plot_width = 0.5 * params['Assembly FTF'] *  params['Core Rings'] ,
-            num_pixels = 500, 
-            font_size = 32,
-            title = "Core", 
-            fig_size = 8, 
-            output_file_name = "Core (zoomed in).png")        
+        core_state = (
+            'shutdown_ARI'
+            if params['Shutdown Margin Calc']
+            else 'operation_ARO'
+        )
+
+        print(
+            "Saving GCMR plot:",
+            f"Core_{core_state}.png"
+        )
+
+        create_universe_plot(
+            materials_database,
+            active_core_universe,
+            plot_width=2.2 * params['Core Radius'],
+            num_pixels=2000,
+            font_size=32,
+            title=f"Core - {core_state}",
+            fig_size=8,
+            output_file_name=f"Core_{core_state}.png"
+        )
+
+        create_universe_plot(
+            materials_database,
+            active_core_universe,
+            plot_width=(
+                0.5
+                * params['Assembly FTF']
+                * params['Core Rings']
+            ),
+            num_pixels=2000,
+            font_size=32,
+            title=f"Core - {core_state} - Zoomed",
+            fig_size=8,
+            output_file_name=(
+                f"Core_{core_state}_zoomed.png"
+            )
+        )
+    # if params['plotting'] == "Y":
+    #         create_universe_plot(materials_database, active_core_universe, 
+    #         plot_width = 2.2 * params['Core Radius'],
+    #         num_pixels = 500, 
+    #         font_size = 32,
+    #         title = "Core", 
+    #         fig_size = 8, 
+    #         output_file_name = "Core.png")
+
+    # if params['plotting'] == "Y":
+    #         create_universe_plot(materials_database, active_core_universe, 
+    #         plot_width = 0.5 * params['Assembly FTF'] *  params['Core Rings'] ,
+    #         num_pixels = 500, 
+    #         font_size = 32,
+    #         title = "Core", 
+    #         fig_size = 8, 
+    #         output_file_name = "Core (zoomed in).png")        
 
     # **************************************************************************************************************************
     #                                                Sec. 6 : VOLUME INFO for Depletion
@@ -412,8 +707,48 @@ def build_openmc_model_GCMR(params):
     # The compact fuel volume defined earlier has a height of 4
     params['Lattice Compact Volume'] =  cylinder_volume(params['Compact Fuel Radius'], 4)
 
-    outer_fuel_ring_count = 6 * (params['Core Rings'] - 1)  # corner + edge assemblies not counted in assembly_number
-    core_fuel_cells = (assembly_number + outer_fuel_ring_count) * assembly_fuel_cells
+    # outer_fuel_ring_count = 6 * (params['Core Rings'] - 1)  # corner + edge assemblies not counted in assembly_number
+    # core_fuel_cells = (assembly_number + outer_fuel_ring_count) * assembly_fuel_cells
+
+    outer_fuel_ring_count = 6 * (
+        params['Core Rings'] - 1
+    )
+
+    central_shutdown_assembly_count = 1
+    surrounding_shutdown_assembly_count = 6
+
+    # assembly_number includes:
+    # 1 center + 6 first-ring assemblies + all other inner assemblies
+    normal_inner_assembly_count = (
+        assembly_number
+        - central_shutdown_assembly_count
+        - surrounding_shutdown_assembly_count
+    )
+
+    core_fuel_cells = (
+        normal_inner_assembly_count
+        * assembly_fuel_cells
+
+        + central_shutdown_assembly_count
+        * central_shutdown_fuel_cells
+
+        + surrounding_shutdown_assembly_count
+        * surrounding_shutdown_fuel_cells
+
+        + outer_fuel_ring_count
+        * assembly_fuel_cells
+    )
+
+    print("Normal inner assemblies:", normal_inner_assembly_count)
+    print(
+        "Central shutdown assemblies:",
+        central_shutdown_assembly_count
+    )
+    print(
+        "Surrounding shutdown assemblies:",
+        surrounding_shutdown_assembly_count
+    )
+    print("Total core fuel positions:", core_fuel_cells)
     core_compact_volume = cylinder_volume(params['Compact Fuel Radius'], params['Active Height']) * core_fuel_cells
     core_triso_number = core_compact_volume / params['Lattice Compact Volume'] * compact_triso_particles_number
     kernel_volume = sphere_volume(params['Fuel Pin Radii'][0])

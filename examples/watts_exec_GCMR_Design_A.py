@@ -44,7 +44,7 @@ update_params({
     'reactor type': "GCMR",  # LTMR or GCMR
     'TRISO Fueled': "Yes",
     'Fuel': 'UCO',
-    'Enrichment': 0.1975,  # The enrichment is a fraction. It has to be between 0 and 1
+    'Enrichment': 0.12,  # The enrichment is a fraction. It has to be between 0 and 1
     'UO2 atom fraction': 0.7,  # Mixing UO2 and UC by atom fraction
     'Radial Reflector': 'Graphite',
     'Axial Reflector': 'Graphite',
@@ -67,14 +67,24 @@ update_params({
     'Fuel Pin Materials': ['UCO', 'buffer_graphite', 'PyC', 'SiC', 'PyC'],
     'Fuel Pin Radii': [0.0250, 0.0350, 0.0390, 0.0425, 0.0465],  # cm # https://art.inl.gov/NRC%20Training%202019/04_TRISO_Fuel.pdf
     'Compact Fuel Radius': 0.6225,  # cm # The radius of the area that is occupied by the TRISO particles (fuel compact/ fuel element)
-    'Packing Fraction': 0.3,
+    'Packing Fraction': 0.4,
     
     # Coolant channel and booster dimensions
     'Coolant Channel Radius': 0.35,  # cm
-    'Moderator Booster Radii': [0.55],  # cm
+    'Moderator Booster Radii': [0.5],  # cm
     'Lattice Pitch': 2.25,
     'Assembly Rings': 6,
     'Core Rings': 5,
+
+    # Central assembly
+    'Central Shutdown Rod Radius': 0.85,  # cm
+    'Central Shutdown Rod Ring': 2,
+    'Central Shutdown Rod Count': 12,
+
+    # Six assemblies surrounding the center
+    'Surrounding Shutdown Rod Radius': 0.45,  # cm
+    'Surrounding Shutdown Rod Ring': 2,
+    'Surrounding Shutdown Rod Count': 2,
 })
 params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
 # if unspecified, radial reflector thickness defaults to just cover the drums,
@@ -82,7 +92,7 @@ params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np
 # params['Radial Reflector Thickness'] = 27.393 # cm # radial reflector
 # params['Axial Reflector Thickness'] = params['Radial Reflector Thickness'] # cm
 # params['Core Radius'] = params['Assembly FTF']*params['Core Rings'] +  params['Radial Reflector Thickness']
-params['Active Height'] = 250
+params['Active Height'] = 200
 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
