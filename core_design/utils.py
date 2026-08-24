@@ -14,6 +14,58 @@ import pandas
 import copy
 
 
+# Keep a permanent, unique plotting color for every entry returned by
+# collect_materials_data, including materials that are not used by a model yet.
+MATERIAL_COLORS = {
+    'UZrH_alloy': 'red',
+    'ZrH': 'yellow',
+    'UO2': 'green',
+    'UC': 'purple',
+    'UCO': 'orange',
+    'UN': 'cyan',
+    'YHx': 'magenta',
+    'NaK': 'blue',
+    'Helium': 'grey',
+    'Be': 'brown',
+    'BeO': 'pink',
+    'Zr': 'lime',
+    'SS304': 'black',
+    'B4C_natural': 'olive',
+    'B4C_enriched': 'deepskyblue',
+    'SiC': 'teal',
+    'Graphite': 'coral',
+    'buffer_graphite': 'gold',
+    'PyC': 'salmon',
+    'homog_TRISO': 'maroon',
+    'heatpipe': 'seashell',
+    'monolith_graphite': 'navy',
+    'UZr': 'darkred',
+    'ZrC': 'slategray',
+    'MgO': 'lightyellow',
+    'WB': 'darkgray',
+    'W2B': 'dimgray',
+    'WB4': 'lightgray',
+    'WC': 'silver',
+    'vtb_air': 'aliceblue',
+    'vtb_shell_ss': 'antiquewhite',
+    'vtb_shell_air_mod': 'aquamarine',
+    'vtb_shell_air_hp': 'azure',
+    'vtb_shell_air_center': 'beige',
+    'vtb_potassium_vapor': 'bisque',
+    'vtb_potassium_liquid': 'blanchedalmond',
+    'vtb_wick': 'blueviolet',
+    'vtb_hp_vapor_liquid_wick': 'burlywood',
+    'vtb_yh_moderator': 'cadetblue',
+    'vtb_buffer': 'chartreuse',
+    'vtb_PyC': 'chocolate',
+    'vtb_SiC': 'cornflowerblue',
+    'vtb_matrix_graphite': 'cornsilk',
+    'vtb_beryllium': 'crimson',
+    'vtb_B4C_drum': 'darkblue',
+    'vtb_B4C_central': 'darkcyan',
+}
+
+
 def circle_area(r):
     return (np.pi) * r ** 2
 
@@ -147,65 +199,20 @@ def calculate_heat_flux_TRISO(params):
 def create_universe_plot(materials_database, universe, plot_width, num_pixels, font_size, title, fig_size, output_file_name):
     import matplotlib.colors as mcolors
 
-    potential_colors = { 
-        'UZrH_alloy': 'red',
-        'ZrH': 'yellow',
-        'UO2': 'green',
-        'UC': 'purple',
-        'UCO': 'orange',
-        'UN': 'cyan',
-        'YHx': 'magenta',
-        'NaK': 'blue',
-        'Helium': 'grey',
-        'Be': 'brown',
-        'BeO': 'pink',
-        'Zr': 'lime',
-        'SS304': 'black',
-        'B4C_natural': 'olive',
-        'B4C_enriched': 'deepskyblue',
-        'SiC': 'teal',
-        'Graphite': 'coral',
-        'buffer_graphite': 'gold',
-        'PyC': 'salmon',
-        'homog_TRISO': 'maroon',
-        'heatpipe': 'seashell',
-        'monolith_graphite': 'navy',
-        'UZr': 'darkred',
-        'ZrC': 'slategray',
-        'MgO': 'lightyellow',
-        'WB': 'darkgray',
-        'W2B': 'dimgray',
-        'WB4': 'lightgray',
-        'WC': 'silver',
-    }
+    missing_colors = set(materials_database) - set(MATERIAL_COLORS)
+    if missing_colors:
+        raise ValueError(
+            "Materials are missing permanent plotting colors: "
+            + ", ".join(sorted(missing_colors))
+        )
 
-    used_colors = set(mcolors.to_hex(c) for c in potential_colors.values())
-    color_pool = [
-        name for name, hex_val in mcolors.CSS4_COLORS.items()
-        if mcolors.to_hex(hex_val) not in used_colors
-    ]
-
-    for mat_name in materials_database:
-        if mat_name not in potential_colors:
-            if not color_pool:
-                raise ValueError(
-                    f"Could not auto-assign a color for material '{mat_name}': "
-                    f"no unique colors remaining in the CSS4 pool. "
-                    f"Please manually add a color for this material in potential_colors."
-                )
-            auto_color = color_pool.pop(0)
-            potential_colors[mat_name] = auto_color
-            used_colors.add(mcolors.to_hex(auto_color))
-            print(
-                f"\033[93m--- WARNING: Material '{mat_name}' does not have a color specified "
-                f"in potential_colors. Automatically assigned color: '{auto_color}'. "
-                f"Please add a permanent entry for this material in the potential_colors "
-                f"dictionary in create_universe_plot (utils.py) to suppress this warning.\033[0m"
-            )
+    resolved_colors = [mcolors.to_hex(color) for color in MATERIAL_COLORS.values()]
+    if len(resolved_colors) != len(set(resolved_colors)):
+        raise ValueError("MATERIAL_COLORS must assign a unique color to every material")
 
     colors = {
         materials_database[mat_name]: color
-        for mat_name, color in potential_colors.items()
+        for mat_name, color in MATERIAL_COLORS.items()
         if mat_name in materials_database
     }
 
@@ -252,7 +259,7 @@ def create_universe_plot(materials_database, universe, plot_width, num_pixels, f
 
     legend_patches = [
         mpatches.Patch(color=color, label=mat_name)
-        for mat_name, color in potential_colors.items()
+        for mat_name, color in MATERIAL_COLORS.items()
         if mat_name in materials_database and materials_database[mat_name] in used_materials
     ]
     universe_plot.legend(
