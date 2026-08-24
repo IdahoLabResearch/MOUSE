@@ -206,15 +206,67 @@ def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None)
                 f"{estimated_total_leakage_bol_pct:.5f}" if idx == 0 and not np.isnan(estimated_total_leakage_bol_pct) else ""
             ])
 
+    # plt.figure()
+    # plt.plot(time_steps, keff_2d_values, marker='o', linestyle='-', color='r', label='keff_2D')
+    # plt.plot(time_steps, keff_2d_corrected_values, marker='o', linestyle='-', color='g', label='corrected_keff_2D')
+    # plt.xlabel('Time [days]')
+    # plt.ylabel('k-effective')
+    # plt.title('Comparison of keff_2D and corrected_keff_2D vs. Time')
+    # plt.grid(True)
+    # plt.legend()
+    # plt.savefig('keff_comparison_vs_Time.png')
+    # plt.show()
+
+
+    # Plot only the operating-period portion of the depletion history.
+    # This does not change the depletion calculation or cycle-length result.
+    plot_limit_days = 2000.0
+
+    plot_indices = [
+        i for i, t in enumerate(time_steps)
+        if t <= plot_limit_days
+    ]
+
+    # Include the first point after the limit so the downward trend is visible.
+    if plot_indices:
+        last_index = min(plot_indices[-1] + 2, len(time_steps))
+    else:
+        last_index = min(2, len(time_steps))
+
     plt.figure()
-    plt.plot(time_steps, keff_2d_values, marker='o', linestyle='-', color='r', label='keff_2D')
-    plt.plot(time_steps, keff_2d_corrected_values, marker='o', linestyle='-', color='g', label='corrected_keff_2D')
+
+    plt.plot(
+        time_steps[:last_index],
+        keff_2d_values[:last_index],
+        marker='o',
+        linestyle='-',
+        color='r',
+        label='keff_2D'
+    )
+
+    plt.plot(
+        time_steps[:last_index],
+        keff_2d_corrected_values[:last_index],
+        marker='o',
+        linestyle='-',
+        color='g',
+        label='corrected_keff_2D'
+    )
+
+    plt.axhline(
+        y=1.0,
+        color='k',
+        linestyle='--',
+        label='k = 1'
+    )
+
     plt.xlabel('Time [days]')
     plt.ylabel('k-effective')
     plt.title('Comparison of keff_2D and corrected_keff_2D vs. Time')
     plt.grid(True)
     plt.legend()
-    plt.savefig('keff_comparison_vs_Time.png')
+    plt.tight_layout()
+    plt.savefig('keff_comparison_vs_Time.png', dpi=300)
     plt.show()
 
     cycle_length = None
@@ -247,3 +299,66 @@ def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None)
         bol_total_non_leakage_probability,
         estimated_total_leakage_bol_pct
     )
+
+
+    # This function is for steady state calculations 
+    def corrected_keff_steady_state(statepoint_file, total_height, core_radius=None):
+    geometry = openmc.Geometry.from_xml()
+    root_universe = geometry.root_universe
+
+    group_edges = np.array([
+        1e-5, 6.7e-2, 3.2e-1, 1, 4, 9.88,
+        4.81e1, 4.54e2, 4.9e4, 1.83e5, 8.21e5, 4e7
+    ])
+
+    groups = openmc.mgxs.EnergyGroups(group_edges)
+
+    mgxs_lib = openmc.mgxs.Library(geometry)
+    mgxs_lib.energy_groups = groups
+    mgxs_lib.mgxs_types = [
+        'absorption',
+        'diffusion-coefficient',
+        'transport',
+        'scatter matrix',
+        'total',
+        'scatter'
+    ]
+    mgxs_lib.domain_type = 'universe'
+    mgxs_lib.domains = [root_universe]
+    mgxs_lib.build_library()
+
+    with openmc.StatePoint(statepoint_file) as sp:
+        mgxs_lib.load_from_statepoint(sp)
+
+        keff_2d = sp.keff.nominal_value
+        keff_2d_uncertainty = sp.keff.std_dev
+
+        abs_xs_mg = mgxs_lib.get_mgxs(root_universe, 'absorption')
+        trans_xs_mg = mgxs_lib.get_mgxs(root_universe, 'transport')
+
+        abs_xs_array = abs_xs_mg.get_xs(
+            nuclide='total',
+            mgxs_type='absorption',
+            collapse=True
+        )
+
+        trans_xs_array = trans_xs_mg.get_xs(
+            nuclide='total',
+            mgxs_type='transport',
+            collapse=True
+        )
+
+        abs_xs_1g = float(np.mean(abs_xs_array))
+        trans_xs_1g = float(np.mean(trans_xs_array))
+
+        diffcoeff_1g = 1.0 / (3.0 * trans_xs_1g)
+        diffusion_length_squared = diffcoeff_1g / abs_xs_1g
+
+        extrapolated_height = total_height + (2.0 * diffcoeff_1g)
+        buckling_axial = (np.pi / extrapolated_height) ** 2
+        p_nl_axial = 1.0 / (1.0 + diffusion_length_squared * buckling_axial)
+
+        keff_3d_corrected = p_nl_axial * keff_2d
+        keff_3d_corrected_uncertainty = p_nl_axial * keff_2d_uncertainty
+
+    return keff_2d, keff_3d_corrected, p_nl_axial    

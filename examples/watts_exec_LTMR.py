@@ -45,7 +45,7 @@ update_params({
     'reactor type': "LTMR", # LTMR or GCMR
     'TRISO Fueled': "No",
     'Fuel': 'UZrH_alloy',
-    'Enrichment': 0.1975,  # Fraction between 0 and 1
+    'Enrichment': 0.05,  # Fraction between 0 and 1
     "H_Zr_ratio": 1.6,  # Proportion of hydrogen to zirconium atoms
     'U_met_wo': 0.3,  # Weight ratio of Uranium to total fuel weight (less than 1)
     'er_wo': 0,       # Erbium (burnable poison)
@@ -70,14 +70,14 @@ update_params({
     'Moderator Pin Radii': [1.5367, 1.5875],  # [params['Moderator Pin Inner Radius'], params['Fuel Pin Radii'][-1]]
     "Pin Gap Distance": 0.1,  # cm
     'Pins Arrangement': LTMR_pins_arrangement,
-    'Number of Rings per Assembly': 12, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
+    'Number of Rings per Assembly': 14, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
     'Radial Reflector Thickness': 14,  # cm
 })
 
 params['Lattice Apothem'] = calculate_hex_apothem(params)
 params['Lattice Radius'] = params['Lattice Apothem']
 params['Assembly FTF'] = 2 * params['Lattice Apothem']
-params['Active Height']  = 78.4
+params['Active Height']  = 120
 params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']  # cm
 params['Fuel Pin Count'] = calculate_pins_in_assembly(params, "FUEL")
 params['Moderator Pin Count'] = calculate_pins_in_assembly(params, "MODERATOR")
@@ -89,11 +89,21 @@ params['Core Radius'] = calculate_core_radius_from_hex(params)
 # ************************************************************************************************************************** 
 
 update_params({
-    'Number of Drums': 12,
+    'Number of Drums': 6,
     # When the user does not specify the drum radius, the code automatically sets it to the largest allowable value that avoids drum overlap
     #'Drum Radius': 9.016, #,  # cm
     'Drum Absorber Thickness': 1,  # cm
     'Drum Absorber Arc Degrees': 120,
+    'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
+    'Shutdown Rod Absorber': 'B4C_enriched',
+    'Shutdown Rod Cladding': 'SS304',
+
+    # Must fit inside the existing pin envelope
+    'Shutdown Rod Absorber Radius': 1.30,  # cm
+    'Shutdown Rod Clad Radius': 1.50,      # cm
+
+    # Number of moderator positions changed to shutdown channels
+    'Number of Shutdown Rods': 6,
 })
 
 update_ltmr_reflector_geometry_from_drums(params)

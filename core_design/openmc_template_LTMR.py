@@ -68,6 +68,96 @@ def create_pin_regions(params, pin_type):
 
     return regions
 
+def create_shutdown_rod_universe(params, materials_database):
+    """
+    Simplified shutdown channel:
+
+    ARO:
+        Absorber withdrawn; channel contains NaK.
+
+    ARI:
+        Enriched B4C absorber inserted.
+    """
+
+    absorber_radius = params['Shutdown Rod Absorber Radius']
+    clad_radius = params['Shutdown Rod Clad Radius']
+
+    if absorber_radius <= 0.0:
+        raise ValueError(
+            "Shutdown Rod Absorber Radius must be greater than zero."
+        )
+
+    if absorber_radius >= clad_radius:
+        raise ValueError(
+            "Shutdown Rod Absorber Radius must be smaller than "
+            "Shutdown Rod Clad Radius."
+        )
+
+    if clad_radius >= params['Fuel Pin Radii'][-1]:
+        raise ValueError(
+            "Shutdown Rod Clad Radius must be smaller than "
+            "the existing pin outer radius."
+        )
+
+    absorber_surface = openmc.ZCylinder(
+        r=absorber_radius,
+        name='shutdown_absorber_surface'
+    )
+
+    clad_surface = openmc.ZCylinder(
+        r=clad_radius,
+        name='shutdown_clad_surface'
+    )
+
+    absorber_material = materials_database[
+        params['Shutdown Rod Absorber']
+    ]
+
+    clad_material = materials_database[
+        params['Shutdown Rod Cladding']
+    ]
+
+    coolant_material = materials_database[
+        params['Coolant']
+    ]
+
+    if params['Shutdown Margin Calc']:
+        print(">>> SHUTDOWN RODS: INSERTED (B4C)")
+        inner_material = absorber_material
+        inner_name = 'shutdown_absorber_inserted'
+    else:
+        print(">>> SHUTDOWN RODS: WITHDRAWN (NaK)")
+        inner_material = coolant_material
+        inner_name = 'shutdown_channel_empty'
+
+    inner_cell = openmc.Cell(
+        name=inner_name,
+        fill=inner_material,
+        region=-absorber_surface
+    )
+
+    clad_cell = openmc.Cell(
+        name='shutdown_rod_cladding',
+        fill=clad_material,
+        region=+absorber_surface & -clad_surface
+    )
+
+    outside_coolant_cell = openmc.Cell(
+        name='shutdown_rod_outer_coolant',
+        fill=coolant_material,
+        region=+clad_surface
+    )
+
+    shutdown_rod_universe = openmc.Universe(
+        name='shutdown_rod_universe',
+        cells=[
+            inner_cell,
+            clad_cell,
+            outside_coolant_cell,
+        ]
+    )
+
+    return shutdown_rod_universe
 
 def _get_valid_drum_counts():
     return [6, 12, 18, 24, 30, 36]
@@ -231,20 +321,55 @@ def create_drums_universe(params, control_drum_absorber_material, control_drum_r
     return drums
 
 
-def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, pin_pitch, reflector_material, outer_coolant_universe):
+# def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, pin_pitch, reflector_material, outer_coolant_universe):
+#     """
+#     Creating the universe of the fuel assembly
+#     @ In, params, dict, The parameters that are used to "fill in" input files with placeholders.
+#     @ In, fuel_pin_universe, openmc.universe.Universe
+#     @ In, moderator_pin_universe, openmc.universe.Universe
+#     @ In, pin_pitch, float, the center-to-center distance between adjacent fuel/moderator pins
+#     @ In, reflector_material, openmc.material.Material, the material of the outer radial reflector
+#     @ In, outer_coolant_universe, openmc.universe.Universe, the OpenMC universe of the coolant in the assembly
+#     @ out, assembly_universe, openmc.universe.Universe, the fuel assembly universe
+#     """
+
+#     assembly = openmc.HexLattice()
+#     assembly.center = (0., 0.)
+#     assembly.pitch = (pin_pitch,)
+#     assembly.outer = outer_coolant_universe
+
+#     rings = copy.deepcopy(params['Pins Arrangement'])
+#     rings = rings[-params['Number of Rings per Assembly']:]
+
+#     for i in range(len(rings)):
+#         for j in range(len(rings[i])):
+#             if rings[i][j] == 'FUEL':
+#                 rings[i][j] = fuel_pin_universe
+#             elif rings[i][j] == 'MODERATOR':
+#                 rings[i][j] = moderator_pin_universe
+
+#     assembly.universes = rings
+
+#     hex_edge_length = calculate_hex_edge_length(params)
+#     assembly_boundary = openmc.model.hexagonal_prism(
+#         edge_length=hex_edge_length,
+#         corner_radius=params['Fuel Pin Radii'][-1] + params["Pin Gap Distance"]
+#     )
+
+#     fuel_assembly_cell = openmc.Cell(fill=assembly, region=assembly_boundary)
+#     reflector_cell = openmc.Cell(fill=reflector_material, region=~assembly_boundary)
+
+#     assembly_universe = openmc.Universe(cells=[fuel_assembly_cell, reflector_cell])
+
+#     return assembly_universe
+
+def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, shutdown_rod_universe, pin_pitch, reflector_material, outer_coolant_universe):
     """
-    Creating the universe of the fuel assembly
-    @ In, params, dict, The parameters that are used to "fill in" input files with placeholders.
-    @ In, fuel_pin_universe, openmc.universe.Universe
-    @ In, moderator_pin_universe, openmc.universe.Universe
-    @ In, pin_pitch, float, the center-to-center distance between adjacent fuel/moderator pins
-    @ In, reflector_material, openmc.material.Material, the material of the outer radial reflector
-    @ In, outer_coolant_universe, openmc.universe.Universe, the OpenMC universe of the coolant in the assembly
-    @ out, assembly_universe, openmc.universe.Universe, the fuel assembly universe
+    Creating the universe of the fuel assembly.
     """
 
     assembly = openmc.HexLattice()
-    assembly.center = (0., 0.)
+    assembly.center = (0.0, 0.0)
     assembly.pitch = (pin_pitch,)
     assembly.outer = outer_coolant_universe
 
@@ -255,21 +380,47 @@ def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, 
         for j in range(len(rings[i])):
             if rings[i][j] == 'FUEL':
                 rings[i][j] = fuel_pin_universe
+
             elif rings[i][j] == 'MODERATOR':
                 rings[i][j] = moderator_pin_universe
+
+            elif rings[i][j] == 'SHUTDOWN':
+                rings[i][j] = shutdown_rod_universe
+
+            else:
+                raise ValueError(
+                    f"Unknown pin label at ring {i}, position {j}: "
+                    f"{rings[i][j]!r}"
+                )
 
     assembly.universes = rings
 
     hex_edge_length = calculate_hex_edge_length(params)
+
     assembly_boundary = openmc.model.hexagonal_prism(
         edge_length=hex_edge_length,
-        corner_radius=params['Fuel Pin Radii'][-1] + params["Pin Gap Distance"]
+        corner_radius=(
+            params['Fuel Pin Radii'][-1]
+            + params['Pin Gap Distance']
+        )
     )
 
-    fuel_assembly_cell = openmc.Cell(fill=assembly, region=assembly_boundary)
-    reflector_cell = openmc.Cell(fill=reflector_material, region=~assembly_boundary)
+    fuel_assembly_cell = openmc.Cell(
+        fill=assembly,
+        region=assembly_boundary
+    )
 
-    assembly_universe = openmc.Universe(cells=[fuel_assembly_cell, reflector_cell])
+    reflector_cell = openmc.Cell(
+        fill=reflector_material,
+        region=~assembly_boundary
+    )
+
+    assembly_universe = openmc.Universe(
+        cells=[
+            fuel_assembly_cell,
+            reflector_cell
+        ]
+    )
 
     return assembly_universe
 
@@ -457,6 +608,8 @@ def build_openmc_model_LTMR(params):
     reflector = materials_database[params['Radial Reflector']]
     control_drum_absorber = materials_database[params['Control Drum Absorber']]
     control_drum_reflector = materials_database[params['Control Drum Reflector']]
+    shutdown_rod_absorber = materials_database[params['Shutdown Rod Absorber']]
+    shutdown_rod_cladding = materials_database[params['Shutdown Rod Cladding']]
 
     # **************************************************************************************************************************
     #                                                Sec. 1.2 : Pin Cell Universes and Coolant
@@ -537,6 +690,21 @@ def build_openmc_model_LTMR(params):
             output_file_name="moderator_pin_universe.png"
         )
 
+    # Create shutdown-rod universe
+    shutdown_rod_universe = create_shutdown_rod_universe(params,materials_database) 
+
+     if params['plotting'] == "Y":
+        create_universe_plot(
+            materials_database,
+            shutdown_rod_universe,
+            plot_width=2.2 * params['Fuel Pin Radii'][-1],
+            num_pixels=500,
+            font_size=32,
+            title="Shutdown Rod Universe",
+            fig_size=8,
+            output_file_name="shutdown_rod_universe.png"
+        )   
+
     # Coolant universe
     coolant_cell = openmc.Cell(fill=coolant)
     coolant_universe = openmc.Universe(cells=(coolant_cell,))
@@ -552,6 +720,7 @@ def build_openmc_model_LTMR(params):
         params,
         fuel_pin_universe,
         moderator_pin_universe,
+        shutdown_rod_universe
         pin_pitch,
         reflector,
         coolant_universe
@@ -572,7 +741,7 @@ def build_openmc_model_LTMR(params):
     all_materials = (
         fuel_materials
         + moderator_materials
-        + [coolant, reflector, control_drum_absorber, control_drum_reflector]
+        + [coolant, reflector, control_drum_absorber, control_drum_reflector, shutdown_rod_absorber, shutdown_rod_cladding]
     )
 
     # Remove None materials while preserving their deterministic order
@@ -603,15 +772,44 @@ def build_openmc_model_LTMR(params):
 
     core_geometry.export_to_xml()
 
+    # if params['plotting'] == "Y":
+    #     drum_state_label = "shutdown" if params['Shutdown Margin Calc'] else "operation"
+    #     create_universe_plot(
+    #         materials_database,
+    #         core_geometry,
+    #         plot_width=2.01 * params['Core Radius'],
+    #         num_pixels=2000,
+    #         font_size=32,
+    #         title="Reactor Core",
+    #         fig_size=8,
+    #         output_file_name=f"core_{drum_state_label}.png"
+    #     )
+
     if params['plotting'] == "Y":
-        drum_state_label = "shutdown" if params['Shutdown Margin Calc'] else "operation"
+
+        print(
+            "CORE PLOT: Shutdown Margin Calc =",
+            params['Shutdown Margin Calc']
+        )
+
+        drum_state_label = (
+            "shutdown"
+            if params['Shutdown Margin Calc']
+            else "operation"
+        )
+
+        print(
+            "CORE PLOT FILE =",
+            f"core_{drum_state_label}.png"
+        )
+
         create_universe_plot(
             materials_database,
             core_geometry,
             plot_width=2.01 * params['Core Radius'],
             num_pixels=2000,
             font_size=32,
-            title="Reactor Core",
+            title=f"Reactor Core - {drum_state_label}",
             fig_size=8,
             output_file_name=f"core_{drum_state_label}.png"
         )
@@ -657,7 +855,7 @@ def build_openmc_model_LTMR(params):
     if 'Particles' in params.keys():
         settings.particles = int(params['Particles'])
     else:
-        settings.particles = 1000
+        settings.particles = 10000
 
     settings.temperature = {
         'default': params['Common Temperature'],
