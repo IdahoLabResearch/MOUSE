@@ -1393,6 +1393,56 @@ PARAMS_REGISTRY = {
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     # --- Servicing Facility ---
+    'Max Reactors Per Servicing Facility': {
+        'group': 'Central Facility', 'units': 'reactors/facility',
+        'description': 'Maximum number of reactors assigned to one servicing facility.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Servicing Facility OCC Learning Rate': {
+        'group': 'Learning Rates', 'units': 'fraction per doubling',
+        'description': 'OCC reduction for each doubling of servicing-facility experience.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Servicing Facility Learning Cap': {
+        'group': 'Learning Rates', 'units': 'facilities',
+        'description': 'Facility number after which servicing-facility OCC learning stops.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Servicing Facility Count': {
+        'group': 'Central Facility', 'units': 'facilities',
+        'description': 'Number of servicing facilities required for the fleet.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Servicing Facility Reactor Counts': {
+        'group': 'Central Facility', 'units': 'reactors',
+        'description': 'Balanced whole-reactor allocation across servicing facilities.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'Servicing Facility Design Capacity': {
+        'group': 'Central Facility', 'units': 'reactors/facility',
+        'description': 'Standard facility capacity based on the largest assigned reactor count.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Servicing Rate Per Facility': {
+        'group': 'Central Facility', 'units': 'reactors/year/facility',
+        'description': 'Fleet servicing rate distributed evenly across facilities.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Servicing Facility OCC Learning Multipliers': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'Sequential OCC multiplier for each servicing facility.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'Cask Learning Rate': {
+        'group': 'Learning Rates', 'units': 'fraction per doubling',
+        'description': 'Unit-cost reduction for each doubling of cask production experience.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Cask Learning Cap': {
+        'group': 'Learning Rates', 'units': 'casks',
+        'description': 'Cask number after which unit-cost learning stops.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'Servicing Facility Perimeter': {
         'group': 'Central Facility', 'units': 'm',
         'description': 'Perimeter of servicing facility for security fencing.',

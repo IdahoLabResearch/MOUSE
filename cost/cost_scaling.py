@@ -3,10 +3,13 @@
 import numpy as np
 import pandas as pd
 from cost.sampling import sampler
+from cost.fleet_mode import cumulative_unit_learning_multiplier
 
 NONSTANDARD_COST_ACCOUNTS = {
     222.11, 222.12, 222.13, 253, 711, 712, 713, 714, 715, 721, 744, 81
 }
+
+CASK_ANNUAL_COST_ACCOUNTS = {747.21, 747.22, 747.23}
 
 
 def non_standard_cost_scale(
@@ -357,6 +360,23 @@ def scale_campus_cost(
                         estimated_cost = 0
                     else:
                         estimated_cost = estimated_cost * count_variable_value
+
+                # Learn against total fleet-wide annual cask demand. Campus
+                # costs are calculated for one facility and replicated later,
+                # so use the fleet total to avoid restarting learning at every
+                # servicing facility.
+                if row['Account'] in CASK_ANNUAL_COST_ACCOUNTS:
+                    total_cask_count = (
+                        count_variable_value
+                        * params.get('Servicing Facility Count', 1)
+                    )
+                    if total_cask_count > 0:
+                        learned_total = cumulative_unit_learning_multiplier(
+                            total_cask_count,
+                            params.get('Cask Learning Rate', 0.15),
+                            params.get('Cask Learning Cap', 100),
+                        )
+                        estimated_cost *= learned_total / total_cask_count
 
             scaled_cost.at[index, f'FOAK Estimated Cost (${escalation_year })'] = estimated_cost
         else:

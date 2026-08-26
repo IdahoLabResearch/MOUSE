@@ -27,6 +27,7 @@ from cost.non_direct_cost import (validate_tax_credit_params, calculate_accounts
 from cost.params_registry import PARAMS_REGISTRY, GROUP_ORDER
 from reactor_engineering_evaluation.operation import reactor_operation
 from cost.cost_drivers import cost_drivers_estimate
+from cost.fleet_mode import servicing_facility_occ_learning_multipliers
 
 
 FLEET_MODE_REACTOR_EXCLUDED_ACCOUNTS = (
@@ -632,9 +633,28 @@ def _calculate_servicing_campus_sample(
     sampled_cost_inputs=None,
     return_sampled_inputs=False,
 ):
+    facility_count = int(params.get('Servicing Facility Count', 1))
+    if facility_count < 1:
+        raise ValueError("'Servicing Facility Count' must be at least one.")
+
+    # Size and cost one representative servicing facility. Fleet Mode assigns
+    # reactors and servicing events evenly across replicated facilities, then
+    # multiplies the completed facility estimate below. Keep ``Fleet`` at its
+    # fleet-wide value so the facility's LCOE contribution uses total fleet
+    # generation as its denominator.
+    facility_params = copy.deepcopy(params)
+    facility_params['Generating Sites Count'] = params.get(
+        'Servicing Facility Design Capacity',
+        math.ceil(params['Generating Sites Count'] / facility_count),
+    )
+    facility_params['Servicing Rate'] = params.get(
+        'Servicing Rate Per Facility',
+        params['Servicing Rate'] / facility_count,
+    )
+
     scaled_result = scale_campus_cost(
         cleaned_cost,
-        params,
+        facility_params,
         sampled_cost_inputs=sampled_cost_inputs,
         return_sampled_inputs=return_sampled_inputs,
     )
@@ -648,18 +668,48 @@ def _calculate_servicing_campus_sample(
     internal_column = value_column.replace('FOAK', 'NOAK')
     scaled_cost[internal_column] = scaled_cost[value_column]
 
+    learning_multipliers = servicing_facility_occ_learning_multipliers(
+        facility_count,
+        params.get('Servicing Facility OCC Learning Rate', 0.30),
+        params.get('Servicing Facility Learning Cap', 5),
+    )
+    average_learning_multiplier = sum(learning_multipliers) / facility_count
+
     updated_cost = update_high_level_costs(scaled_cost, 'base', aggregation_sample)
-    updated_cost = calculate_servicing_campus_derived_costs(updated_cost, params)
+    updated_cost = calculate_servicing_campus_derived_costs(updated_cost, facility_params)
     updated_cost = update_high_level_costs(updated_cost, 'other', aggregation_sample)
-    updated_cost = calculate_servicing_campus_capital_costs(updated_cost, params)
+    numeric_accounts = pd.to_numeric(updated_cost['Account'], errors='coerce')
+    capital_rows = numeric_accounts.ge(10) & numeric_accounts.lt(60)
+    updated_cost.loc[capital_rows, [value_column, internal_column]] *= (
+        average_learning_multiplier
+    )
+    # Recalculate annual accounts tied to learned direct-capital equipment.
+    updated_cost = calculate_servicing_campus_derived_costs(
+        updated_cost, facility_params
+    )
+    updated_cost = calculate_servicing_campus_capital_costs(updated_cost, facility_params)
     updated_cost = update_high_level_costs(updated_cost, 'finance', aggregation_sample)
-    updated_cost = calculate_servicing_campus_TCI(updated_cost, params)
+    updated_cost = calculate_servicing_campus_TCI(updated_cost, facility_params)
     updated_cost = update_high_level_costs(updated_cost, 'annual', aggregation_sample)
     updated_cost = _calculate_servicing_campus_annual_totals(updated_cost)
-    final_cost = energy_cost_levelized_servicing_campus(params, updated_cost)
+    final_cost = energy_cost_levelized_servicing_campus(facility_params, updated_cost)
 
     sample_result = final_cost[['Account', 'Account Title', value_column]].copy()
     sample_result.rename(columns={value_column: 'Value'}, inplace=True)
+    sample_result['Value'] *= facility_count
+
+    # Normalize summary rows against the complete fleet after replication.
+    generating_sites = params['Generating Sites Count']
+    for total_account, per_reactor_account in (
+        ('OCC', 'OCC per reactor'),
+        ('TCI', 'TCI per reactor'),
+        ('Annual Cost', 'Annual Cost per reactor'),
+    ):
+        total_rows = sample_result['Account'] == total_account
+        per_reactor_rows = sample_result['Account'] == per_reactor_account
+        sample_result.loc[per_reactor_rows, 'Value'] = (
+            sample_result.loc[total_rows, 'Value'].iloc[0] / generating_sites
+        )
     if return_sampled_inputs:
         return sample_result, sampled_values
     return sample_result
@@ -918,16 +968,24 @@ def _servicing_operating_state_params(params, operating_reactors, service_events
     state['Generating Sites Count'] = operating_reactors
     state['Servicing Rate'] = service_events
 
-    service_scale = np.rint(service_events / 3)
+    facility_count = int(state.get('Servicing Facility Count', 1))
+    state['Servicing Facility Design Capacity'] = math.ceil(
+        operating_reactors / facility_count
+    )
+    state['Servicing Rate Per Facility'] = service_events / facility_count
+
+    service_events_per_facility = state['Servicing Rate Per Facility']
+    reactors_per_facility = state['Servicing Facility Design Capacity']
+    service_scale = np.rint(service_events_per_facility / 3)
     state['SER Switchyard Average Power'] = 6 * service_scale ** 0.698970
     state['Servicing Hot Cell Count'] = np.ceil(
-        service_events / state['Servicing Hot Cell Annual Rate']
+        service_events_per_facility / state['Servicing Hot Cell Annual Rate']
     )
     state['He Gas Replenishment'] = (
         state['Servicing Hot Cell Count'] * state['He Gas Replenishment Per Hot Cell']
         + state['Radioactive Waste Processing Hot Cell Count']
         * state['He Gas Replenishment Per Hot Cell']
-        + state['CoolantInventoryRPV_Mass'] * service_events
+        + state['CoolantInventoryRPV_Mass'] * service_events_per_facility
     )
     state['SER Number of Operators Per Shift'] = np.ceil(
         5.625 * service_scale ** 0.426
@@ -947,35 +1005,35 @@ def _servicing_operating_state_params(params, operating_reactors, service_events
         + state['Dwell Time Serv']
     )
     state['Reactor Transport Vehicle Count'] = np.ceil(
-        service_events * reactor_trip_time + 1
+        service_events_per_facility * reactor_trip_time + 1
     )
     state['Helium Transport Truck Count'] = np.ceil(
-        operating_reactors
+        reactors_per_facility
         * state['Annual Coolant Supply Frequency']
         * supply_trip_time
         * 1.05
     )
     state['Water Tanker Truck Count'] = np.ceil(
-        operating_reactors
+        reactors_per_facility
         * state['Water Supply Frequency']
         * supply_trip_time
         * 1.05
     )
     state['Maintenance Truck Count'] = np.ceil(
-        operating_reactors
+        reactors_per_facility
         * state['Maintenance Visit Frequency']
         * supply_trip_time
         * 1.05
     )
 
     state['Reactor Transport Cask Count'] = round(
-        service_events * (4 / 12) * 1.5, -1
+        service_events_per_facility * (4 / 12) * 1.5, -1
     )
-    state['Annual Used Fuel Cask Consumption'] = service_events
+    state['Annual Used Fuel Cask Consumption'] = service_events_per_facility
     state['Annual Reactor Cask Replacement'] = np.ceil(
         0.05 * state['Reactor Transport Cask Count']
     )
-    state['Annual Radwaste Cask Consumption'] = 0.5 * service_events
+    state['Annual Radwaste Cask Consumption'] = 0.5 * service_events_per_facility
     return state
 
 
@@ -1240,6 +1298,10 @@ def build_servicing_annual_cost_samples(
                     params['SER Account 716 to Accounts 711-715 Ratio']
                     + params['SER Account 717 to Accounts 711-715 Ratio']
                 ) * staffing_cost
+                # Dynamic costs above describe one representative servicing
+                # facility. Replicate them before combining them with the
+                # already fleet-total fixed annual accounts.
+                dynamic_cost *= int(params.get('Servicing Facility Count', 1))
 
                 fixed_annual_accounts = [
                     741, 742, 743, 747.1, 747.4, 75, 78,
