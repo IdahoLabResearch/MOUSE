@@ -74,14 +74,14 @@ update_params({
         params['Number of Shutdown Rods']
     ),
     'Number of Rings per Assembly': 14, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
-    'Radial Reflector Thickness': 19.515,  # cm; contains 9.016 cm drums for the 14-ring assembly
+    'Radial Reflector Thickness': 44.54,  # cm
+    'Axial Reflector Thickness': 44.54,  # cm
 })
 
 params['Lattice Apothem'] = calculate_hex_apothem(params)
 params['Lattice Radius'] = params['Lattice Apothem']
 params['Assembly FTF'] = 2 * params['Lattice Apothem']
 params['Active Height']  = 120
-params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']  # cm
 params['Fuel Pin Count'] = calculate_pins_in_assembly(params, "FUEL")
 params['Moderator Pin Count'] = calculate_pins_in_assembly(params, "MODERATOR")
 params['Moderator Mass'] = calculate_moderator_mass(params)

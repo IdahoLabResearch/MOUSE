@@ -550,29 +550,45 @@ def create_control_drums_positions(params):
 
 def update_ltmr_reflector_geometry_from_drums(params):
     """
-    For LTMR, derive:
-    - Core Radius
-    - Radial Reflector Thickness
-    - Axial Reflector Thickness
-    - Drum Height
+    Resolve LTMR reflector geometry around the selected control-drum layout.
 
-    from the actual drum layout implied by Number of Drums and Drum Radius.
+    When Drum Radius and Radial Reflector Thickness are both explicit inputs,
+    preserve the requested reflector thickness and validate that it contains
+    every drum tube.  For legacy inputs with an automatically selected drum
+    radius, retain the historical behavior of deriving the minimum reflector
+    thickness from the drum layout.
+
+    Axial Reflector Thickness is independent of the radial drum layout.  It
+    defaults to the resolved radial thickness only when it is not provided.
     """
+    drum_radius_is_explicit = 'Drum Radius' in params
     drum_radius = resolve_drum_radius(params)
     drum_tube_radius = drum_radius + drum_radius / 90.0
 
     drum_positions = create_control_drums_positions(params)
 
-    max_outer_radius = max(
+    minimum_core_radius = max(
         np.sqrt(x ** 2 + y ** 2) + drum_tube_radius
         for x, y, _ in drum_positions
     )
 
     hex_apothem = calculate_hex_apothem(params)
+    minimum_radial_thickness = minimum_core_radius - hex_apothem
 
-    params['Core Radius'] = max_outer_radius
-    params['Radial Reflector Thickness'] = params['Core Radius'] - hex_apothem
-    params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']
+    if drum_radius_is_explicit and 'Radial Reflector Thickness' in params:
+        radial_thickness = float(params['Radial Reflector Thickness'])
+        if radial_thickness + 1e-9 < minimum_radial_thickness:
+            raise ValueError(
+                "Radial Reflector Thickness is too small for the explicit "
+                f"LTMR drum layout. At least {minimum_radial_thickness:.4f} "
+                f"cm is required, but got {radial_thickness:.4f} cm."
+            )
+    else:
+        radial_thickness = minimum_radial_thickness
+
+    params['Radial Reflector Thickness'] = radial_thickness
+    params['Core Radius'] = hex_apothem + radial_thickness
+    params.setdefault('Axial Reflector Thickness', radial_thickness)
     params['Drum Height'] = params['Active Height'] + 2 * params['Axial Reflector Thickness']
 
     return drum_positions
