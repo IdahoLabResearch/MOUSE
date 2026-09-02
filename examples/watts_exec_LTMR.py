@@ -74,7 +74,7 @@ update_params({
         params['Number of Shutdown Rods']
     ),
     'Number of Rings per Assembly': 14, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
-    'Radial Reflector Thickness': 14,  # cm
+    'Radial Reflector Thickness': 19.515,  # cm; contains 9.016 cm drums for the 14-ring assembly
 })
 
 params['Lattice Apothem'] = calculate_hex_apothem(params)
@@ -92,9 +92,8 @@ params['Core Radius'] = calculate_core_radius_from_hex(params)
 # ************************************************************************************************************************** 
 
 update_params({
-    'Number of Drums': 6,
-    # When the user does not specify the drum radius, the code automatically sets it to the largest allowable value that avoids drum overlap
-    #'Drum Radius': 9.016, #,  # cm
+    'Number of Drums': 12,
+    'Drum Radius': 9.016,  # cm
     'Drum Absorber Thickness': 1,  # cm
     'Drum Absorber Arc Degrees': 120,
     'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
