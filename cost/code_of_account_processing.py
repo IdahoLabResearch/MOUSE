@@ -114,10 +114,24 @@ def create_cost_dictionary(df, params, tracked_params_list):
     # Physics safety metrics — tracked from params directly (not from the cost dataframe)
     # These are always included if present in params; set to nan if not calculated
     # (e.g. when Shutdown Margin Calc or Isothermal Temperature Coefficients are False)
-    physics_metrics = ['Temp Coeff 3D (2D corrected)', 'SDM 3D (2D corrected)']
+    physics_metrics = [
+        'Temp Coeff 3D (2D corrected)',
+        'Temp Coeff 3D (2D corrected) Uncertainty',
+        'Most Limiting Shutdown Margin 3D (2D corrected)',
+        'Most Limiting Shutdown Margin 3D (2D corrected) Uncertainty',
+    ]
     for metric in physics_metrics:
         if metric in params.keys():
             filtered_params[metric] = params[metric]
+
+    # Preserve the historical SDM output name for downstream scripts while
+    # using the current descriptive key everywhere in MOUSE itself.
+    current_sdm_key = 'Most Limiting Shutdown Margin 3D (2D corrected)'
+    legacy_sdm_key = 'SDM 3D (2D corrected)'
+    if current_sdm_key in params:
+        filtered_params[legacy_sdm_key] = params[current_sdm_key]
+    elif legacy_sdm_key in params:
+        filtered_params[legacy_sdm_key] = params[legacy_sdm_key]
 
     # ITC-related accounts — only present if user provided 'ITC credit level' in params
     itc_accounts = [
