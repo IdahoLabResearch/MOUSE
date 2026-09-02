@@ -74,8 +74,8 @@ update_params({
         params['Number of Shutdown Rods']
     ),
     'Number of Rings per Assembly': 14, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
-    'Radial Reflector Thickness': 44.54,  # cm
-    'Axial Reflector Thickness': 44.54,  # cm
+    'Radial Reflector Thickness': 44.53999867260457,  # cm
+    'Axial Reflector Thickness': 44.53999867260457,  # cm
 })
 
 params['Lattice Apothem'] = calculate_hex_apothem(params)
@@ -85,18 +85,19 @@ params['Active Height']  = 120
 params['Fuel Pin Count'] = calculate_pins_in_assembly(params, "FUEL")
 params['Moderator Pin Count'] = calculate_pins_in_assembly(params, "MODERATOR")
 params['Moderator Mass'] = calculate_moderator_mass(params)
-params['Core Radius'] = calculate_core_radius_from_hex(params)
+params['Core Radius'] = 83.11277015716345  # cm
 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 
 update_params({
-    'Number of Drums': 12,
-    'Drum Radius': 9.016,  # cm
+    'Number of Drums': 6,
+    'Drum Radius': 22.02527406887039,  # cm
+    'Drum Tube Radius': 22.26999933630228,  # cm
     'Drum Absorber Thickness': 1,  # cm
     'Drum Absorber Arc Degrees': 120,
-    'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
+    'Drum Height': 209.0799973452091,  # cm
     'Shutdown Rod Absorber': 'B4C_enriched',
     'Shutdown Rod Cladding': 'SS304',
 
@@ -106,7 +107,23 @@ update_params({
 
 })
 
+# Explicit original geometry. The shared helper may validate and synchronize
+# dependent values, but it is not allowed to change any selected dimension.
+explicit_original_geometry = {
+    'Core Radius': 83.11277015716345,
+    'Radial Reflector Thickness': 44.53999867260457,
+    'Axial Reflector Thickness': 44.53999867260457,
+    'Drum Radius': 22.02527406887039,
+    'Drum Tube Radius': 22.26999933630228,
+    'Drum Height': 209.0799973452091,
+}
 update_ltmr_reflector_geometry_from_drums(params)
+for parameter_name, expected_value in explicit_original_geometry.items():
+    if not np.isclose(params[parameter_name], expected_value, rtol=0.0, atol=1.0e-9):
+        raise RuntimeError(
+            f"Explicit original geometry mismatch for {parameter_name}: "
+            f"expected {expected_value}, got {params[parameter_name]}"
+        )
 calculate_drums_volumes_and_masses(params)
 calculate_reflector_mass_LTMR(params)
 
