@@ -82,6 +82,7 @@ params['Lattice Apothem'] = calculate_hex_apothem(params)
 params['Lattice Radius'] = params['Lattice Apothem']
 params['Assembly FTF'] = 2 * params['Lattice Apothem']
 params['Active Height']  = 120
+params['Shutdown Rod Height'] = params['Active Height']  # cm
 params['Fuel Pin Count'] = calculate_pins_in_assembly(params, "FUEL")
 params['Moderator Pin Count'] = calculate_pins_in_assembly(params, "MODERATOR")
 params['Moderator Mass'] = calculate_moderator_mass(params)
@@ -125,6 +126,7 @@ for parameter_name, expected_value in explicit_original_geometry.items():
             f"expected {expected_value}, got {params[parameter_name]}"
         )
 calculate_drums_volumes_and_masses(params)
+calculate_shutdown_rods_volumes_and_masses(params)
 calculate_reflector_mass_LTMR(params)
 
 # **************************************************************************************************************************

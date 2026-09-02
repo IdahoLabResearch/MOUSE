@@ -118,6 +118,10 @@ from webapp.estimate_service import (  # noqa: E402
     run_estimate,
     run_lcoe_at_noak_unit,
 )
+from core_design.drums import (  # noqa: E402
+    calculate_reflector_mass_LTMR,
+    calculate_shutdown_rods_volumes_and_masses,
+)
 
 
 BASE_INPUTS = {
@@ -229,6 +233,88 @@ class EstimateServiceTest(unittest.TestCase):
                 params = result.params
                 self.assertGreater(params['Radial Reflector Mass'], 0.0)
                 self.assertGreater(params['Axial Reflector Mass'], 0.0)
+
+    def test_ltmr_shutdown_rod_mass_uses_count_height_and_radii(self):
+        params = {
+            'reactor type': 'LTMR',
+            'Number of Shutdown Rods': 6,
+            'Shutdown Rod Height': 120.0,
+            'Shutdown Rod Absorber Radius': 1.30,
+            'Shutdown Rod Clad Radius': 1.50,
+            'Shutdown Rod Absorber': 'B4C_enriched',
+            'Shutdown Rod Cladding': 'SS304',
+        }
+
+        calculate_shutdown_rods_volumes_and_masses(params)
+
+        absorber_volume = 6 * math.pi * 1.30 ** 2 * 120.0
+        cladding_volume = 6 * math.pi * (1.50 ** 2 - 1.30 ** 2) * 120.0
+        self.assertAlmostEqual(
+            absorber_volume,
+            params['Shutdown Rod Absorber Volume'],
+        )
+        self.assertAlmostEqual(
+            cladding_volume,
+            params['Shutdown Rod Cladding Volume'],
+        )
+        self.assertAlmostEqual(
+            absorber_volume * 2.52 / 1000,
+            params['Shutdown Rod Absorber Mass'],
+        )
+        self.assertAlmostEqual(
+            cladding_volume * 7.98 / 1000,
+            params['Shutdown Rod Cladding Mass'],
+        )
+        self.assertAlmostEqual(
+            params['Shutdown Rod Absorber Mass']
+            + params['Shutdown Rod Cladding Mass'],
+            params['Shutdown Rods Mass'],
+        )
+
+    def test_ltmr_reflector_volumes_exclude_drum_tubes_without_overlap(self):
+        core_radius = 83.11277148455888
+        assembly_ftf = 77.14554296911777
+        params = {
+            'reactor type': 'LTMR',
+            'Drum Radius': 9.016,
+            'Number of Drums': 12,
+            'Core Radius': core_radius,
+            'Assembly FTF': assembly_ftf,
+            'Active Height': 120.0,
+            'Axial Reflector Thickness': 44.54,
+            'Radial Reflector': 'Graphite',
+            'Axial Reflector': 'Graphite',
+        }
+
+        calculate_reflector_mass_LTMR(params)
+
+        tube_radius = 9.016 * 91 / 90
+        tube_area = 12 * math.pi * tube_radius ** 2
+        hex_area = math.sqrt(3) / 2 * assembly_ftf ** 2
+        radial_volume = (
+            math.pi * core_radius ** 2 - hex_area - tube_area
+        ) * 120.0
+        axial_volume = 2 * (
+            math.pi * core_radius ** 2 - tube_area
+        ) * 44.54
+
+        self.assertAlmostEqual(tube_area, params['All Drum Tubes Area'])
+        self.assertAlmostEqual(
+            radial_volume,
+            params['Radial Reflector Volume'],
+        )
+        self.assertAlmostEqual(
+            axial_volume,
+            params['Axial Reflector Volume'],
+        )
+        self.assertAlmostEqual(
+            radial_volume * 1.60 / 1000,
+            params['Radial Reflector Mass'],
+        )
+        self.assertAlmostEqual(
+            axial_volume * 1.60 / 1000,
+            params['Axial Reflector Mass'],
+        )
 
     def test_noak_lcoe_anchor_returns_diagnostics(self):
         anchor = run_lcoe_at_noak_unit(LcoeAtNoakInputs(

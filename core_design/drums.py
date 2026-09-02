@@ -325,42 +325,126 @@ def calculate_drums_volumes_and_masses(params):
     params['All Drums Area'] = params['All Drums Volume'] / params['Drum Height']
 
 
+def calculate_shutdown_rods_volumes_and_masses(params):
+    """Calculate LTMR shutdown-rod absorber and cladding inventories."""
+    number_of_rods = int(params['Number of Shutdown Rods'])
+    rod_height = float(params['Shutdown Rod Height'])
+    absorber_radius = float(params['Shutdown Rod Absorber Radius'])
+    clad_radius = float(params['Shutdown Rod Clad Radius'])
+
+    if number_of_rods <= 0:
+        raise ValueError("Number of Shutdown Rods must be greater than zero.")
+    if rod_height <= 0.0:
+        raise ValueError("Shutdown Rod Height must be greater than zero.")
+    if absorber_radius <= 0.0:
+        raise ValueError(
+            "Shutdown Rod Absorber Radius must be greater than zero."
+        )
+    if absorber_radius >= clad_radius:
+        raise ValueError(
+            "Shutdown Rod Absorber Radius must be smaller than "
+            "Shutdown Rod Clad Radius."
+        )
+
+    absorber_volume = (
+        number_of_rods
+        * circle_area(absorber_radius)
+        * rod_height
+    )
+    cladding_volume = (
+        number_of_rods
+        * (
+            circle_area(clad_radius)
+            - circle_area(absorber_radius)
+        )
+        * rod_height
+    )
+
+    materials_database = collect_materials_data(params)
+    absorber_density = materials_database[
+        params['Shutdown Rod Absorber']
+    ].density
+    cladding_density = materials_database[
+        params['Shutdown Rod Cladding']
+    ].density
+
+    absorber_mass = absorber_volume * absorber_density / 1000  # kg
+    cladding_mass = cladding_volume * cladding_density / 1000  # kg
+
+    params['Shutdown Rod Absorber Volume'] = absorber_volume
+    params['Shutdown Rod Cladding Volume'] = cladding_volume
+    params['Shutdown Rod Absorber Mass'] = absorber_mass
+    params['Shutdown Rod Cladding Mass'] = cladding_mass
+    params['Shutdown Rods Mass'] = absorber_mass + cladding_mass
+
+
 def hexagonal_area_from_ftf(ftf_distance):
     """Calculate hexagonal area directly from flat-to-flat distance."""
     return (np.sqrt(3) / 2) * ftf_distance ** 2
 
 
 def calculate_reflector_mass_LTMR(params):
-    _resolve_drum_radius(params)
+    drum_radius = _resolve_drum_radius(params)
 
     hex_area = hexagonal_area_from_ftf(params['Assembly FTF'])
     core_radius = params['Core Radius']
-    area_of_all_drums = params['All Drums Area']
-    drum_height = params['Drum Height']
+    drum_tube_radius = drum_radius + drum_radius / 90.0
+    area_of_all_drum_tubes = (
+        params['Number of Drums'] * circle_area(drum_tube_radius)
+    )
+    params['Drum Tube Radius'] = drum_tube_radius
+    params['All Drum Tubes Area'] = area_of_all_drum_tubes
 
-    # Assumes all drums lie fully inside the reflector region.
-    area_reflector = np.pi * core_radius * core_radius - hex_area - area_of_all_drums  # cm^2
-    if area_reflector < 0:
+    # The radial reflector surrounds the hexagonal active core over the active
+    # height only. Both axial reflector disks span the circular core footprint.
+    # Control-drum tubes pass through all three regions and are excluded from
+    # each reflector volume; the tube-to-drum clearance is modeled as void.
+    radial_reflector_area = (
+        circle_area(core_radius)
+        - hex_area
+        - area_of_all_drum_tubes
+    )
+    axial_reflector_area = (
+        circle_area(core_radius)
+        - area_of_all_drum_tubes
+    )
+
+    if radial_reflector_area < 0:
         raise ValueError(
             "LTMR radial reflector area is negative. "
             f"Core Radius ({core_radius:.4f} cm) is too small for the active "
             f"hex area ({hex_area:.4f} cm^2) and drum area "
-            f"({area_of_all_drums:.4f} cm^2). "
+            f"({area_of_all_drum_tubes:.4f} cm^2). "
             "Update the LTMR reflector geometry from the drum layout before "
             "calculating reflector mass, or increase Radial Reflector Thickness."
         )
+    if axial_reflector_area < 0:
+        raise ValueError(
+            "LTMR axial reflector area is negative. "
+            f"Core Radius ({core_radius:.4f} cm) is too small for the drum "
+            f"tube area ({area_of_all_drum_tubes:.4f} cm^2)."
+        )
 
-    vol_reflector = area_reflector * drum_height  # cm^3
+    radial_reflector_volume = (
+        radial_reflector_area * params['Active Height']
+    )
+    axial_reflector_volume = (
+        2
+        * axial_reflector_area
+        * params['Axial Reflector Thickness']
+    )
 
     materials_database = collect_materials_data(params)
     rad_reflector_density = materials_database[params['Radial Reflector']].density
     ax_reflector_density = materials_database[params['Axial Reflector']].density
 
-    mass_reflector_rad = vol_reflector * rad_reflector_density / 1000  # kg
-    params['Radial Reflector Mass'] = mass_reflector_rad
-    params['Axial Reflector Mass'] = (1 / 1000) * ax_reflector_density * cylinder_volume(
-        core_radius,
-        params['Axial Reflector Thickness']
+    params['Radial Reflector Volume'] = radial_reflector_volume
+    params['Axial Reflector Volume'] = axial_reflector_volume
+    params['Radial Reflector Mass'] = (
+        radial_reflector_volume * rad_reflector_density / 1000
+    )
+    params['Axial Reflector Mass'] = (
+        axial_reflector_volume * ax_reflector_density / 1000
     )
 
 

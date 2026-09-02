@@ -333,6 +333,11 @@ PARAMS_REGISTRY = {
         'description': 'Outer radius of the LTMR shutdown-rod cladding',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'Shutdown Rod Height': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Physical height of each LTMR shutdown rod; defaults to the active core height in the example input',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'Fuel Pin Count per Assembly': {
         'group': 'Geometry', 'units': '',
         'description': 'Number of fuel pins per hexagonal assembly (HPMR)',
@@ -401,6 +406,11 @@ PARAMS_REGISTRY = {
         'description': 'Total cross-sectional area of all control drums',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
+    'All Drum Tubes Area': {
+        'group': 'Control Drums', 'units': 'cm²',
+        'description': 'Total cross-sectional area removed from the reflector by all LTMR control-drum tubes, including clearance around each physical drum',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
     'Control Drum Absorber Mass': {
         'group': 'Control Drums', 'units': 'kg',
         'description': 'Total mass of absorber material in all control drums',
@@ -419,6 +429,41 @@ PARAMS_REGISTRY = {
     # =========================================================
     # Core Design
     # =========================================================
+    'Shutdown Rod Absorber Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'Total B4C absorber volume in all LTMR shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Cladding Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'Total cladding volume in all LTMR shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Absorber Mass': {
+        'group': 'Core Design', 'units': 'kg',
+        'description': 'Total B4C absorber mass in all LTMR shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Cladding Mass': {
+        'group': 'Core Design', 'units': 'kg',
+        'description': 'Total cladding mass in all LTMR shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rods Mass': {
+        'group': 'Core Design', 'units': 'kg',
+        'description': 'Combined absorber and cladding mass of all LTMR shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Radial Reflector Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'LTMR radial reflector volume over the active core height, excluding the hexagonal core and control-drum tubes',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Axial Reflector Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'Combined volume of both LTMR axial reflectors, excluding control-drum tubes',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
     'Radial Reflector Mass': {
         'group': 'Core Design', 'units': 'kg',
         'description': 'Total mass of the radial neutron reflector',
