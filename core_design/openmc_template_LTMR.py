@@ -3,6 +3,9 @@
 import openmc
 import numpy as np
 from core_design.openmc_materials_database import collect_materials_data
+from core_design.pins_arrangement import (
+    SUPPORTED_LTMR_SHUTDOWN_ROD_COUNTS,
+)
 from core_design.utils import (
     create_universe_plot,
     circle_area,
@@ -73,10 +76,11 @@ def create_shutdown_rod_universe(params, materials_database):
     Simplified shutdown channel:
 
     ARO:
-        Absorber withdrawn; channel contains NaK.
+        B4C absorber and its SS304 cladding are withdrawn together;
+        the entire channel contains NaK.
 
     ARI:
-        Enriched B4C absorber inserted.
+        Enriched B4C absorber and its SS304 cladding are inserted.
     """
 
     absorber_radius = params['Shutdown Rod Absorber Radius']
@@ -122,39 +126,41 @@ def create_shutdown_rod_universe(params, materials_database):
     ]
 
     if params['Shutdown Margin Calc']:
-        print(">>> SHUTDOWN RODS: INSERTED (B4C)")
-        inner_material = absorber_material
-        inner_name = 'shutdown_absorber_inserted'
-    else:
-        print(">>> SHUTDOWN RODS: WITHDRAWN (NaK)")
-        inner_material = coolant_material
-        inner_name = 'shutdown_channel_empty'
+        print(">>> SHUTDOWN RODS: INSERTED (B4C AND CLADDING)")
+        absorber_cell = openmc.Cell(
+            name='shutdown_absorber_inserted',
+            fill=absorber_material,
+            region=-absorber_surface
+        )
 
-    inner_cell = openmc.Cell(
-        name=inner_name,
-        fill=inner_material,
-        region=-absorber_surface
-    )
+        clad_cell = openmc.Cell(
+            name='shutdown_rod_cladding_inserted',
+            fill=clad_material,
+            region=+absorber_surface & -clad_surface
+        )
 
-    clad_cell = openmc.Cell(
-        name='shutdown_rod_cladding',
-        fill=clad_material,
-        region=+absorber_surface & -clad_surface
-    )
+        outside_coolant_cell = openmc.Cell(
+            name='shutdown_rod_outer_coolant',
+            fill=coolant_material,
+            region=+clad_surface
+        )
 
-    outside_coolant_cell = openmc.Cell(
-        name='shutdown_rod_outer_coolant',
-        fill=coolant_material,
-        region=+clad_surface
-    )
-
-    shutdown_rod_universe = openmc.Universe(
-        name='shutdown_rod_universe',
-        cells=[
-            inner_cell,
+        cells = [
+            absorber_cell,
             clad_cell,
             outside_coolant_cell,
         ]
+    else:
+        print(">>> SHUTDOWN RODS: WITHDRAWN (B4C AND CLADDING)")
+        withdrawn_channel_cell = openmc.Cell(
+            name='shutdown_channel_withdrawn',
+            fill=coolant_material
+        )
+        cells = [withdrawn_channel_cell]
+
+    shutdown_rod_universe = openmc.Universe(
+        name='shutdown_rod_universe',
+        cells=cells
     )
 
     return shutdown_rod_universe
@@ -363,6 +369,55 @@ def create_drums_universe(params, control_drum_absorber_material, control_drum_r
 
 #     return assembly_universe
 
+
+def _validate_shutdown_rod_layout(params, rings):
+    """Validate the selected active LTMR shutdown-channel configuration."""
+    actual_count = sum(row.count('SHUTDOWN') for row in rings)
+    requested_count = params.get('Number of Shutdown Rods', actual_count)
+
+    if requested_count not in SUPPORTED_LTMR_SHUTDOWN_ROD_COUNTS:
+        raise ValueError(
+            "Number of Shutdown Rods must be one of "
+            f"{list(SUPPORTED_LTMR_SHUTDOWN_ROD_COUNTS)}, got "
+            f"{requested_count!r}."
+        )
+
+    if actual_count != requested_count:
+        raise ValueError(
+            "The selected Pins Arrangement contains "
+            f"{actual_count} shutdown channels, but Number of Shutdown "
+            f"Rods is {requested_count}. Select the matching predefined "
+            "LTMR pin arrangement."
+        )
+
+    for ring_index, ring in enumerate(rings):
+        if len(ring) == 1:
+            continue
+        if len(ring) % 6 != 0:
+            raise ValueError(
+                f"LTMR ring {ring_index} has {len(ring)} positions; "
+                "a sixfold-symmetric hexagonal ring must be divisible by 6."
+            )
+
+        positions_per_sector = len(ring) // 6
+        reference_sector = [
+            value == 'SHUTDOWN'
+            for value in ring[:positions_per_sector]
+        ]
+        for sector_index in range(1, 6):
+            start = sector_index * positions_per_sector
+            sector = [
+                value == 'SHUTDOWN'
+                for value in ring[start:start + positions_per_sector]
+            ]
+            if sector != reference_sector:
+                raise ValueError(
+                    "Shutdown channels in LTMR ring "
+                    f"{ring_index} are not sixfold symmetric."
+                )
+
+    return actual_count
+
 def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, shutdown_rod_universe, pin_pitch, reflector_material, outer_coolant_universe):
     """
     Creating the universe of the fuel assembly.
@@ -375,6 +430,7 @@ def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, 
 
     rings = copy.deepcopy(params['Pins Arrangement'])
     rings = rings[-params['Number of Rings per Assembly']:]
+    _validate_shutdown_rod_layout(params, rings)
 
     for i in range(len(rings)):
         for j in range(len(rings[i])):
@@ -581,6 +637,38 @@ and generates the necessary XML files.
 """
 
 
+def _load_depleted_fuel_override(params):
+    """Load the operating depletion fuel composition for a static case."""
+    materials_xml = params.get('_Depleted Fuel Materials XML')
+    if not materials_xml:
+        return None
+
+    if '_Operating Fuel Material ID' not in params:
+        raise ValueError(
+            "Static lifecycle calculation is missing the operating fuel "
+            "material ID. Run the operating depletion before static cases."
+        )
+
+    operating_fuel_id = int(params['_Operating Fuel Material ID'])
+    depleted_materials = openmc.Materials.from_xml(materials_xml)
+    matches = [
+        material
+        for material in depleted_materials
+        if material.id == operating_fuel_id
+    ]
+
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected one depleted fuel material with ID "
+            f"{operating_fuel_id}, but found {len(matches)} in "
+            f"{materials_xml}."
+        )
+
+    depleted_fuel = matches[0]
+    depleted_fuel.temperature = params['Common Temperature']
+    return depleted_fuel
+
+
 def build_openmc_model_LTMR(params):
     """
     OpenMC Model
@@ -604,6 +692,12 @@ def build_openmc_model_LTMR(params):
     # Read material properties for the fuel, coolant, reflector, and control drums
     # (each drum contains two materials: absorber and reflector)
     fuel = materials_database[params['Fuel']]
+    depleted_fuel_override = _load_depleted_fuel_override(params)
+    if depleted_fuel_override is None:
+        params['_Operating Fuel Material ID'] = int(fuel.id)
+    else:
+        fuel = depleted_fuel_override
+        materials_database[params['Fuel']] = fuel
     coolant = materials_database[params['Coolant']]
     reflector = materials_database[params['Radial Reflector']]
     control_drum_absorber = materials_database[params['Control Drum Absorber']]
@@ -855,7 +949,10 @@ def build_openmc_model_LTMR(params):
     if 'Particles' in params.keys():
         settings.particles = int(params['Particles'])
     else:
-        settings.particles = 10000
+        settings.particles = 2000
+
+    if '_OpenMC Seed' in params:
+        settings.seed = int(params['_OpenMC Seed'])
 
     settings.temperature = {
         'default': params['Common Temperature'],

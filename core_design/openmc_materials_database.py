@@ -159,7 +159,10 @@ def collect_materials_data(params):
     # """""""""""""""""""""
        
     ZrH = openmc.Material(name="ZrH", temperature=params['Common Temperature'])
-    ZrH.set_density("g/cm3", 5.6)
+    # Internal override used by density-aware temperature-coefficient cases.
+    # Other MOUSE calculations retain the original 5.6 g/cm3 value.
+    zrh_density = float(params.get('_ZrH Density Override', 5.6))
+    ZrH.set_density("g/cm3", zrh_density)
     ZrH.add_nuclide("H1", 1.85)
     ZrH.add_element("zirconium", 1.0)
     ZrH.add_s_alpha_beta("c_H_in_ZrH")
@@ -182,7 +185,10 @@ def collect_materials_data(params):
     # """""""""""""""""""""
     
     NaK = openmc.Material(name="NaK", temperature=params['Common Temperature'])
-    NaK.set_density("g/cm3", 0.85)
+    # Internal override used by density-aware temperature-coefficient cases.
+    # Other MOUSE calculations retain the original 0.85 g/cm3 value.
+    nak_density = float(params.get('_NaK Density Override', 0.85))
+    NaK.set_density("g/cm3", nak_density)
     NaK.add_nuclide("Na23", 2.20000e-01)
     NaK.add_nuclide("K39", 7.27413e-01)
     NaK.add_nuclide("K41", 5.24956e-02)
