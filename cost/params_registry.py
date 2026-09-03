@@ -127,13 +127,19 @@ PARAMS_REGISTRY = {
 
     'Shutdown Rod Absorber': {
         'group': 'Materials', 'units': '',
-        'description': 'Neutron absorber material used in the LTMR shutdown rods',
+        'description': 'Neutron absorber material used in the movable shutdown rods',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Cladding': {
         'group': 'Materials', 'units': '',
-        'description': 'Cladding material that moves with each LTMR shutdown rod',
+        'description': 'Cladding material that moves with each shutdown-rod absorber',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Graphite Linear Expansion Coefficient': {
+        'group': 'Materials', 'units': '1/K',
+        'description': 'Mean linear thermal-expansion coefficient used to adjust GCMR graphite number density in density-aware temperature-coefficient cases.',
+        'source': 'User Input; IG-110 proxy from ORNL/TM-2017/705, Table 2.2, page 3',
+        'hidden': False, 'array_mode': None},
 
     'Moderator Booster Materials': {
         'group': 'Materials', 'units': '',
@@ -258,6 +264,11 @@ PARAMS_REGISTRY = {
         'description': 'Volume fraction of TRISO particles within the fuel compact',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'TRISO Packing Seed': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Deterministic random seed used by OpenMC when packing TRISO particles in the representative fuel compact.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'Coolant Channel Radius': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Radius of the coolant channels in the GCMR assembly',
@@ -283,6 +294,51 @@ PARAMS_REGISTRY = {
         'description': 'Number of assembly rings along the side of the hexagonal core (GCMR)',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'Central Shutdown Rod Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'B4C absorber radius for each shutdown rod in the central GCMR assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Central Shutdown Rod Clad Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Outer SS304 cladding radius for each shutdown rod in the central GCMR assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Central Shutdown Rod Ring': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Hexagonal pin-lattice ring containing the central-assembly shutdown rods.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Central Shutdown Rod Count': {
+        'group': 'Geometry', 'units': 'rods',
+        'description': 'Number of shutdown rods in the central GCMR assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'B4C absorber radius for each shutdown rod in a surrounding GCMR shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Clad Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Outer SS304 cladding radius for each shutdown rod in a surrounding GCMR shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Ring': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Hexagonal pin-lattice ring containing shutdown rods in each surrounding shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Count': {
+        'group': 'Geometry', 'units': 'rods per assembly',
+        'description': 'Number of shutdown rods in each surrounding GCMR shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Assembly Count': {
+        'group': 'Geometry', 'units': 'assemblies',
+        'description': 'Number of first-ring GCMR assemblies containing the smaller surrounding shutdown rods.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'Lattice Apothem': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Distance from the hex lattice center to the midpoint of a flat face of the outermost pin lattice.',
@@ -296,12 +352,12 @@ PARAMS_REGISTRY = {
     'Assembly FTF': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Assembly flat-to-flat distance (distance between opposite parallel faces of the hexagonal assembly).',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'Core Radius': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Total core radius including the radial reflector',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'hexagonal Core Edge Length': {
         'group': 'Geometry', 'units': 'cm',
@@ -320,8 +376,8 @@ PARAMS_REGISTRY = {
 
     'Number of Shutdown Rods': {
         'group': 'Geometry', 'units': '',
-        'description': 'Number of LTMR shutdown rods and NaK-filled shutdown channels; supported values are 6 and 12, using predefined sixfold-symmetric lattice configurations',
-        'source': 'User Input', 'hidden': False, 'array_mode': None},
+        'description': 'Total shutdown-rod count. LTMR accepts user-selected 6- or 12-rod predefined layouts; GCMR calculates the total from the central and surrounding assembly inputs.',
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Absorber Radius': {
         'group': 'Geometry', 'units': 'cm',
@@ -388,13 +444,13 @@ PARAMS_REGISTRY = {
 
     'Drum Tube Radius': {
         'group': 'Control Drums', 'units': 'cm',
-        'description': 'Outer radius of the control drum tube (slightly larger than drum radius)',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'description': 'Outer radius of the control drum tube. It is explicit and validated for the GCMR example and may be calculated for other models.',
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'Drum Count': {
         'group': 'Control Drums', 'units': '',
-        'description': 'Total number of control drums in the core',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'description': 'Total number of control drums in the core; explicit and validated against the GCMR lattice.',
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'All Drums Volume': {
         'group': 'Control Drums', 'units': 'cm³',
@@ -431,22 +487,22 @@ PARAMS_REGISTRY = {
     # =========================================================
     'Shutdown Rod Absorber Volume': {
         'group': 'Core Design', 'units': 'cm³',
-        'description': 'Total B4C absorber volume in all LTMR shutdown rods',
+        'description': 'Total B4C absorber volume in all shutdown rods',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Cladding Volume': {
         'group': 'Core Design', 'units': 'cm³',
-        'description': 'Total cladding volume in all LTMR shutdown rods',
+        'description': 'Total cladding volume in all shutdown rods',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Absorber Mass': {
         'group': 'Core Design', 'units': 'kg',
-        'description': 'Total B4C absorber mass in all LTMR shutdown rods',
+        'description': 'Total B4C absorber mass in all shutdown rods',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Cladding Mass': {
         'group': 'Core Design', 'units': 'kg',
-        'description': 'Total cladding mass in all LTMR shutdown rods',
+        'description': 'Total cladding mass in all shutdown rods',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rods Mass': {
@@ -2214,12 +2270,12 @@ PARAMS_REGISTRY = {
 
     'Temperature Coefficient Density Aware': {
         'group': 'Debug / Intermediate Values', 'units': '',
-        'description': 'Whether NaK and ZrH densities were adjusted between the base and elevated-temperature coefficient cases.',
+        'description': 'Whether reactor-specific coolant and moderator densities were adjusted between the base and elevated-temperature coefficient cases.',
         'source': 'Calculated', 'hidden': True, 'array_mode': None},
 
     'Temperature Coefficient Density Temperatures': {
         'group': 'Debug / Intermediate Values', 'units': 'K',
-        'description': 'Base and elevated temperatures associated with the reported NaK and ZrH densities.',
+        'description': 'Base and elevated temperatures associated with the reported coolant and moderator densities.',
         'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
 
     'Temperature Coefficient NaK Densities': {
@@ -2232,6 +2288,16 @@ PARAMS_REGISTRY = {
         'description': 'ZrH densities used at the base and elevated temperatures.',
         'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
 
+    'Temperature Coefficient Helium Densities': {
+        'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
+        'description': 'GCMR helium densities used at the base and elevated temperatures under the constant-pressure scaling assumption.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient Graphite Densities': {
+        'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
+        'description': 'GCMR graphite densities used at the base and elevated temperatures using the configured linear thermal-expansion coefficient.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
     'Temperature Coefficient Base Seeds': {
         'group': 'Debug / Intermediate Values', 'units': '',
         'description': 'Independent OpenMC random seeds used for the base-temperature lifecycle snapshots.',
@@ -2241,6 +2307,11 @@ PARAMS_REGISTRY = {
         'group': 'Debug / Intermediate Values', 'units': '',
         'description': 'Independent OpenMC random seeds used for the elevated-temperature lifecycle snapshots.',
         'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'Shutdown Margin Seeds': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Independent OpenMC random seeds used for the cold ARI lifecycle shutdown-margin snapshots.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
 
     'keff 2D high temp': {
         'group': 'Debug / Intermediate Values', 'units': '',

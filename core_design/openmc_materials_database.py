@@ -194,7 +194,12 @@ def collect_materials_data(params):
     NaK.add_nuclide("K41", 5.24956e-02)
 
     Helium = openmc.Material(name='Helium')
-    Helium.set_density('g/cm3', 0.000166)
+    # Internal override used by density-aware GCMR temperature-coefficient
+    # cases. Other calculations retain the original 0.000166 g/cm3 value.
+    helium_density = float(
+        params.get('_Helium Density Override', 0.000166)
+    )
+    Helium.set_density('g/cm3', helium_density)
     Helium.temperature = params['Common Temperature']
     Helium.add_element('He', 1.0)
     
@@ -287,8 +292,16 @@ def collect_materials_data(params):
     # """""""""""""""""""""
    
     # Graphite
-    Graphite = openmc.Material(name='Graphite')
-    Graphite.set_density('g/cm3', 1.60)
+    Graphite = openmc.Material(
+        name='Graphite',
+        temperature=params['Common Temperature']
+    )
+    # Internal override used by density-aware GCMR temperature-coefficient
+    # cases. Buffer graphite and PyC retain their fabrication densities.
+    graphite_density = float(
+        params.get('_Graphite Density Override', 1.60)
+    )
+    Graphite.set_density('g/cm3', graphite_density)
     Graphite.add_element('C', 1.0)
     # This adds thermal scattering data for graphite.
     Graphite.add_s_alpha_beta('c_Graphite')

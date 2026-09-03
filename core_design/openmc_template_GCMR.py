@@ -10,11 +10,43 @@ An OpenMC function that accepts an instance of "parameters"
 and generates the necessary XML files.
 """
 
+
+def _load_depleted_fuel_override(params):
+    """Load the operating depleted UCO composition for a static case."""
+    materials_xml = params.get('_Depleted Fuel Materials XML')
+    if not materials_xml:
+        return None
+
+    if '_Operating Fuel Material ID' not in params:
+        raise ValueError(
+            "Static lifecycle calculation is missing the operating fuel "
+            "material ID. Run the operating depletion before static cases."
+        )
+
+    operating_fuel_id = int(params['_Operating Fuel Material ID'])
+    depleted_materials = openmc.Materials.from_xml(materials_xml)
+    matches = [
+        material
+        for material in depleted_materials
+        if material.id == operating_fuel_id
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected one depleted fuel material with ID "
+            f"{operating_fuel_id}, but found {len(matches)} in "
+            f"{materials_xml}."
+        )
+
+    depleted_fuel = matches[0]
+    depleted_fuel.temperature = params['Common Temperature']
+    return depleted_fuel
+
 def build_openmc_model_GCMR(params):
     
     params.setdefault('Shutdown Margin Calc', False)
     params.setdefault('Isothermal Temperature Coefficients', False)
     params.setdefault('Cold Shutdown Temperature', 300)
+    params.setdefault('TRISO Packing Seed', 1)
 
     # **************************************************************************************************************************
     #                                                Sec. 0 : Helper Functions
@@ -55,7 +87,12 @@ def build_openmc_model_GCMR(params):
 
         compact_region = -compact_surf & -active_core_maxz & +active_core_minz
 
-        packed_shells = openmc.model.pack_spheres(radius= params['Fuel Pin Radii'][-1], region=compact_region, pf= params['Packing Fraction'])
+        packed_shells = openmc.model.pack_spheres(
+            radius=params['Fuel Pin Radii'][-1],
+            region=compact_region,
+            pf=params['Packing Fraction'],
+            seed=int(params['TRISO Packing Seed'])
+        )
 
         compact_triso_particles = [openmc.model.TRISO(params['Fuel Pin Radii'][-1], fill=triso_universe, center=c) for c in packed_shells]
         compact_triso_particles_number = len(compact_triso_particles)
@@ -106,74 +143,101 @@ def build_openmc_model_GCMR(params):
 
     def create_shutdown_pin_universe(
         params,
-        rod_radius,
+        absorber_radius,
+        clad_radius,
         rod_name,
         active_core_maxz,
         active_core_minz,
         absorber_material,
+        cladding_material,
         coolant_material,
         outer_material
     ):
         """
-        Simplified movable shutdown channel.
+        Movable B4C shutdown rod with SS304 cladding.
 
         ARO:
-            Rod withdrawn; channel contains helium.
+            B4C and cladding withdrawn together; channel contains helium.
 
         ARI:
-            Enriched B4C rod inserted.
+            Enriched B4C and its SS304 cladding inserted together.
         """
 
-        if rod_radius <= 0.0:
+        if absorber_radius <= 0.0:
             raise ValueError(
-                f"{rod_name} radius must be greater than zero."
+                f"{rod_name} absorber radius must be greater than zero."
+            )
+        if absorber_radius >= clad_radius:
+            raise ValueError(
+                f"{rod_name} absorber radius ({absorber_radius} cm) must "
+                f"be smaller than its clad radius ({clad_radius} cm)."
             )
 
         max_radius = 0.5 * params['Lattice Pitch']
 
-        if rod_radius >= max_radius:
+        if clad_radius >= max_radius:
             raise ValueError(
-                f"{rod_name} radius ({rod_radius} cm) must be smaller "
+                f"{rod_name} clad radius ({clad_radius} cm) must be smaller "
                 f"than half the lattice pitch ({max_radius} cm)."
             )
 
-        rod_surface = openmc.ZCylinder(
-            r=rod_radius,
-            name=f'{rod_name}_surface'
+        absorber_surface = openmc.ZCylinder(
+            r=absorber_radius,
+            name=f'{rod_name}_absorber_surface'
         )
-
-        inside_region = (
-            -rod_surface
-            & -active_core_maxz
-            & +active_core_minz
+        clad_surface = openmc.ZCylinder(
+            r=clad_radius,
+            name=f'{rod_name}_clad_surface'
         )
 
         outside_region = (
-            +rod_surface
+            +clad_surface
             & -active_core_maxz
             & +active_core_minz
         )
 
         if params['Shutdown Margin Calc']:
             print(
-                f">>> {rod_name}: INSERTED B4C, "
-                f"radius = {rod_radius} cm"
+                f">>> {rod_name}: INSERTED B4C radius = "
+                f"{absorber_radius} cm, SS304 clad radius = "
+                f"{clad_radius} cm"
             )
-            inner_material = absorber_material
-            inner_name = f'{rod_name}_inserted'
+            absorber_cell = openmc.Cell(
+                name=f'{rod_name}_absorber_inserted',
+                fill=absorber_material,
+                region=(
+                    -absorber_surface
+                    & -active_core_maxz
+                    & +active_core_minz
+                )
+            )
+            clad_cell = openmc.Cell(
+                name=f'{rod_name}_cladding_inserted',
+                fill=cladding_material,
+                region=(
+                    +absorber_surface
+                    & -clad_surface
+                    & -active_core_maxz
+                    & +active_core_minz
+                )
+            )
+            rod_cells = [absorber_cell, clad_cell]
         else:
             print(
-                f">>> {rod_name}: WITHDRAWN Helium, "
-                f"radius = {rod_radius} cm"
+                f">>> {rod_name}: WITHDRAWN B4C AND CLADDING; "
+                f"helium channel radius = {clad_radius} cm"
             )
-            inner_material = coolant_material
-            inner_name = f'{rod_name}_withdrawn'
-
-        inner_cell = openmc.Cell(
-            name=inner_name,
-            fill=inner_material,
-            region=inside_region
-        )
+            rod_cells = [
+                openmc.Cell(
+                    name=f'{rod_name}_withdrawn_helium',
+                    fill=coolant_material,
+                    region=(
+                        -clad_surface
+                        & -active_core_maxz
+                        & +active_core_minz
+                    )
+                )
+            ]
 
         outer_cell = openmc.Cell(
             name=f'{rod_name}_outer_graphite',
@@ -183,7 +247,7 @@ def build_openmc_model_GCMR(params):
 
         return openmc.Universe(
             name=f'{rod_name}_universe',
-            cells=[inner_cell, outer_cell]
+            cells=rod_cells + [outer_cell]
         )
    
 
@@ -286,8 +350,11 @@ def build_openmc_model_GCMR(params):
         cd_inner_shell = openmc.ZCylinder(r= drum_radius - absorber_thickness)
         cd_outer_shell = openmc.ZCylinder(r= drum_radius)
         
-        # The tube radius of the control drum
-        params['Drum Tube Radius'] = params['Drum Radius'] +(params['Drum Radius']/ 45)  # cm
+        # Drum Tube Radius is an explicit GCMR input validated in drums.py.
+        if 'Drum Tube Radius' not in params:
+            raise KeyError(
+                "GCMR requires an explicit 'Drum Tube Radius'."
+            )
 
         cd_gap_shell = openmc.ZCylinder(r= params['Drum Tube Radius'] )
 
@@ -321,12 +388,20 @@ def build_openmc_model_GCMR(params):
     # **************************************************************************************************************************
     materials_database = collect_materials_data(params)
     fuel = materials_database[params['Fuel']]
+    depleted_fuel_override = _load_depleted_fuel_override(params)
+    if depleted_fuel_override is None:
+        params['_Operating Fuel Material ID'] = int(fuel.id)
+    else:
+        fuel = depleted_fuel_override
+        materials_database[params['Fuel']] = fuel
     reflector = materials_database[params['Radial Reflector']]
     moderator = materials_database[params['Moderator']]
     booster_materials_list = [materials_database[m] for m in params['Moderator Booster Materials']]
 
     control_drum_absorber = materials_database[params['Control Drum Absorber']]
     control_drum_reflector = materials_database[params['Control Drum Reflector']]
+    shutdown_rod_absorber = materials_database[params['Shutdown Rod Absorber']]
+    shutdown_rod_cladding = materials_database[params['Shutdown Rod Cladding']]
     coolant =  materials_database[params['Coolant']]
     
     # **************************************************************************************************************************
@@ -384,11 +459,13 @@ def build_openmc_model_GCMR(params):
      # Central-assembly shutdown pin
     central_shutdown_pin_universe = create_shutdown_pin_universe(
         params=params,
-        rod_radius=params['Central Shutdown Rod Radius'],
+        absorber_radius=params['Central Shutdown Rod Radius'],
+        clad_radius=params['Central Shutdown Rod Clad Radius'],
         rod_name='central_shutdown_rod',
         active_core_maxz=active_core_maxz,
         active_core_minz=active_core_minz,
-        absorber_material=control_drum_absorber,
+        absorber_material=shutdown_rod_absorber,
+        cladding_material=shutdown_rod_cladding,
         coolant_material=coolant,
         outer_material=materials_database[params['Moderator']]
     )
@@ -407,11 +484,13 @@ def build_openmc_model_GCMR(params):
     # Surrounding-assembly shutdown pin
     surrounding_shutdown_pin_universe = create_shutdown_pin_universe(
         params=params,
-        rod_radius=params['Surrounding Shutdown Rod Radius'],
+        absorber_radius=params['Surrounding Shutdown Rod Radius'],
+        clad_radius=params['Surrounding Shutdown Rod Clad Radius'],
         rod_name='surrounding_shutdown_rod',
         active_core_maxz=active_core_maxz,
         active_core_minz=active_core_minz,
-        absorber_material=control_drum_absorber,
+        absorber_material=shutdown_rod_absorber,
+        cladding_material=shutdown_rod_cladding,
         coolant_material=coolant,
         outer_material=materials_database[params['Moderator']]
     )
@@ -619,10 +698,18 @@ def build_openmc_model_GCMR(params):
     #     rings.insert(0, [assembly_universe]*ring_cells)
     #     assembly_number += ring_cells
 
-     # Center: one assembly with 12 large shutdown rods
+    # Center: one assembly with 12 large shutdown rods
     rings = [[central_shutdown_assembly_universe]]
 
     assembly_number = 1
+    surrounding_shutdown_assembly_count = int(
+        params['Surrounding Shutdown Assembly Count']
+    )
+    if surrounding_shutdown_assembly_count != 6:
+        raise ValueError(
+            "The first GCMR core ring contains exactly six surrounding "
+            "shutdown assemblies."
+        )
 
     for n in range(1, params['Core Rings'] - 1):
         ring_cells = 6 * n
@@ -648,7 +735,12 @@ def build_openmc_model_GCMR(params):
     rings.insert(0, flatten_list([[openmc.Universe(cells =\
         [openmc.Cell(fill= materials_database[params['Radial Reflector']])])] +\
             [cd]*( params['Core Rings']-1) for cd in drums]))
-    params['number of drums'] = (params['Core Rings']-1) * len(drums)
+    modeled_drum_count = (params['Core Rings'] - 1) * len(drums)
+    if int(params['Drum Count']) != modeled_drum_count:
+        raise ValueError(
+            f"Drum Count is {params['Drum Count']}, but the GCMR core "
+            f"lattice contains {modeled_drum_count} drum positions."
+        )
     active_core.universes = rings
     outer_surface = openmc.ZCylinder(r=params['Core Radius'], boundary_type='vacuum')
     active_core_cell = openmc.Cell(fill=active_core, region=-outer_surface & -active_core_maxz & +active_core_minz)
@@ -726,7 +818,9 @@ def build_openmc_model_GCMR(params):
     )
 
     central_shutdown_assembly_count = 1
-    surrounding_shutdown_assembly_count = 6
+    surrounding_shutdown_assembly_count = int(
+        params['Surrounding Shutdown Assembly Count']
+    )
 
     # assembly_number includes:
     # 1 center + 6 first-ring assemblies + all other inner assemblies
@@ -765,11 +859,24 @@ def build_openmc_model_GCMR(params):
     kernel_volume = sphere_volume(params['Fuel Pin Radii'][0])
     fuel_volume = core_triso_number * kernel_volume
     fuel.volume = fuel_volume
-    all_materials = fuel_materials + [fuel, reflector, moderator] + booster_materials_list + [control_drum_absorber, coolant, control_drum_reflector]
+    all_materials = (
+        fuel_materials
+        + [fuel, reflector, moderator]
+        + booster_materials_list
+        + [
+            control_drum_absorber,
+            coolant,
+            control_drum_reflector,
+            shutdown_rod_absorber,
+            shutdown_rod_cladding,
+        ]
+    )
     
     # Remove None materials
     all_materials_cleaned_list = [item for item in all_materials if item is not None]
-    materials = openmc.Materials(list(set(all_materials_cleaned_list)))
+    materials = openmc.Materials(
+        list(dict.fromkeys(all_materials_cleaned_list))
+    )
    
     openmc.Materials.cross_sections = params['cross_sections_xml_location']
     materials.export_to_xml()
@@ -821,17 +928,20 @@ def build_openmc_model_GCMR(params):
 
 
     batches = 100
-    inactive = 10
+    inactive = 50
     if 'Particles' in params.keys():
         particles = int(params['Particles'])#1000
     else:
-        particles = 1000 
+        particles = 2000
 
     settings_file = openmc.Settings()
     settings_file.batches = batches
     settings_file.inactive = inactive
     settings_file.particles = particles
     settings_file.output = {'tallies': True}
+
+    if '_OpenMC Seed' in params:
+        settings_file.seed = int(params['_OpenMC Seed'])
 
     settings_file.temperature = {
         'default': params['Common Temperature'],

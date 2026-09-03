@@ -53,8 +53,13 @@ update_params({
     'Moderator Booster Materials': ['ZrH'],
     'Coolant': 'Helium',
     'Common Temperature': 850,  # Kelvins
+    # IG-110 proxy: mean of axial/transverse CTE values in
+    # ORNL/TM-2017/705, Table 2.2 (4.5 and 4.2 microstrain/K).
+    'Graphite Linear Expansion Coefficient': 4.3e-6,  # 1/K
     'Control Drum Absorber': 'B4C_enriched',  # The absorber material in the control drums
     'Control Drum Reflector': 'Graphite',  # The reflector material in the control drums
+    'Shutdown Rod Absorber': 'B4C_enriched',
+    'Shutdown Rod Cladding': 'SS304',
     'HX Material': 'SS316', 
 })
 
@@ -68,6 +73,7 @@ update_params({
     'Fuel Pin Radii': [0.0250, 0.0350, 0.0390, 0.0425, 0.0465],  # cm # https://art.inl.gov/NRC%20Training%202019/04_TRISO_Fuel.pdf
     'Compact Fuel Radius': 0.6225,  # cm # The radius of the area that is occupied by the TRISO particles (fuel compact/ fuel element)
     'Packing Fraction': 0.4,
+    'TRISO Packing Seed': 1,
     
     # Coolant channel and booster dimensions
     'Coolant Channel Radius': 0.35,  # cm
@@ -78,32 +84,39 @@ update_params({
 
     # Central assembly
     'Central Shutdown Rod Radius': 0.85,  # cm
+    'Central Shutdown Rod Clad Radius': 1.05,  # cm; 0.20 cm SS304
     'Central Shutdown Rod Ring': 2,
     'Central Shutdown Rod Count': 12,
 
     # Six assemblies surrounding the center
     'Surrounding Shutdown Rod Radius': 0.45,  # cm
+    'Surrounding Shutdown Rod Clad Radius': 0.65,  # cm; 0.20 cm SS304
     'Surrounding Shutdown Rod Ring': 2,
     'Surrounding Shutdown Rod Count': 2,
+    'Surrounding Shutdown Assembly Count': 6,
+
+    # Explicit geometry values for this design. The geometry helper validates
+    # these values and does not replace them with calculated dimensions.
+    'Assembly FTF': 19.48557158514987,  # cm
+    'Active Height': 200.0,  # cm
+    'Radial Reflector Thickness': 9.742785792574935,  # cm
+    'Axial Reflector Thickness': 9.742785792574935,  # cm
+    'Core Radius': 107.17064371832429,  # cm
+    'Shutdown Rod Height': 200.0,  # cm
 })
-params['Assembly FTF'] = params['Lattice Pitch']*(params['Assembly Rings']-1)*np.sqrt(3)
-# if unspecified, radial reflector thickness defaults to just cover the drums,
-# and axial reflector thickness defaults to match the radial one
-# params['Radial Reflector Thickness'] = 27.393 # cm # radial reflector
-# params['Axial Reflector Thickness'] = params['Radial Reflector Thickness'] # cm
-# params['Core Radius'] = params['Assembly FTF']*params['Core Rings'] +  params['Radial Reflector Thickness']
-params['Active Height'] = 200
 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 update_params({
-    #'Drum Radius': 9, # cm  # if unavailable, maximize the drum radius while preventing overlaps  
+    'Drum Count': 24,
+    'Drum Radius': 9.530986101432001,  # cm
+    'Drum Tube Radius': 9.742785792574935,  # cm
     'Drum Absorber Thickness': 1, # cm
-   # if unspecified, drum height defaults to active height + 2 * axial reflector thickness
-    #'Drum Height': params['Active Height'] + 2*params['Axial Reflector Thickness'],
+    'Drum Height': 219.48557158514987,  # cm
     })
 calculate_drums_volumes_and_masses(params)
+calculate_gcmr_shutdown_rods_volumes_and_masses(params)
 calculate_reflector_mass_GCMR(params)          
 calculate_moderator_mass_GCMR(params) 
 
@@ -133,6 +146,7 @@ params['Heat Flux'] = calculate_heat_flux_TRISO(params) # MW/m^2
 # Recommended: True for final design verification; can be set to False to save
 # computation time during early design exploration.
 params['Shutdown Margin Calc'] = True  # True or False
+params['Cold Shutdown Temperature'] = 300  # K
 
 # --- Isothermal Temperature Coefficient ---
 # When True, two additional OpenMC simulations are run: one at 'Common Temperature'

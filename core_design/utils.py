@@ -15,18 +15,26 @@ from core_design.peaking_factor import compute_pin_peaking_factors
 import pandas
 
 
-# Dedicated particle count for each lifecycle temperature-coefficient snapshot.
+# Dedicated particle counts for lifecycle temperature-coefficient snapshots.
 # Depletion and cold-shutdown calculations retain their normal particle count.
-TEMPERATURE_COEFFICIENT_PARTICLES = 100000
+TEMPERATURE_COEFFICIENT_PARTICLES = 4000
+EOL_TEMPERATURE_COEFFICIENT_PARTICLES = 15000
 
 # Current MOUSE material densities at the operating reference temperature.
 NAK_REFERENCE_DENSITY_G_CM3 = 0.85
 ZRH_REFERENCE_DENSITY_G_CM3 = 5.6
+HELIUM_REFERENCE_DENSITY_G_CM3 = 0.000166
+GRAPHITE_REFERENCE_DENSITY_G_CM3 = 1.60
 
 # Mean linear expansion coefficient reported for unalloyed epsilon-ZrH1.83.
 # The model uses H/Zr = 1.85. Geometry is held fixed in this density-only
 # treatment.
 ZRH_LINEAR_EXPANSION_PER_K = 9.15e-6
+
+# Rounded mean of the axial and transverse IG-110 values reported at 500 C in
+# ORNL/TM-2017/705, Table 2.2. The GCMR example uses this documented
+# near-isotropic nuclear-graphite value as an explicit proxy.
+GRAPHITE_LINEAR_EXPANSION_PER_K = 4.3e-6
 
 
 def _nak_eutectic_density_correlation_g_cm3(temperature_k):
@@ -59,29 +67,89 @@ def _nak_eutectic_density_correlation_g_cm3(temperature_k):
     return density_kg_m3 / 1000.0
 
 
-def _temperature_density_overrides(reference_temperature_k, temperature_k):
-    """Return NaK and ZrH densities anchored to the MOUSE reference values."""
-    nak_reference_correlation = _nak_eutectic_density_correlation_g_cm3(
-        reference_temperature_k
-    )
-    nak_target_correlation = _nak_eutectic_density_correlation_g_cm3(
-        temperature_k
-    )
-    nak_density = (
-        NAK_REFERENCE_DENSITY_G_CM3
-        * nak_target_correlation
-        / nak_reference_correlation
-    )
+def _temperature_density_overrides(
+    params,
+    reference_temperature_k,
+    temperature_k
+):
+    """Return reactor-specific coolant and moderator density overrides.
 
-    linear_scale = 1.0 + ZRH_LINEAR_EXPANSION_PER_K * (
-        float(temperature_k) - float(reference_temperature_k)
-    )
-    zrh_density = ZRH_REFERENCE_DENSITY_G_CM3 / linear_scale ** 3
+    LTMR uses temperature-dependent NaK and ZrH number densities. GCMR
+    uses constant-pressure helium scaling plus thermal-expansion density
+    corrections for graphite and ZrH. Solid geometry remains fixed, so the
+    graphite and ZrH terms are density-only approximations.
+    """
+    reactor_type = params.get('reactor type')
 
-    return {
-        '_NaK Density Override': float(nak_density),
-        '_ZrH Density Override': float(zrh_density),
-    }
+    if reactor_type == 'LTMR':
+        nak_reference_correlation = _nak_eutectic_density_correlation_g_cm3(
+            reference_temperature_k
+        )
+        nak_target_correlation = _nak_eutectic_density_correlation_g_cm3(
+            temperature_k
+        )
+        nak_density = (
+            NAK_REFERENCE_DENSITY_G_CM3
+            * nak_target_correlation
+            / nak_reference_correlation
+        )
+        linear_scale = 1.0 + ZRH_LINEAR_EXPANSION_PER_K * (
+            float(temperature_k) - float(reference_temperature_k)
+        )
+        return {
+            '_NaK Density Override': float(nak_density),
+            '_ZrH Density Override': float(
+                ZRH_REFERENCE_DENSITY_G_CM3 / linear_scale ** 3
+            ),
+        }
+
+    if reactor_type == 'GCMR':
+        reference_temperature_k = float(reference_temperature_k)
+        temperature_k = float(temperature_k)
+        if reference_temperature_k <= 0.0 or temperature_k <= 0.0:
+            raise ValueError(
+                "GCMR density temperatures must be greater than zero K."
+            )
+
+        # Constant-pressure ideal-gas scaling, anchored to the existing MOUSE
+        # helium density. NIST IR 8474, Introduction (p. 1) describes helium's
+        # near-ideal-gas behavior; a pressure-specific EOS can replace this
+        # relation when the GCMR operating pressure is defined.
+        helium_density = (
+            HELIUM_REFERENCE_DENSITY_G_CM3
+            * reference_temperature_k
+            / temperature_k
+        )
+        graphite_linear_expansion = float(
+            params.get(
+                'Graphite Linear Expansion Coefficient',
+                GRAPHITE_LINEAR_EXPANSION_PER_K
+            )
+        )
+        if graphite_linear_expansion < 0.0:
+            raise ValueError(
+                "Graphite Linear Expansion Coefficient cannot be negative."
+            )
+        graphite_scale = 1.0 + graphite_linear_expansion * (
+            temperature_k - reference_temperature_k
+        )
+        zrh_scale = 1.0 + ZRH_LINEAR_EXPANSION_PER_K * (
+            temperature_k - reference_temperature_k
+        )
+        return {
+            '_Helium Density Override': float(helium_density),
+            '_Graphite Density Override': float(
+                GRAPHITE_REFERENCE_DENSITY_G_CM3 / graphite_scale ** 3
+            ),
+            '_ZrH Density Override': float(
+                ZRH_REFERENCE_DENSITY_G_CM3 / zrh_scale ** 3
+            ),
+        }
+
+    raise ValueError(
+        "Density-aware temperature coefficients are implemented only for "
+        f"LTMR and GCMR, not {reactor_type!r}."
+    )
 
 
 # Keep a permanent, unique plotting color for every entry returned by
@@ -780,6 +848,8 @@ def _run_static_snapshot(
     density_override_keys = (
         '_NaK Density Override',
         '_ZrH Density Override',
+        '_Helium Density Override',
+        '_Graphite Density Override',
     )
     original_density_overrides = {
         key: (key in params, params.get(key))
@@ -796,12 +866,16 @@ def _run_static_snapshot(
         if particles is not None:
             params['Particles'] = int(particles)
         if material_density_overrides is not None:
-            for key in density_override_keys:
-                if key not in material_density_overrides:
-                    raise KeyError(
-                        f"Missing required density override '{key}'."
-                    )
-                params[key] = float(material_density_overrides[key])
+            unknown_keys = (
+                set(material_density_overrides) - set(density_override_keys)
+            )
+            if unknown_keys:
+                raise KeyError(
+                    "Unsupported material-density override(s): "
+                    f"{sorted(unknown_keys)}"
+                )
+            for key, value in material_density_overrides.items():
+                params[key] = float(value)
 
         build_openmc_model(params)
         openmc.run()
@@ -864,6 +938,10 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
         lifecycle['eol_lower_index'],
         lifecycle['eol_upper_index'],
     })
+    eol_indices = {
+        lifecycle['eol_lower_index'],
+        lifecycle['eol_upper_index'],
+    }
 
     depletion_results = openmc.deplete.Results('./depletion_results.h5')
     snapshot_material_files = {}
@@ -904,6 +982,7 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
     temperature_particles_by_index = {}
     base_temperature_seeds = {}
     high_temperature_seeds = {}
+    shutdown_seeds = {}
     base_density_overrides = None
     high_density_overrides = None
 
@@ -912,10 +991,12 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
             operating_temperature + float(params['Temperature Perturbation'])
         )
         base_density_overrides = _temperature_density_overrides(
+            params,
             operating_temperature,
             operating_temperature
         )
         high_density_overrides = _temperature_density_overrides(
+            params,
             operating_temperature,
             elevated_temperature
         )
@@ -924,33 +1005,39 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
             operating_temperature,
             elevated_temperature,
         ]
-        params['Temperature Coefficient NaK Densities'] = [
-            base_density_overrides['_NaK Density Override'],
-            high_density_overrides['_NaK Density Override'],
-        ]
-        params['Temperature Coefficient ZrH Densities'] = [
-            base_density_overrides['_ZrH Density Override'],
-            high_density_overrides['_ZrH Density Override'],
-        ]
         print("\nDensity-aware lifecycle temperature coefficient model:")
-        print(
-            f"  NaK: {base_density_overrides['_NaK Density Override']:.8f} "
-            f"g/cm3 at {operating_temperature:.1f} K -> "
-            f"{high_density_overrides['_NaK Density Override']:.8f} g/cm3 "
-            f"at {elevated_temperature:.1f} K"
-        )
-        print(
-            f"  ZrH: {base_density_overrides['_ZrH Density Override']:.8f} "
-            f"g/cm3 at {operating_temperature:.1f} K -> "
-            f"{high_density_overrides['_ZrH Density Override']:.8f} g/cm3 "
-            f"at {elevated_temperature:.1f} K"
-        )
+        density_output_names = {
+            '_NaK Density Override': 'NaK',
+            '_ZrH Density Override': 'ZrH',
+            '_Helium Density Override': 'Helium',
+            '_Graphite Density Override': 'Graphite',
+        }
+        for override_key, material_name in density_output_names.items():
+            if override_key not in base_density_overrides:
+                continue
+            output_key = (
+                f'Temperature Coefficient {material_name} Densities'
+            )
+            params[output_key] = [
+                base_density_overrides[override_key],
+                high_density_overrides[override_key],
+            ]
+            print(
+                f"  {material_name}: "
+                f"{base_density_overrides[override_key]:.8f} g/cm3 at "
+                f"{operating_temperature:.1f} K -> "
+                f"{high_density_overrides[override_key]:.8f} g/cm3 at "
+                f"{elevated_temperature:.1f} K"
+            )
 
     for case_number, index in enumerate(selected_indices):
         if params['Isothermal Temperature Coefficients']:
             base_seed = 104729 + 2000003 * case_number
             high_seed = 15485863 + 2000033 * case_number
-            case_particles = TEMPERATURE_COEFFICIENT_PARTICLES
+            if index in eol_indices:
+                case_particles = EOL_TEMPERATURE_COEFFICIENT_PARTICLES
+            else:
+                case_particles = TEMPERATURE_COEFFICIENT_PARTICLES
             base_temperature_seeds[index] = base_seed
             high_temperature_seeds[index] = high_seed
             temperature_particles_by_index[index] = case_particles
@@ -989,16 +1076,19 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
             )
 
         if params['Shutdown Margin Calc']:
+            shutdown_seed = 32452843 + 2000081 * case_number
+            shutdown_seeds[index] = shutdown_seed
             print(
                 f"\n[Lifecycle] Cold ARI static case at depletion index "
-                f"{index}."
+                f"{index}, seed {shutdown_seed}."
             )
             shutdown_results[index] = _run_static_snapshot(
                 build_openmc_model,
                 params,
                 snapshot_material_files[index],
                 params['Cold Shutdown Temperature'],
-                shutdown_state=True
+                shutdown_state=True,
+                seed=shutdown_seed
             )
 
     operating_raw = [float(value) for value in params['keff 2D']]
@@ -1205,6 +1295,9 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
         params['Temp Coeff 3D (2D corrected) Uncertainty'] = np.nan
 
     if params['Shutdown Margin Calc']:
+        params['Shutdown Margin Seeds'] = [
+            shutdown_seeds[index] for index in selected_indices
+        ]
         sdm_raw = {}
         sdm_raw_uncertainty = {}
         sdm_corrected = {}
@@ -1391,9 +1484,10 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
 
         print(
             f"Using {TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
-            "for every lifecycle temperature-coefficient snapshot. The "
-            "operating depletion and cold-shutdown calculations retain their "
-            "normal particle settings."
+            "for BOL/MOL temperature-coefficient snapshots and "
+            f"{EOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
+            "for both EOL bracketing snapshots. The operating depletion and "
+            "cold-shutdown calculations retain their normal particle settings."
         )
 
     try:
