@@ -16,7 +16,6 @@ from reactor_engineering_evaluation.fuel_calcs import fuel_calculations
 from reactor_engineering_evaluation.BOP import *
 from reactor_engineering_evaluation.vessels_calcs import *
 from reactor_engineering_evaluation.tools import *
-from reactor_engineering_evaluation.operation import reactor_operation
 from cost.cost_estimation import detailed_bottom_up_cost_estimate
 from cost.fleet_mode import (
     servicing_facility_allocation,
@@ -272,8 +271,6 @@ update_params({
     'Reactors Monitored Per Operator': 9,
     'Security Staff Per Shift': 1
 })
-
-reactor_operation(params)
 
 # Based on https://digital.library.unt.edu/ark:/67531/metadc893980/m2/1/high_res_d/919556.pdf (tables 17 and 18):
 # Estimated helium mass per MWt is 3.3 kg/MWt.
