@@ -301,6 +301,123 @@ def calculate_number_of_rings(rings_over_one_edge):
         2 * rings_over_one_edge - 1
 
 
+def _positive_integer_param(params, name):
+    value = params[name]
+    integer_value = int(value)
+    if integer_value <= 0 or integer_value != value:
+        raise ValueError(f"{name} must be a positive integer, got {value!r}.")
+    return integer_value
+
+
+def validate_gcmr_shutdown_rod_layout(params):
+    """Validate GCMR rod inventory inputs against modeled lattice positions."""
+    shutdown_keys = {
+        'Central Shutdown Rod Ring',
+        'Central Shutdown Rod Count',
+        'Central Shutdown Rod Radius',
+        'Central Shutdown Rod Clad Radius',
+        'Surrounding Shutdown Rod Ring',
+        'Surrounding Shutdown Rod Count',
+        'Surrounding Shutdown Rod Radius',
+        'Surrounding Shutdown Rod Clad Radius',
+        'Surrounding Shutdown Assembly Count',
+        'Shutdown Rod Height',
+    }
+    provided_shutdown_keys = shutdown_keys.intersection(params)
+    if not provided_shutdown_keys:
+        return {
+            'central_count': 0,
+            'surrounding_count_per_assembly': 0,
+            'surrounding_assembly_count': 0,
+            'total_rod_count': 0,
+        }
+    missing_shutdown_keys = shutdown_keys.difference(params)
+    if missing_shutdown_keys:
+        raise KeyError(
+            "Incomplete GCMR shutdown-rod geometry; missing "
+            + ", ".join(sorted(missing_shutdown_keys))
+        )
+
+    assembly_rings = _positive_integer_param(params, 'Assembly Rings')
+    core_rings = _positive_integer_param(params, 'Core Rings')
+    if assembly_rings < 3:
+        raise ValueError("Assembly Rings must be at least 3 for GCMR shutdown rods.")
+    if core_rings < 3:
+        raise ValueError("Core Rings must be at least 3 for the surrounding shutdown assemblies.")
+
+    central_ring = _positive_integer_param(params, 'Central Shutdown Rod Ring')
+    central_count = _positive_integer_param(params, 'Central Shutdown Rod Count')
+    surrounding_ring = _positive_integer_param(params, 'Surrounding Shutdown Rod Ring')
+    surrounding_count = _positive_integer_param(params, 'Surrounding Shutdown Rod Count')
+    surrounding_assemblies = _positive_integer_param(
+        params, 'Surrounding Shutdown Assembly Count'
+    )
+
+    if surrounding_assemblies != 6:
+        raise ValueError(
+            "Surrounding Shutdown Assembly Count must be 6 because the first "
+            "GCMR core ring contains exactly six assemblies."
+        )
+
+    maximum_fuel_ring = assembly_rings - 2
+    for label, ring, count in (
+        ('Central', central_ring, central_count),
+        ('Surrounding', surrounding_ring, surrounding_count),
+    ):
+        if ring > maximum_fuel_ring:
+            raise ValueError(
+                f"{label} Shutdown Rod Ring must be between 1 and "
+                f"{maximum_fuel_ring}; ring {ring} is not a modeled fuel ring."
+            )
+        positions = 6 * ring
+        if count > positions or positions % count != 0:
+            raise ValueError(
+                f"{label} Shutdown Rod Count ({count}) cannot be distributed "
+                f"uniformly over ring {ring}, which has {positions} positions."
+            )
+
+    active_height = float(params['Active Height'])
+    rod_height = float(params['Shutdown Rod Height'])
+    if not np.isclose(rod_height, active_height, rtol=0.0, atol=1e-9):
+        raise ValueError(
+            f"Shutdown Rod Height ({rod_height:.12g} cm) must equal Active "
+            f"Height ({active_height:.12g} cm)."
+        )
+
+    return {
+        'central_count': central_count,
+        'surrounding_count_per_assembly': surrounding_count,
+        'surrounding_assembly_count': surrounding_assemblies,
+        'total_rod_count': (
+            central_count + surrounding_assemblies * surrounding_count
+        ),
+    }
+
+
+def calculate_gcmr_fuel_compact_count(params):
+    """Return the GCMR fuel positions remaining after rod-channel insertion."""
+    layout = validate_gcmr_shutdown_rod_layout(params)
+    original_count = (
+        calculate_number_of_rings(params['Assembly Rings'] - 1)
+        * calculate_number_of_rings(params['Core Rings'])
+    )
+    fuel_compact_count = original_count - layout['total_rod_count']
+    if fuel_compact_count <= 0:
+        raise ValueError("GCMR shutdown rods remove every modeled fuel position.")
+    return fuel_compact_count
+
+
+def gcmr_drum_absorber_plane_coefficient(angle_degrees):
+    """Return the plane coefficient for a symmetric GCMR absorber sector."""
+    angle = float(angle_degrees)
+    if angle <= 0.0 or angle > 180.0:
+        raise ValueError(
+            "Drum Absorber Arc Degrees must be greater than 0 and no greater than "
+            f"180 degrees, got {angle_degrees!r}."
+        )
+    return 1.0 / np.tan(np.radians(angle) / 2.0)
+
+
 def calculate_number_fuel_elements_hpmr(rings_over_one_edge):
     total_number_of_rings = calculate_number_of_rings(rings_over_one_edge)
     number_of_heatpipe_pins = calculate_number_of_rings(int(np.ceil(rings_over_one_edge / 2)))
@@ -320,9 +437,17 @@ def calculate_total_number_of_TRISO_particles(params):
         params['Packing Fraction'] * compact_fuel_vol / one_particle_volume
     )
     params['Number Of TRISO Particles Per Compact Fuel'] = number_of_particles_per_compact_fuel_vol
-    total_number_of_particles = number_of_particles_per_compact_fuel_vol * \
-        calculate_number_of_rings(params['Assembly Rings'] - 1) * \
-        calculate_number_of_rings(params['Core Rings'])
+    if params.get('reactor type') == 'GCMR':
+        fuel_compact_count = calculate_gcmr_fuel_compact_count(params)
+        params['GCMR Fuel Compact Count'] = fuel_compact_count
+    else:
+        fuel_compact_count = (
+            calculate_number_of_rings(params['Assembly Rings'] - 1)
+            * calculate_number_of_rings(params['Core Rings'])
+        )
+    total_number_of_particles = (
+        number_of_particles_per_compact_fuel_vol * fuel_compact_count
+    )
     params['Total Number of TRISO Particles'] = total_number_of_particles
     return total_number_of_particles
 

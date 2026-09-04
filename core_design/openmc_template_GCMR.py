@@ -2,7 +2,17 @@
 # Importing libraries
 import numpy as np
 import openmc
-from core_design.utils import create_universe_plot, create_cells, cyclic_rotation, flatten_list, cylinder_volume, sphere_volume
+from core_design.utils import (
+    calculate_gcmr_fuel_compact_count,
+    create_universe_plot,
+    create_cells,
+    cyclic_rotation,
+    flatten_list,
+    cylinder_volume,
+    gcmr_drum_absorber_plane_coefficient,
+    sphere_volume,
+    validate_gcmr_shutdown_rod_layout,
+)
 from core_design.openmc_materials_database import collect_materials_data
 
 """
@@ -343,7 +353,12 @@ def build_openmc_model_GCMR(params):
                             control_drum_absorber_material,
                             control_drum_reflector_material):
 
-        absorber_arc = 1 / np.sqrt(3)  # plane coefficient b in x + b*y = 0 giving exactly a 120° absorber arc
+        absorber_angle = float(
+            params.get('Drum Absorber Arc Degrees', 120.0)
+        )
+        absorber_plane_coefficient = (
+            gcmr_drum_absorber_plane_coefficient(absorber_angle)
+        )
         REFERENCE_ANGLE = 240  # constant that orients the drum correctly relative to the lattice geometry
         rotation_angle = 180 if params['Shutdown Margin Calc'] else 0
 
@@ -358,8 +373,12 @@ def build_openmc_model_GCMR(params):
 
         cd_gap_shell = openmc.ZCylinder(r= params['Drum Tube Radius'] )
 
-        cutting_plane_1 = openmc.Plane(a=1, b=absorber_arc/2)
-        cutting_plane_2 = openmc.Plane(a=1, b=-absorber_arc/2)
+        cutting_plane_1 = openmc.Plane(
+            a=1, b=absorber_plane_coefficient
+        )
+        cutting_plane_2 = openmc.Plane(
+            a=1, b=-absorber_plane_coefficient
+        )
 
         drum_absorber = +cd_inner_shell & -cd_outer_shell & -cutting_plane_1 & -cutting_plane_2
         drum_reflector = -cd_outer_shell & ~drum_absorber
@@ -386,6 +405,7 @@ def build_openmc_model_GCMR(params):
     # **************************************************************************************************************************
     #                                                Sec. 1 : MATERIALS
     # **************************************************************************************************************************
+    shutdown_layout = validate_gcmr_shutdown_rod_layout(params)
     materials_database = collect_materials_data(params)
     fuel = materials_database[params['Fuel']]
     depleted_fuel_override = _load_depleted_fuel_override(params)
@@ -702,21 +722,16 @@ def build_openmc_model_GCMR(params):
     rings = [[central_shutdown_assembly_universe]]
 
     assembly_number = 1
-    surrounding_shutdown_assembly_count = int(
-        params['Surrounding Shutdown Assembly Count']
-    )
-    if surrounding_shutdown_assembly_count != 6:
-        raise ValueError(
-            "The first GCMR core ring contains exactly six surrounding "
-            "shutdown assemblies."
-        )
+    surrounding_shutdown_assembly_count = shutdown_layout[
+        'surrounding_assembly_count'
+    ]
 
     for n in range(1, params['Core Rings'] - 1):
         ring_cells = 6 * n
 
         if n == 1:
-            # First core ring: six assemblies, each containing
-            # six smaller shutdown rods.
+            # First core ring: six assemblies containing the configured
+            # number of smaller shutdown rods per assembly.
             rings.insert(
                 0,
                 [surrounding_shutdown_assembly_universe] * ring_cells
@@ -843,6 +858,13 @@ def build_openmc_model_GCMR(params):
         + outer_fuel_ring_count
         * assembly_fuel_cells
     )
+    expected_fuel_cells = calculate_gcmr_fuel_compact_count(params)
+    if core_fuel_cells != expected_fuel_cells:
+        raise ValueError(
+            f"GCMR lattice contains {core_fuel_cells} fuel positions, but "
+            f"the shared geometry calculation expects {expected_fuel_cells}."
+        )
+    params['GCMR Fuel Compact Count'] = core_fuel_cells
 
     print("Normal inner assemblies:", normal_inner_assembly_count)
     print(

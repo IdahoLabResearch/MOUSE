@@ -113,6 +113,7 @@ update_params({
     'Drum Radius': 9.530986101432001,  # cm
     'Drum Tube Radius': 9.742785792574935,  # cm
     'Drum Absorber Thickness': 1, # cm
+    'Drum Absorber Arc Degrees': 120.0,
     'Drum Height': 219.48557158514987,  # cm
     })
 calculate_drums_volumes_and_masses(params)

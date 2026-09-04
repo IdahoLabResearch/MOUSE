@@ -424,7 +424,7 @@ PARAMS_REGISTRY = {
 
     'Drum Absorber Arc Degrees': {
         'group': 'Control Drums', 'units': 'degrees',
-        'description': 'Angular span of the absorber arc on each control drum',
+        'description': 'Angular span of the absorber arc on each control drum; used by both OpenMC geometry and material inventory calculations',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Drum Radius': {
@@ -464,7 +464,7 @@ PARAMS_REGISTRY = {
 
     'All Drum Tubes Area': {
         'group': 'Control Drums', 'units': 'cm²',
-        'description': 'Total cross-sectional area removed from the reflector by all LTMR control-drum tubes, including clearance around each physical drum',
+        'description': 'Total cross-sectional area removed from the reflector by all control-drum tubes, including clearance around each physical drum',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Control Drum Absorber Mass': {
@@ -507,7 +507,12 @@ PARAMS_REGISTRY = {
 
     'Shutdown Rods Mass': {
         'group': 'Core Design', 'units': 'kg',
-        'description': 'Combined absorber and cladding mass of all LTMR shutdown rods',
+        'description': 'Combined absorber and cladding mass of all shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'GCMR Fuel Compact Count': {
+        'group': 'Core Design', 'units': 'compacts',
+        'description': 'Number of GCMR fuel-compact positions remaining after shutdown-rod channels replace fuel positions',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Radial Reflector Volume': {

@@ -8,6 +8,9 @@ from core_design.utils import (
     calculate_number_of_rings,
     calculate_hex_edge_length,
     calculate_hex_apothem,
+    calculate_gcmr_fuel_compact_count,
+    gcmr_drum_absorber_plane_coefficient,
+    validate_gcmr_shutdown_rod_layout,
 )
 
 
@@ -323,7 +326,25 @@ def calculate_drums_volumes_and_masses(params):
             )
 
     drum_volume = np.pi * drum_radius * drum_radius * drum_height
-    if 'coating_angle' in params:
+    if params.get('reactor type') == 'GCMR':
+        absorber_angle = float(
+            params.get('Drum Absorber Arc Degrees', 120.0)
+        )
+        # Validate the same angle definition used to construct the OpenMC planes.
+        gcmr_drum_absorber_plane_coefficient(absorber_angle)
+        params['Drum Absorber Arc Degrees'] = absorber_angle
+        drum_absorp_vol = (
+            np.pi
+            * (
+                drum_radius * drum_radius
+                - (drum_radius - absorber_thickness)
+                * (drum_radius - absorber_thickness)
+            )
+            * absorber_angle
+            / 360.0
+            * drum_height
+        )
+    elif 'coating_angle' in params:
         drum_absorp_vol = (
             np.pi * (drum_radius * drum_radius)
             - np.pi / 180 * params['coating_angle'] * (drum_radius - absorber_thickness) * (drum_radius - absorber_thickness)
@@ -383,6 +404,10 @@ def calculate_drums_volumes_and_masses(params):
     params['Control Drum Reflector Mass'] = drum_refl_all_mass
     params['Control Drums Mass'] = control_drums_mass
     params['All Drums Area'] = params['All Drums Volume'] / params['Drum Height']
+    if 'Drum Tube Radius' in params:
+        params['All Drum Tubes Area'] = (
+            number_of_drums * circle_area(params['Drum Tube Radius'])
+        )
 
 
 def calculate_shutdown_rods_volumes_and_masses(params):
@@ -440,23 +465,13 @@ def calculate_shutdown_rods_volumes_and_masses(params):
 
 def calculate_gcmr_shutdown_rods_volumes_and_masses(params):
     """Calculate total GCMR shutdown-rod absorber and cladding inventory."""
+    layout = validate_gcmr_shutdown_rod_layout(params)
     rod_height = float(params['Shutdown Rod Height'])
-    central_count = int(params['Central Shutdown Rod Count'])
-    surrounding_assembly_count = int(
-        params['Surrounding Shutdown Assembly Count']
-    )
-    surrounding_count_per_assembly = int(
-        params['Surrounding Shutdown Rod Count']
-    )
-
-    if rod_height <= 0.0:
-        raise ValueError("Shutdown Rod Height must be greater than zero.")
-    if central_count <= 0 or surrounding_assembly_count <= 0:
-        raise ValueError("GCMR shutdown-rod counts must be greater than zero.")
-    if surrounding_count_per_assembly <= 0:
-        raise ValueError(
-            "Surrounding Shutdown Rod Count must be greater than zero."
-        )
+    central_count = layout['central_count']
+    surrounding_assembly_count = layout['surrounding_assembly_count']
+    surrounding_count_per_assembly = layout[
+        'surrounding_count_per_assembly'
+    ]
 
     rod_groups = [
         (
@@ -586,19 +601,33 @@ def calculate_reflector_mass_LTMR(params):
 def calculate_reflector_mass_GCMR(params):
     materials_database = collect_materials_data(params)
     tot_number_assemblies = calculate_number_of_rings(params['Core Rings'])
-    reflector_height = params['Active Height']
-    reflector_volume = reflector_height * (
+    drum_tube_area = params['All Drum Tubes Area']
+    radial_reflector_area = (
         circle_area(params['Core Radius'])
         - tot_number_assemblies * hexagonal_area_from_ftf(params['Assembly FTF'])
-        - params['All Drums Area']
+        - drum_tube_area
+    )
+    axial_reflector_area = circle_area(params['Core Radius']) - drum_tube_area
+    if radial_reflector_area < 0.0 or axial_reflector_area < 0.0:
+        raise ValueError(
+            "GCMR reflector area is negative; increase Core Radius or reduce "
+            "the assembly/drum-tube geometry."
+        )
+
+    radial_reflector_volume = radial_reflector_area * params['Active Height']
+    axial_reflector_volume = (
+        2.0 * axial_reflector_area * params['Axial Reflector Thickness']
     )
 
     rad_reflector_density = materials_database[params['Radial Reflector']].density
-    rad_reflector_mass = rad_reflector_density * reflector_volume / 1000  # kg
-    params['Radial Reflector Mass'] = rad_reflector_mass
-    params['Axial Reflector Mass'] = 2 * (1 / 1000) * materials_database[params['Axial Reflector']].density * cylinder_volume(
-        params['Core Radius'],
-        params['Axial Reflector Thickness']
+    axial_reflector_density = materials_database[params['Axial Reflector']].density
+    params['Radial Reflector Volume'] = radial_reflector_volume
+    params['Axial Reflector Volume'] = axial_reflector_volume
+    params['Radial Reflector Mass'] = (
+        rad_reflector_density * radial_reflector_volume / 1000
+    )
+    params['Axial Reflector Mass'] = (
+        axial_reflector_density * axial_reflector_volume / 1000
     )
 
 
@@ -607,18 +636,42 @@ def calculate_moderator_mass_GCMR(params):
     AR = params['Assembly Rings']
     CR = params['Core Rings']
     tot_number_assemblies = calculate_number_of_rings(CR)
+    layout = validate_gcmr_shutdown_rod_layout(params)
+    fuel_compact_count = calculate_gcmr_fuel_compact_count(params)
+    params['GCMR Fuel Compact Count'] = fuel_compact_count
 
     # Area of one hexagonal assembly cell in the core lattice
     hex_area = hexagonal_area_from_ftf(params['Assembly FTF'])
 
-    # Fuel compact area per assembly (packing fraction only — graphite matrix inside the compact counts as moderator)
-    num_fuel_regions_per_hex = calculate_number_of_rings(AR - 1)
-    area_fuel_per_hex = params['Packing Fraction'] * circle_area(params['Compact Fuel Radius']) * num_fuel_regions_per_hex
+    # Packing fraction only: graphite matrix inside each compact remains moderator.
+    total_fuel_area = (
+        params['Packing Fraction']
+        * circle_area(params['Compact Fuel Radius'])
+        * fuel_compact_count
+    )
 
     # Every hex cell in the assembly (fuel, booster, or coolant lattice hex) has 6 coolant channels
     # at its vertices. Vertex sharing gives 2 effective channels per cell across all calculate_number_of_rings(AR)
     # cells (inner fuel rings + outer booster/coolant ring).
-    area_coolant_per_hex = 2 * calculate_number_of_rings(AR) * circle_area(params['Coolant Channel Radius'])
+    total_lattice_positions = (
+        tot_number_assemblies * calculate_number_of_rings(AR)
+    )
+    total_coolant_area = (
+        2
+        * (total_lattice_positions - layout['total_rod_count'])
+        * circle_area(params['Coolant Channel Radius'])
+    )
+
+    if layout['total_rod_count']:
+        total_shutdown_channel_area = (
+            layout['central_count']
+            * circle_area(params['Central Shutdown Rod Clad Radius'])
+            + layout['surrounding_assembly_count']
+            * layout['surrounding_count_per_assembly']
+            * circle_area(params['Surrounding Shutdown Rod Clad Radius'])
+        )
+    else:
+        total_shutdown_channel_area = 0.0
 
     # Booster pin count: each booster_lattice_hex has its pin at the CENTER (not a vertex), so it
     # is never shared between adjacent cells — 1 full pin per booster cell.
@@ -641,8 +694,9 @@ def calculate_moderator_mass_GCMR(params):
         + n_edges   * ((AR - 1) * 4 - 1)
     )
 
-    # Per-assembly average booster footprint (used to compute the moderator area displacement)
-    area_moderator_booster_per_hex = (total_booster_pins / tot_number_assemblies) * circle_area(booster_radii[-1])
+    total_moderator_booster_area = (
+        total_booster_pins * circle_area(booster_radii[-1])
+    )
 
     # Per-region booster mass (annular regions from innermost to outermost)
     tot_booster_mass = 0.0
@@ -660,14 +714,21 @@ def calculate_moderator_mass_GCMR(params):
         params[f'Moderator Booster Mass {mat_name}'] = region_mass
         tot_booster_mass += region_mass
 
-    moderator_area = hex_area - area_fuel_per_hex - area_coolant_per_hex - area_moderator_booster_per_hex
+    moderator_area = (
+        tot_number_assemblies * hex_area
+        - total_fuel_area
+        - total_coolant_area
+        - total_moderator_booster_area
+        - total_shutdown_channel_area
+    )
+    if moderator_area < 0.0:
+        raise ValueError("Calculated GCMR moderator area is negative.")
     tot_moderator_mass = (
-        tot_number_assemblies
-        * moderator_area
-        * params['Active Height']
+        moderator_area * params['Active Height']
         * materials_database[params['Moderator']].density
         / 1000
     )
+    params['Moderator Total Area'] = moderator_area
     params['Moderator Mass'] = tot_moderator_mass
     params['Moderator Booster Mass'] = tot_booster_mass
 
