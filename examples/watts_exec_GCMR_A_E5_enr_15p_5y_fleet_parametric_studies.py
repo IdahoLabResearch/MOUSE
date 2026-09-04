@@ -151,8 +151,8 @@ params['Heat Flux'] = calculate_heat_flux_TRISO(params) # MW/m^2
 # A positive SDM means the reactor can be safely shut down with all drums inserted.
 # Recommended: True for final design verification; can be set to False to save
 # computation time during early design exploration.
-params['Shutdown Margin Calc'] = True  # True or False
-params['Cold Shutdown Temperature'] = 300  # K
+# params['Shutdown Margin Calc'] = True  # True or False
+# params['Cold Shutdown Temperature'] = 300  # K
 
 # --- Isothermal Temperature Coefficient ---
 # When True, two additional OpenMC simulations are run: one at 'Common Temperature'
@@ -160,7 +160,7 @@ params['Cold Shutdown Temperature'] = 300  # K
 # coefficient is then calculated in units of pcm/K.
 # A negative coefficient indicates the reactor is self-stabilizing (desired behavior).
 # Recommended: True for safety analysis; can be set to False to save computation time.
-params['Isothermal Temperature Coefficients'] = True  # True or False
+# params['Isothermal Temperature Coefficients'] = True  # True or False
 
 # --- Temperature Perturbation ---
 # The temperature step (in Kelvin) used for the isothermal temperature coefficient calculation.
@@ -170,18 +170,19 @@ params['Isothermal Temperature Coefficients'] = True  # True or False
 # avoiding nonlinear effects. 
 # Units: Kelvin
 # This parameter is REQUIRED only when 'Isothermal Temperature Coefficients' is True.
-params['Temperature Perturbation'] = 100  # K
+# params['Temperature Perturbation'] = 100  # K
 
-heat_flux_monitor = monitor_heat_flux(params)
-run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
-fuel_calculations(params)  # calculate the fuel mass and SWU
+# heat_flux_monitor = monitor_heat_flux(params)
+# run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 
 # --- Previously calculated OpenMC results ---
 # To bypass OpenMC later, comment out run_openmc(...) above and uncomment these assignments.
-# params['Fuel Lifetime'] = 1786  # days
-# params['Mass U235'] = 85655.7587486539  # g
-# params['Mass U238'] = 484226.2801659319  # g
-# params['Uranium Mass'] = 569.8820389145857  # kg
+params['Fuel Lifetime'] = 1786  # days
+params['Mass U235'] = 85655.7587486539  # g
+params['Mass U238'] = 484226.2801659319  # g
+params['Uranium Mass'] = 569.8820389145857  # kg
+fuel_calculations(params)  # calculate the fuel mass and SWU
+
 
 # **************************************************************************************************************************
 #                                         Sec. 6: Primary Loop + Balance of Plant

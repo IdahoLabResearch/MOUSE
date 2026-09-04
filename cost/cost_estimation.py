@@ -1111,7 +1111,14 @@ def _fleet_cohort_schedule(params):
             event_time = cohort['operation_start'] + service_number * cycle_length
             if event_time >= retirement_time:
                 break
-            event_year = int(math.ceil(event_time - 1e-12))
+            # Annual schedule rows end at the cohort's last operating year.
+            # A fractional event immediately before retirement can otherwise
+            # round up to the retirement year, which is outside that cohort's
+            # operating interval and can exceed the overall schedule horizon.
+            event_year = min(
+                int(math.ceil(event_time - 1e-12)),
+                retirement_time - 1,
+            )
             service_events_by_year[event_year] += cohort['reactors']
             service_number += 1
 
