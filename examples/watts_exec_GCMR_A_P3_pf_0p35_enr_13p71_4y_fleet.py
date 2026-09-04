@@ -407,10 +407,9 @@ params['Fleet Mode'] = True
 params['Production Rate'] = 100 #reactors per year
 params['Deployment Period'] = 10 # years
 params['Fleet'] = params['Deployment Period'] * params['Production Rate']
-params['Generating Sites Count'] = int(
-    np.ceil(params['Capacity Factor'] * params['Fleet'])
-)
 params['Average Distance From Serv to GenSite'] = 1000 #miles (statutory miles)
+params['Servicing Total Time'] = 10 / 365  # years; 5.98 servicing days plus 78 testing hours, rounded up to 10 whole days.
+params['Extra RPV Fraction'] = 0.015
 params['Max Reactors Per Servicing Facility'] = 1000
 params['Servicing Facility OCC Learning Rate'] = 0.30
 params['Servicing Facility Learning Cap'] = 5
@@ -524,13 +523,23 @@ params['Radioactive Waste Processing Hot Cell Count'] = 1
 params['He Gas Replenishment Per Hot Cell'] = ((3*3*5) * 2 * params['Servicing Hot Cell Annual Rate'] * 2 + 0.1 * (10*30*7)*12) * params['m3_to_kg_He_RT_atmospheric']
 params['He Gas Replenishment'] = (params['Servicing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['Radioactive Waste Processing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['CoolantInventoryRPV_Mass'] * params['Servicing Rate Per Facility'])
 
-params['SER Number of Operators Per Shift'] = np.ceil( 0.0 + 5.625 * (scale_var_SER ** 0.426) )
-params['SER Engineering Headcount'] = np.ceil( 0.0 + 20.0 * (scale_var_SER ** 0.301) )
-params['SER Maintenance Staff Per Shift'] = 40  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
-params['SER Security Staff Per Shift'] = 1  # REVIEW NEEDED: provisional value carried over from the old reactor-site staffing input.
+params['SER Number of Operators Per Shift'] = np.ceil(0.0 + 33.33333333333329 * (scale_var_SER ** 0.4771212547196621))
+params['SER Engineering Headcount'] = np.ceil(0.0 + 124.99999999999939 * (scale_var_SER ** 0.3010299956639814))
+params['SER Maintenance Staff Per Shift'] = np.ceil(0.0 + 266.6666666666656 * (scale_var_SER ** 0.47712125471966266))
+params['SER Security Staff Per Shift'] = np.ceil(0.0 + 3.1304347826086882 * (scale_var_SER ** 0.5835765856339492))
 
 params['Roundtrip Time'] = 2*params['Average Distance From Serv to GenSite'] / 40 / (8760/2) #[years] based on average speed of 40 miles/hour, 12 hours of driving per day
 params['Roundtrip Time Reactor Transport'] = 2*params['Average Distance From Serv to GenSite'] / 15 / (8760/2) #[years] based on average speed of 15 miles/hour, 12 hours of driving per day
+params['Generating Sites Count'] = np.floor(
+    params['Fleet']
+    / (
+        (
+            (params['Roundtrip Time Reactor Transport'] + params['Servicing Total Time'] + params['Cycle Length'])
+            / params['Cycle Length']
+        )
+        * (1 + params['Extra RPV Fraction'])
+    )
+)  # TimeOnSite = Cycle Length; TimeOffSite = reactor roundtrip transport time + total servicing time.
 params['Dwell Time GenSite'] = 1/365 #[years]
 params['Dwell Time Serv'] = 1/365 #[years]
 params['Dwell Time Reactor Transport GenSite'] = 2/365 #[years]
@@ -549,8 +558,8 @@ params['SER Administration Building Area'] = 258000 / (3.2808 ** 2)
 
 params['SER Helium Flowrate'] = params['He Gas Replenishment'] / (0.9 * 8766 * 3600)
 
-params['SER Local Transport Vehicle Count'] = 80  # REVIEW NEEDED: provisional value carried over from the old central-facility example.
-params['SER Utility Vehicle Count'] = 100  # REVIEW NEEDED: provisional value based on the old general transport vehicle count.
+params['SER Local Transport Vehicle Count'] = np.ceil(scale_var_SER * 5 / (0.9 * 365.25))  # Five movements per reactor serviced, adjusted for 90% vehicle capacity factor.
+params['SER Utility Vehicle Count'] = np.ceil(0.0 + 3.1304347826086882 * (scale_var_SER ** 0.5835765856339492))
 params['Reactor Transport Vehicle Count'] = np.ceil(params['Servicing Rate Per Facility'] * (params['Roundtrip Time Reactor Transport']+params['Dwell Time Reactor Transport GenSite']+params['Dwell Time Reactor Transport Serv']) + 1)
 params['Helium Transport Truck Count'] = np.ceil(params['Servicing Facility Design Capacity'] * params['Annual Coolant Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
 params['Water Tanker Truck Count'] = np.ceil(params['Servicing Facility Design Capacity'] * params['Water Supply Frequency'] * ((params['Roundtrip Time']+params['Dwell Time GenSite']+params['Dwell Time Serv']) * 1.05))
@@ -570,7 +579,7 @@ params['Helium Purification and Storage Building Area'] = 0.0 + 72.0 * (scale_va
 params['SER Local Control Building Area'] = 40 * scale_var_SER
 params['SER Remote Control Building Area'] = 40 * scale_var_SER
 params['SER Rad Waste Management Building Area'] = 0.0 + 40.5 * (scale_var_SER ** 0.7447)
-params['Radwaste Storage Warehouses Area'] = (0.0 + 15422.94 * (scale_var_SER ** 0.994)) / (3.2808 ** 2)  # This needs to be reviewed.
+params['Radwaste Storage Warehouses Area'] = (0.0 + 15422.94 * (scale_var_SER ** 0.994))  # m^2
 params['SER Emergency Generator Power'] = 0.0 + 3.266667 * (scale_var_SER ** 0.632)
 params['Parts Service Center and Warehouse Building Area'] = 0.0 + 675.0 * (scale_var_SER ** 0.6021)
 params['Service Air Water Building Count'] = np.rint( 0.0 + 1.333333 * (scale_var_SER ** 0.1761) )
