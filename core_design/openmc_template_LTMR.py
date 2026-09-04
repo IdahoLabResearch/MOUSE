@@ -3,6 +3,9 @@
 import openmc
 import numpy as np
 from core_design.openmc_materials_database import collect_materials_data
+from core_design.pins_arrangement import (
+    SUPPORTED_LTMR_SHUTDOWN_ROD_COUNTS,
+)
 from core_design.utils import (
     create_universe_plot,
     circle_area,
@@ -68,6 +71,99 @@ def create_pin_regions(params, pin_type):
 
     return regions
 
+def create_shutdown_rod_universe(params, materials_database):
+    """
+    Simplified shutdown channel:
+
+    ARO:
+        B4C absorber and its SS304 cladding are withdrawn together;
+        the entire channel contains NaK.
+
+    ARI:
+        Enriched B4C absorber and its SS304 cladding are inserted.
+    """
+
+    absorber_radius = params['Shutdown Rod Absorber Radius']
+    clad_radius = params['Shutdown Rod Clad Radius']
+
+    if absorber_radius <= 0.0:
+        raise ValueError(
+            "Shutdown Rod Absorber Radius must be greater than zero."
+        )
+
+    if absorber_radius >= clad_radius:
+        raise ValueError(
+            "Shutdown Rod Absorber Radius must be smaller than "
+            "Shutdown Rod Clad Radius."
+        )
+
+    if clad_radius >= params['Fuel Pin Radii'][-1]:
+        raise ValueError(
+            "Shutdown Rod Clad Radius must be smaller than "
+            "the existing pin outer radius."
+        )
+
+    absorber_surface = openmc.ZCylinder(
+        r=absorber_radius,
+        name='shutdown_absorber_surface'
+    )
+
+    clad_surface = openmc.ZCylinder(
+        r=clad_radius,
+        name='shutdown_clad_surface'
+    )
+
+    absorber_material = materials_database[
+        params['Shutdown Rod Absorber']
+    ]
+
+    clad_material = materials_database[
+        params['Shutdown Rod Cladding']
+    ]
+
+    coolant_material = materials_database[
+        params['Coolant']
+    ]
+
+    if params['Shutdown Margin Calc']:
+        print(">>> SHUTDOWN RODS: INSERTED (B4C AND CLADDING)")
+        absorber_cell = openmc.Cell(
+            name='shutdown_absorber_inserted',
+            fill=absorber_material,
+            region=-absorber_surface
+        )
+
+        clad_cell = openmc.Cell(
+            name='shutdown_rod_cladding_inserted',
+            fill=clad_material,
+            region=+absorber_surface & -clad_surface
+        )
+
+        outside_coolant_cell = openmc.Cell(
+            name='shutdown_rod_outer_coolant',
+            fill=coolant_material,
+            region=+clad_surface
+        )
+
+        cells = [
+            absorber_cell,
+            clad_cell,
+            outside_coolant_cell,
+        ]
+    else:
+        print(">>> SHUTDOWN RODS: WITHDRAWN (B4C AND CLADDING)")
+        withdrawn_channel_cell = openmc.Cell(
+            name='shutdown_channel_withdrawn',
+            fill=coolant_material
+        )
+        cells = [withdrawn_channel_cell]
+
+    shutdown_rod_universe = openmc.Universe(
+        name='shutdown_rod_universe',
+        cells=cells
+    )
+
+    return shutdown_rod_universe
 
 def _get_valid_drum_counts():
     return [6, 12, 18, 24, 30, 36]
@@ -231,45 +327,156 @@ def create_drums_universe(params, control_drum_absorber_material, control_drum_r
     return drums
 
 
-def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, pin_pitch, reflector_material, outer_coolant_universe):
+# def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, pin_pitch, reflector_material, outer_coolant_universe):
+#     """
+#     Creating the universe of the fuel assembly
+#     @ In, params, dict, The parameters that are used to "fill in" input files with placeholders.
+#     @ In, fuel_pin_universe, openmc.universe.Universe
+#     @ In, moderator_pin_universe, openmc.universe.Universe
+#     @ In, pin_pitch, float, the center-to-center distance between adjacent fuel/moderator pins
+#     @ In, reflector_material, openmc.material.Material, the material of the outer radial reflector
+#     @ In, outer_coolant_universe, openmc.universe.Universe, the OpenMC universe of the coolant in the assembly
+#     @ out, assembly_universe, openmc.universe.Universe, the fuel assembly universe
+#     """
+
+#     assembly = openmc.HexLattice()
+#     assembly.center = (0., 0.)
+#     assembly.pitch = (pin_pitch,)
+#     assembly.outer = outer_coolant_universe
+
+#     rings = copy.deepcopy(params['Pins Arrangement'])
+#     rings = rings[-params['Number of Rings per Assembly']:]
+
+#     for i in range(len(rings)):
+#         for j in range(len(rings[i])):
+#             if rings[i][j] == 'FUEL':
+#                 rings[i][j] = fuel_pin_universe
+#             elif rings[i][j] == 'MODERATOR':
+#                 rings[i][j] = moderator_pin_universe
+
+#     assembly.universes = rings
+
+#     hex_edge_length = calculate_hex_edge_length(params)
+#     assembly_boundary = openmc.model.hexagonal_prism(
+#         edge_length=hex_edge_length,
+#         corner_radius=params['Fuel Pin Radii'][-1] + params["Pin Gap Distance"]
+#     )
+
+#     fuel_assembly_cell = openmc.Cell(fill=assembly, region=assembly_boundary)
+#     reflector_cell = openmc.Cell(fill=reflector_material, region=~assembly_boundary)
+
+#     assembly_universe = openmc.Universe(cells=[fuel_assembly_cell, reflector_cell])
+
+#     return assembly_universe
+
+
+def _validate_shutdown_rod_layout(params, rings):
+    """Validate the selected active LTMR shutdown-channel configuration."""
+    actual_count = sum(row.count('SHUTDOWN') for row in rings)
+    requested_count = params.get('Number of Shutdown Rods', actual_count)
+
+    if requested_count not in SUPPORTED_LTMR_SHUTDOWN_ROD_COUNTS:
+        raise ValueError(
+            "Number of Shutdown Rods must be one of "
+            f"{list(SUPPORTED_LTMR_SHUTDOWN_ROD_COUNTS)}, got "
+            f"{requested_count!r}."
+        )
+
+    if actual_count != requested_count:
+        raise ValueError(
+            "The selected Pins Arrangement contains "
+            f"{actual_count} shutdown channels, but Number of Shutdown "
+            f"Rods is {requested_count}. Select the matching predefined "
+            "LTMR pin arrangement."
+        )
+
+    for ring_index, ring in enumerate(rings):
+        if len(ring) == 1:
+            continue
+        if len(ring) % 6 != 0:
+            raise ValueError(
+                f"LTMR ring {ring_index} has {len(ring)} positions; "
+                "a sixfold-symmetric hexagonal ring must be divisible by 6."
+            )
+
+        positions_per_sector = len(ring) // 6
+        reference_sector = [
+            value == 'SHUTDOWN'
+            for value in ring[:positions_per_sector]
+        ]
+        for sector_index in range(1, 6):
+            start = sector_index * positions_per_sector
+            sector = [
+                value == 'SHUTDOWN'
+                for value in ring[start:start + positions_per_sector]
+            ]
+            if sector != reference_sector:
+                raise ValueError(
+                    "Shutdown channels in LTMR ring "
+                    f"{ring_index} are not sixfold symmetric."
+                )
+
+    return actual_count
+
+def create_assembly_universe(params, fuel_pin_universe, moderator_pin_universe, shutdown_rod_universe, pin_pitch, reflector_material, outer_coolant_universe):
     """
-    Creating the universe of the fuel assembly
-    @ In, params, dict, The parameters that are used to "fill in" input files with placeholders.
-    @ In, fuel_pin_universe, openmc.universe.Universe
-    @ In, moderator_pin_universe, openmc.universe.Universe
-    @ In, pin_pitch, float, the center-to-center distance between adjacent fuel/moderator pins
-    @ In, reflector_material, openmc.material.Material, the material of the outer radial reflector
-    @ In, outer_coolant_universe, openmc.universe.Universe, the OpenMC universe of the coolant in the assembly
-    @ out, assembly_universe, openmc.universe.Universe, the fuel assembly universe
+    Creating the universe of the fuel assembly.
     """
 
     assembly = openmc.HexLattice()
-    assembly.center = (0., 0.)
+    assembly.center = (0.0, 0.0)
     assembly.pitch = (pin_pitch,)
     assembly.outer = outer_coolant_universe
 
     rings = copy.deepcopy(params['Pins Arrangement'])
     rings = rings[-params['Number of Rings per Assembly']:]
+    _validate_shutdown_rod_layout(params, rings)
 
     for i in range(len(rings)):
         for j in range(len(rings[i])):
             if rings[i][j] == 'FUEL':
                 rings[i][j] = fuel_pin_universe
+
             elif rings[i][j] == 'MODERATOR':
                 rings[i][j] = moderator_pin_universe
+
+            elif rings[i][j] == 'SHUTDOWN':
+                rings[i][j] = shutdown_rod_universe
+
+            else:
+                raise ValueError(
+                    f"Unknown pin label at ring {i}, position {j}: "
+                    f"{rings[i][j]!r}"
+                )
 
     assembly.universes = rings
 
     hex_edge_length = calculate_hex_edge_length(params)
+
     assembly_boundary = openmc.model.hexagonal_prism(
         edge_length=hex_edge_length,
-        corner_radius=params['Fuel Pin Radii'][-1] + params["Pin Gap Distance"]
+        corner_radius=(
+            params['Fuel Pin Radii'][-1]
+            + params['Pin Gap Distance']
+        )
     )
 
-    fuel_assembly_cell = openmc.Cell(fill=assembly, region=assembly_boundary)
-    reflector_cell = openmc.Cell(fill=reflector_material, region=~assembly_boundary)
+    fuel_assembly_cell = openmc.Cell(
+        fill=assembly,
+        region=assembly_boundary
+    )
 
-    assembly_universe = openmc.Universe(cells=[fuel_assembly_cell, reflector_cell])
+    reflector_cell = openmc.Cell(
+        fill=reflector_material,
+        region=~assembly_boundary
+    )
+
+    assembly_universe = openmc.Universe(
+        cells=[
+            fuel_assembly_cell,
+            reflector_cell
+        ]
+    )
 
     return assembly_universe
 
@@ -343,29 +550,45 @@ def create_control_drums_positions(params):
 
 def update_ltmr_reflector_geometry_from_drums(params):
     """
-    For LTMR, derive:
-    - Core Radius
-    - Radial Reflector Thickness
-    - Axial Reflector Thickness
-    - Drum Height
+    Resolve LTMR reflector geometry around the selected control-drum layout.
 
-    from the actual drum layout implied by Number of Drums and Drum Radius.
+    When Drum Radius and Radial Reflector Thickness are both explicit inputs,
+    preserve the requested reflector thickness and validate that it contains
+    every drum tube.  For legacy inputs with an automatically selected drum
+    radius, retain the historical behavior of deriving the minimum reflector
+    thickness from the drum layout.
+
+    Axial Reflector Thickness is independent of the radial drum layout.  It
+    defaults to the resolved radial thickness only when it is not provided.
     """
+    drum_radius_is_explicit = 'Drum Radius' in params
     drum_radius = resolve_drum_radius(params)
     drum_tube_radius = drum_radius + drum_radius / 90.0
 
     drum_positions = create_control_drums_positions(params)
 
-    max_outer_radius = max(
+    minimum_core_radius = max(
         np.sqrt(x ** 2 + y ** 2) + drum_tube_radius
         for x, y, _ in drum_positions
     )
 
     hex_apothem = calculate_hex_apothem(params)
+    minimum_radial_thickness = minimum_core_radius - hex_apothem
 
-    params['Core Radius'] = max_outer_radius
-    params['Radial Reflector Thickness'] = params['Core Radius'] - hex_apothem
-    params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']
+    if drum_radius_is_explicit and 'Radial Reflector Thickness' in params:
+        radial_thickness = float(params['Radial Reflector Thickness'])
+        if radial_thickness + 1e-9 < minimum_radial_thickness:
+            raise ValueError(
+                "Radial Reflector Thickness is too small for the explicit "
+                f"LTMR drum layout. At least {minimum_radial_thickness:.4f} "
+                f"cm is required, but got {radial_thickness:.4f} cm."
+            )
+    else:
+        radial_thickness = minimum_radial_thickness
+
+    params['Radial Reflector Thickness'] = radial_thickness
+    params['Core Radius'] = hex_apothem + radial_thickness
+    params.setdefault('Axial Reflector Thickness', radial_thickness)
     params['Drum Height'] = params['Active Height'] + 2 * params['Axial Reflector Thickness']
 
     return drum_positions
@@ -430,6 +653,38 @@ and generates the necessary XML files.
 """
 
 
+def _load_depleted_fuel_override(params):
+    """Load the operating depletion fuel composition for a static case."""
+    materials_xml = params.get('_Depleted Fuel Materials XML')
+    if not materials_xml:
+        return None
+
+    if '_Operating Fuel Material ID' not in params:
+        raise ValueError(
+            "Static lifecycle calculation is missing the operating fuel "
+            "material ID. Run the operating depletion before static cases."
+        )
+
+    operating_fuel_id = int(params['_Operating Fuel Material ID'])
+    depleted_materials = openmc.Materials.from_xml(materials_xml)
+    matches = [
+        material
+        for material in depleted_materials
+        if material.id == operating_fuel_id
+    ]
+
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected one depleted fuel material with ID "
+            f"{operating_fuel_id}, but found {len(matches)} in "
+            f"{materials_xml}."
+        )
+
+    depleted_fuel = matches[0]
+    depleted_fuel.temperature = params['Common Temperature']
+    return depleted_fuel
+
+
 def build_openmc_model_LTMR(params):
     """
     OpenMC Model
@@ -453,10 +708,18 @@ def build_openmc_model_LTMR(params):
     # Read material properties for the fuel, coolant, reflector, and control drums
     # (each drum contains two materials: absorber and reflector)
     fuel = materials_database[params['Fuel']]
+    depleted_fuel_override = _load_depleted_fuel_override(params)
+    if depleted_fuel_override is None:
+        params['_Operating Fuel Material ID'] = int(fuel.id)
+    else:
+        fuel = depleted_fuel_override
+        materials_database[params['Fuel']] = fuel
     coolant = materials_database[params['Coolant']]
     reflector = materials_database[params['Radial Reflector']]
     control_drum_absorber = materials_database[params['Control Drum Absorber']]
     control_drum_reflector = materials_database[params['Control Drum Reflector']]
+    shutdown_rod_absorber = materials_database[params['Shutdown Rod Absorber']]
+    shutdown_rod_cladding = materials_database[params['Shutdown Rod Cladding']]
 
     # **************************************************************************************************************************
     #                                                Sec. 1.2 : Pin Cell Universes and Coolant
@@ -537,6 +800,21 @@ def build_openmc_model_LTMR(params):
             output_file_name="moderator_pin_universe.png"
         )
 
+    # Create shutdown-rod universe
+    shutdown_rod_universe = create_shutdown_rod_universe(params, materials_database)
+
+    if params['plotting'] == "Y":
+        create_universe_plot(
+            materials_database,
+            shutdown_rod_universe,
+            plot_width=2.2 * params['Fuel Pin Radii'][-1],
+            num_pixels=500,
+            font_size=32,
+            title="Shutdown Rod Universe",
+            fig_size=8,
+            output_file_name="shutdown_rod_universe.png"
+        )
+
     # Coolant universe
     coolant_cell = openmc.Cell(fill=coolant)
     coolant_universe = openmc.Universe(cells=(coolant_cell,))
@@ -552,6 +830,7 @@ def build_openmc_model_LTMR(params):
         params,
         fuel_pin_universe,
         moderator_pin_universe,
+        shutdown_rod_universe,
         pin_pitch,
         reflector,
         coolant_universe
@@ -572,7 +851,7 @@ def build_openmc_model_LTMR(params):
     all_materials = (
         fuel_materials
         + moderator_materials
-        + [coolant, reflector, control_drum_absorber, control_drum_reflector]
+        + [coolant, reflector, control_drum_absorber, control_drum_reflector, shutdown_rod_absorber, shutdown_rod_cladding]
     )
 
     # Remove None materials while preserving their deterministic order
@@ -603,15 +882,44 @@ def build_openmc_model_LTMR(params):
 
     core_geometry.export_to_xml()
 
+    # if params['plotting'] == "Y":
+    #     drum_state_label = "shutdown" if params['Shutdown Margin Calc'] else "operation"
+    #     create_universe_plot(
+    #         materials_database,
+    #         core_geometry,
+    #         plot_width=2.01 * params['Core Radius'],
+    #         num_pixels=2000,
+    #         font_size=32,
+    #         title="Reactor Core",
+    #         fig_size=8,
+    #         output_file_name=f"core_{drum_state_label}.png"
+    #     )
+
     if params['plotting'] == "Y":
-        drum_state_label = "shutdown" if params['Shutdown Margin Calc'] else "operation"
+
+        print(
+            "CORE PLOT: Shutdown Margin Calc =",
+            params['Shutdown Margin Calc']
+        )
+
+        drum_state_label = (
+            "shutdown"
+            if params['Shutdown Margin Calc']
+            else "operation"
+        )
+
+        print(
+            "CORE PLOT FILE =",
+            f"core_{drum_state_label}.png"
+        )
+
         create_universe_plot(
             materials_database,
             core_geometry,
             plot_width=2.01 * params['Core Radius'],
             num_pixels=2000,
             font_size=32,
-            title="Reactor Core",
+            title=f"Reactor Core - {drum_state_label}",
             fig_size=8,
             output_file_name=f"core_{drum_state_label}.png"
         )
@@ -657,15 +965,15 @@ def build_openmc_model_LTMR(params):
     if 'Particles' in params.keys():
         settings.particles = int(params['Particles'])
     else:
-        settings.particles = 1000
+        settings.particles = 2000
 
-    if params['Isothermal Temperature Coefficients']:
-        settings.temperature = {
-            'default': params['Common Temperature'],
-            'method': 'interpolation',
-            'tolerance': 50.0
-        }
-    else:
-        settings.temperature = {'method': 'interpolation'}
+    if '_OpenMC Seed' in params:
+        settings.seed = int(params['_OpenMC Seed'])
+
+    settings.temperature = {
+        'default': params['Common Temperature'],
+        'method': 'interpolation',
+        'tolerance': 50.0
+    }
 
     settings.export_to_xml()

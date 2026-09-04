@@ -223,7 +223,7 @@ def save_params_to_excel_file(excel_file, params):
     Saves the params dictionary to the 'Parameters' sheet of the output Excel file.
     Parameters are organized into labeled groups, sorted alphabetically within each group,
     with units, descriptions, and source (User Input vs Calculated) for each parameter.
-    Array parameters are summarized (BOL, EOL, min, max) rather than shown as raw lists.
+    Array parameters are summarized (first, last, min, max) rather than shown as raw lists.
     Parameters not found in the registry are placed in an 'Uncategorized' group with a warning.
     """
 
@@ -257,7 +257,8 @@ def save_params_to_excel_file(excel_file, params):
     def handle_array(name, val, mode, units, description, source):
         """
         Expand an array parameter into multiple display rows based on mode:
-          'summary' → BOL, EOL, min, max
+          'summary' → first, last, min, max
+          'lifecycle' → BOL, MOL, EOL
           'steps'   → first step, last step, number of steps
           'as_is'   → single row with the list as a string
         Returns a list of (display_name, value, units, description, source) tuples.
@@ -268,10 +269,34 @@ def save_params_to_excel_file(excel_file, params):
             return rows
 
         if mode == 'summary':
-            rows.append((f'{name} (BOL)',   float(round(val[0], 6)),   units, f'{description} — beginning of life', source))
-            rows.append((f'{name} (EOL)',   float(round(val[-1], 6)),  units, f'{description} — end of life',       source))
+            rows.append((f'{name} (first)', float(round(val[0], 6)),   units, f'{description} — first reported value', source))
+            rows.append((f'{name} (last)',  float(round(val[-1], 6)),  units, f'{description} — last reported value',  source))
             rows.append((f'{name} (min)',   float(round(min(val), 6)), units, f'{description} — minimum value',     source))
             rows.append((f'{name} (max)',   float(round(max(val), 6)), units, f'{description} — maximum value',     source))
+        elif mode == 'lifecycle':
+            if len(val) != 3:
+                raise ValueError(
+                    f"Lifecycle parameter '{name}' must contain exactly "
+                    f"three values for BOL, MOL, and EOL."
+                )
+            lifecycle_labels = ('BOL', 'MOL', 'EOL')
+            lifecycle_descriptions = (
+                'beginning of life',
+                'middle of life',
+                'end of life',
+            )
+            for label, detail, item in zip(
+                lifecycle_labels,
+                lifecycle_descriptions,
+                val
+            ):
+                rows.append((
+                    f'{name} ({label})',
+                    float(round(item, 6)),
+                    units,
+                    f'{description} — {detail}',
+                    source
+                ))
         elif mode == 'steps':
             rows.append((f'{name} (first)', format_value(val[0]),  units, f'{description} — first step',     source))
             rows.append((f'{name} (last)',  format_value(val[-1]), units, f'{description} — last step',      source))

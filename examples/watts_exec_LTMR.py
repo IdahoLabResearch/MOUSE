@@ -8,7 +8,7 @@ Users can modify parameters in the "params" dictionary below.
 import numpy as np
 import watts  # Simulation workflows for one or multiple codes
 from core_design.openmc_template_LTMR import *
-from core_design.pins_arrangement import LTMR_pins_arrangement
+from core_design.pins_arrangement import get_ltmr_pins_arrangement
 from core_design.utils import *
 from core_design.drums import *
 from reactor_engineering_evaluation.fuel_calcs import fuel_calculations
@@ -44,11 +44,8 @@ update_params({
 update_params({
     'reactor type': "LTMR", # LTMR or GCMR
     'TRISO Fueled': "No",
-    'Fuel': 'UZrH_alloy',
-    'Enrichment': 0.1975,  # Fraction between 0 and 1
-    "H_Zr_ratio": 1.6,  # Proportion of hydrogen to zirconium atoms
-    'U_met_wo': 0.3,  # Weight ratio of Uranium to total fuel weight (less than 1)
-    'er_wo': 0,       # Erbium (burnable poison)
+    'Fuel': 'UO2',
+    'Enrichment': 0.05,  # Fraction between 0 and 1
     'Coolant': 'NaK',
     'Radial Reflector': 'Graphite',
     'Axial Reflector': 'Graphite',
@@ -62,6 +59,10 @@ update_params({
 #                                           Sec. 2: Geometry: Fuel Pins, Moderator Pins, Coolant, Hexagonal Lattice
 # **************************************************************************************************************************  
 
+# Select one of the predefined sixfold-symmetric shutdown-rod layouts.
+# Supported values are 6 and 12.
+params['Number of Shutdown Rods'] = 6
+
 update_params({
     'Fuel Pin Materials': ['Zr', None, params['Fuel'], None, 'SS304'],
     'Fuel Pin Radii': [0.28575, 0.3175, 1.5113, 1.5367, 1.5875],  # cm
@@ -69,35 +70,63 @@ update_params({
     'Moderator Pin Inner Radius': 1.5367,  # cm
     'Moderator Pin Radii': [1.5367, 1.5875],  # [params['Moderator Pin Inner Radius'], params['Fuel Pin Radii'][-1]]
     "Pin Gap Distance": 0.1,  # cm
-    'Pins Arrangement': LTMR_pins_arrangement,
-    'Number of Rings per Assembly': 12, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
-    'Radial Reflector Thickness': 14,  # cm
+    'Pins Arrangement': get_ltmr_pins_arrangement(
+        params['Number of Shutdown Rods']
+    ),
+    'Number of Rings per Assembly': 14, # the number of rings can be 12 or lower as long as the heat flux criteria is not violated
+    'Radial Reflector Thickness': 44.53999867260457,  # cm
+    'Axial Reflector Thickness': 44.53999867260457,  # cm
 })
 
 params['Lattice Apothem'] = calculate_hex_apothem(params)
 params['Lattice Radius'] = params['Lattice Apothem']
 params['Assembly FTF'] = 2 * params['Lattice Apothem']
-params['Active Height']  = 78.4
-params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']  # cm
+params['Active Height']  = 120
+params['Shutdown Rod Height'] = params['Active Height']  # cm
 params['Fuel Pin Count'] = calculate_pins_in_assembly(params, "FUEL")
 params['Moderator Pin Count'] = calculate_pins_in_assembly(params, "MODERATOR")
 params['Moderator Mass'] = calculate_moderator_mass(params)
-params['Core Radius'] = calculate_core_radius_from_hex(params)
+params['Core Radius'] = 83.11277015716345  # cm
 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 
 update_params({
-    'Number of Drums': 12,
-    # When the user does not specify the drum radius, the code automatically sets it to the largest allowable value that avoids drum overlap
-    #'Drum Radius': 9.016, #,  # cm
+    'Number of Drums': 6,
+    'Drum Radius': 22.02527406887039,  # cm
+    'Drum Tube Radius': 22.26999933630228,  # cm
     'Drum Absorber Thickness': 1,  # cm
     'Drum Absorber Arc Degrees': 120,
+    'Drum Height': 209.0799973452091,  # cm
+    'Shutdown Rod Absorber': 'B4C_enriched',
+    'Shutdown Rod Cladding': 'SS304',
+
+    # Must fit inside the existing pin envelope
+    'Shutdown Rod Absorber Radius': 1.30,  # cm
+    'Shutdown Rod Clad Radius': 1.50,      # cm
+
 })
 
+# Explicit original geometry. The shared helper may validate and synchronize
+# dependent values, but it is not allowed to change any selected dimension.
+explicit_original_geometry = {
+    'Core Radius': 83.11277015716345,
+    'Radial Reflector Thickness': 44.53999867260457,
+    'Axial Reflector Thickness': 44.53999867260457,
+    'Drum Radius': 22.02527406887039,
+    'Drum Tube Radius': 22.26999933630228,
+    'Drum Height': 209.0799973452091,
+}
 update_ltmr_reflector_geometry_from_drums(params)
+for parameter_name, expected_value in explicit_original_geometry.items():
+    if not np.isclose(params[parameter_name], expected_value, rtol=0.0, atol=1.0e-9):
+        raise RuntimeError(
+            f"Explicit original geometry mismatch for {parameter_name}: "
+            f"expected {expected_value}, got {params[parameter_name]}"
+        )
 calculate_drums_volumes_and_masses(params)
+calculate_shutdown_rods_volumes_and_masses(params)
 calculate_reflector_mass_LTMR(params)
 
 # **************************************************************************************************************************
@@ -118,16 +147,18 @@ params['Heat Flux'] =  calculate_heat_flux(params)
 # **************************************************************************************************************************
 
 # --- Shutdown Margin  ---
-# When True, an additional OpenMC simulation is run to evaluate shutdown margin
-# for the shutdown configuration (all control drums inserted, absorber facing the core)
-# at 'Cold Shutdown Temperature'.
+# When True, dedicated cold static calculations evaluate shutdown margin at
+# BOL, MOL, and EOL. Shutdown rods are inserted and control-drum absorbers face
+# the core at 'Cold Shutdown Temperature'.
 # Recommended: True for final design verification; can be set to False to save
 # computation time during early design exploration.
+params['Shutdown Margin Calc'] = True  # True or False
 
 # --- Isothermal Temperature Coefficient ---
-# When True, two additional OpenMC simulations are run: one at 'Common Temperature'
-# and one at 'Common Temperature' + 'Temperature Perturbation'. The temperature
-# coefficient is then calculated in units of pcm/K.
+# When True, dedicated static pairs at BOL, MOL, and EOL are run at
+# 'Common Temperature' and at 'Common Temperature' + 'Temperature Perturbation'.
+# The temperature coefficient is calculated in units of pcm/K and includes the
+# modeled NaK and ZrH density changes between the two temperatures.
 # A negative coefficient indicates the reactor is self-stabilizing (desired behavior).
 # Recommended: True for safety analysis; can be set to False to save computation time.
 params['Isothermal Temperature Coefficients'] = True  # True or False

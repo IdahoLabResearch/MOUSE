@@ -118,6 +118,20 @@ from webapp.estimate_service import (  # noqa: E402
     run_estimate,
     run_lcoe_at_noak_unit,
 )
+from core_design.drums import (  # noqa: E402
+    calculate_drums_volumes_and_masses,
+    calculate_gcmr_shutdown_rods_volumes_and_masses,
+    calculate_moderator_mass_GCMR,
+    calculate_reflector_mass_GCMR,
+    calculate_reflector_mass_LTMR,
+    calculate_shutdown_rods_volumes_and_masses,
+)
+from core_design.utils import (  # noqa: E402
+    calculate_gcmr_fuel_compact_count,
+    calculate_number_of_rings,
+    calculate_total_number_of_TRISO_particles,
+    gcmr_drum_absorber_plane_coefficient,
+)
 
 
 BASE_INPUTS = {
@@ -229,6 +243,192 @@ class EstimateServiceTest(unittest.TestCase):
                 params = result.params
                 self.assertGreater(params['Radial Reflector Mass'], 0.0)
                 self.assertGreater(params['Axial Reflector Mass'], 0.0)
+
+    def test_ltmr_shutdown_rod_mass_uses_count_height_and_radii(self):
+        params = {
+            'reactor type': 'LTMR',
+            'Number of Shutdown Rods': 6,
+            'Shutdown Rod Height': 120.0,
+            'Shutdown Rod Absorber Radius': 1.30,
+            'Shutdown Rod Clad Radius': 1.50,
+            'Shutdown Rod Absorber': 'B4C_enriched',
+            'Shutdown Rod Cladding': 'SS304',
+        }
+
+        calculate_shutdown_rods_volumes_and_masses(params)
+
+        absorber_volume = 6 * math.pi * 1.30 ** 2 * 120.0
+        cladding_volume = 6 * math.pi * (1.50 ** 2 - 1.30 ** 2) * 120.0
+        self.assertAlmostEqual(
+            absorber_volume,
+            params['Shutdown Rod Absorber Volume'],
+        )
+        self.assertAlmostEqual(
+            cladding_volume,
+            params['Shutdown Rod Cladding Volume'],
+        )
+        self.assertAlmostEqual(
+            absorber_volume * 2.52 / 1000,
+            params['Shutdown Rod Absorber Mass'],
+        )
+        self.assertAlmostEqual(
+            cladding_volume * 7.98 / 1000,
+            params['Shutdown Rod Cladding Mass'],
+        )
+        self.assertAlmostEqual(
+            params['Shutdown Rod Absorber Mass']
+            + params['Shutdown Rod Cladding Mass'],
+            params['Shutdown Rods Mass'],
+        )
+
+    def test_ltmr_reflector_volumes_exclude_drum_tubes_without_overlap(self):
+        core_radius = 83.11277148455888
+        assembly_ftf = 77.14554296911777
+        params = {
+            'reactor type': 'LTMR',
+            'Drum Radius': 9.016,
+            'Number of Drums': 12,
+            'Core Radius': core_radius,
+            'Assembly FTF': assembly_ftf,
+            'Active Height': 120.0,
+            'Axial Reflector Thickness': 44.54,
+            'Radial Reflector': 'Graphite',
+            'Axial Reflector': 'Graphite',
+        }
+
+        calculate_reflector_mass_LTMR(params)
+
+        tube_radius = 9.016 * 91 / 90
+        tube_area = 12 * math.pi * tube_radius ** 2
+        hex_area = math.sqrt(3) / 2 * assembly_ftf ** 2
+        radial_volume = (
+            math.pi * core_radius ** 2 - hex_area - tube_area
+        ) * 120.0
+        axial_volume = 2 * (
+            math.pi * core_radius ** 2 - tube_area
+        ) * 44.54
+
+        self.assertAlmostEqual(tube_area, params['All Drum Tubes Area'])
+        self.assertAlmostEqual(
+            radial_volume,
+            params['Radial Reflector Volume'],
+        )
+        self.assertAlmostEqual(
+            axial_volume,
+            params['Axial Reflector Volume'],
+        )
+        self.assertAlmostEqual(
+            radial_volume * 1.60 / 1000,
+            params['Radial Reflector Mass'],
+        )
+        self.assertAlmostEqual(
+            axial_volume * 1.60 / 1000,
+            params['Axial Reflector Mass'],
+        )
+
+    @staticmethod
+    def _gcmr_geometry_params():
+        return {
+            'reactor type': 'GCMR',
+            'Assembly Rings': 6,
+            'Core Rings': 5,
+            'Lattice Pitch': 2.25,
+            'Assembly FTF': 19.48557158514987,
+            'Active Height': 200.0,
+            'Shutdown Rod Height': 200.0,
+            'Central Shutdown Rod Ring': 2,
+            'Central Shutdown Rod Count': 12,
+            'Central Shutdown Rod Radius': 0.85,
+            'Central Shutdown Rod Clad Radius': 1.05,
+            'Surrounding Shutdown Rod Ring': 2,
+            'Surrounding Shutdown Rod Count': 2,
+            'Surrounding Shutdown Rod Radius': 0.45,
+            'Surrounding Shutdown Rod Clad Radius': 0.65,
+            'Surrounding Shutdown Assembly Count': 6,
+            'Shutdown Rod Absorber': 'B4C_enriched',
+            'Shutdown Rod Cladding': 'SS304',
+            'Compact Fuel Radius': 0.6225,
+            'Fuel Pin Radii': [0.0250, 0.0350, 0.0390, 0.0425, 0.0465],
+            'Packing Fraction': 0.4,
+            'Coolant Channel Radius': 0.35,
+            'Moderator Booster Materials': ['ZrH'],
+            'Moderator Booster Radii': [0.5],
+            'Moderator': 'Graphite',
+            'Radial Reflector': 'Graphite',
+            'Axial Reflector': 'Graphite',
+            'Radial Reflector Thickness': 9.742785792574935,
+            'Axial Reflector Thickness': 9.742785792574935,
+            'Core Radius': 107.17064371832429,
+            'Drum Count': 24,
+            'Drum Radius': 9.530986101432001,
+            'Drum Tube Radius': 9.742785792574935,
+            'Drum Absorber Thickness': 1.0,
+            'Drum Absorber Arc Degrees': 120.0,
+            'Drum Height': 219.48557158514987,
+            'Control Drum Absorber': 'B4C_enriched',
+            'Control Drum Reflector': 'Graphite',
+        }
+
+    def test_gcmr_shutdown_rods_reduce_fuel_positions_and_match_inventory(self):
+        params = self._gcmr_geometry_params()
+        calculate_gcmr_shutdown_rods_volumes_and_masses(params)
+
+        self.assertEqual(24, params['Number of Shutdown Rods'])
+        self.assertEqual(3697, calculate_gcmr_fuel_compact_count(params))
+        total_particles = calculate_total_number_of_TRISO_particles(params)
+        self.assertEqual(
+            params['Number Of TRISO Particles Per Compact Fuel'] * 3697,
+            total_particles,
+        )
+        self.assertAlmostEqual(
+            12 * math.pi * (0.85 ** 2 + 0.45 ** 2) * 200.0,
+            params['Shutdown Rod Absorber Volume'],
+        )
+
+        params['Shutdown Rod Height'] = 199.0
+        with self.assertRaisesRegex(ValueError, 'must equal Active Height'):
+            calculate_gcmr_shutdown_rods_volumes_and_masses(params)
+
+    def test_gcmr_drum_mass_uses_same_configurable_angle_as_geometry(self):
+        params_120 = self._gcmr_geometry_params()
+        calculate_drums_volumes_and_masses(params_120)
+        params_90 = self._gcmr_geometry_params()
+        params_90['Drum Absorber Arc Degrees'] = 90.0
+        calculate_drums_volumes_and_masses(params_90)
+
+        self.assertAlmostEqual(
+            0.75,
+            params_90['Control Drum Absorber Mass']
+            / params_120['Control Drum Absorber Mass'],
+        )
+        self.assertAlmostEqual(
+            1 / math.sqrt(3),
+            gcmr_drum_absorber_plane_coefficient(120.0),
+        )
+
+    def test_gcmr_reflector_and_moderator_exclude_tubes_and_rod_channels(self):
+        params = self._gcmr_geometry_params()
+        calculate_drums_volumes_and_masses(params)
+        calculate_reflector_mass_GCMR(params)
+        calculate_moderator_mass_GCMR(params)
+
+        tube_area = 24 * math.pi * params['Drum Tube Radius'] ** 2
+        assembly_area = (
+            math.sqrt(3) / 2 * params['Assembly FTF'] ** 2
+        )
+        radial_volume = (
+            math.pi * params['Core Radius'] ** 2
+            - calculate_number_of_rings(5) * assembly_area
+            - tube_area
+        ) * 200.0
+        axial_volume = 2 * (
+            math.pi * params['Core Radius'] ** 2 - tube_area
+        ) * params['Axial Reflector Thickness']
+
+        self.assertAlmostEqual(tube_area, params['All Drum Tubes Area'])
+        self.assertAlmostEqual(radial_volume, params['Radial Reflector Volume'])
+        self.assertAlmostEqual(axial_volume, params['Axial Reflector Volume'])
+        self.assertGreater(params['Moderator Total Area'], 0.0)
 
     def test_noak_lcoe_anchor_returns_diagnostics(self):
         anchor = run_lcoe_at_noak_unit(LcoeAtNoakInputs(

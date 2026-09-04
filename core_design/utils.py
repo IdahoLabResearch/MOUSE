@@ -4,13 +4,205 @@ import openmc
 import openmc.deplete
 import watts
 import traceback  # print full stack traces for OpenMC failures
+import glob
+import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from core_design.correction_factor import corrected_keff_2d
+from core_design.correction_factor import corrected_keff_2d, corrected_keff_static
+#from core_design.correction_factor import corrected_keff_steady_state       #Use this line and comment the previuos line if you run steady state 
 from core_design.peaking_factor import compute_pin_peaking_factors
 
 import pandas
-import copy
+
+
+# Dedicated particle counts for lifecycle temperature-coefficient snapshots.
+# Depletion and cold-shutdown calculations retain their normal particle count.
+BOL_TEMPERATURE_COEFFICIENT_PARTICLES = 30000
+TEMPERATURE_COEFFICIENT_PARTICLES = 4000
+EOL_TEMPERATURE_COEFFICIENT_PARTICLES = 15000
+
+# Current MOUSE material densities at the operating reference temperature.
+NAK_REFERENCE_DENSITY_G_CM3 = 0.85
+ZRH_REFERENCE_DENSITY_G_CM3 = 5.6
+HELIUM_REFERENCE_DENSITY_G_CM3 = 0.000166
+GRAPHITE_REFERENCE_DENSITY_G_CM3 = 1.60
+
+# Mean linear expansion coefficient reported for unalloyed epsilon-ZrH1.83.
+# The model uses H/Zr = 1.85. Geometry is held fixed in this density-only
+# treatment.
+ZRH_LINEAR_EXPANSION_PER_K = 9.15e-6
+
+# Rounded mean of the axial and transverse IG-110 values reported at 500 C in
+# ORNL/TM-2017/705, Table 2.2. The GCMR example uses this documented
+# near-isotropic nuclear-graphite value as an explicit proxy.
+GRAPHITE_LINEAR_EXPANSION_PER_K = 4.3e-6
+
+
+def _nak_eutectic_density_correlation_g_cm3(temperature_k):
+    """Return NaK-78 density using Sodium-NaK Handbook Eqs. 1.5, 1.8, 1.9."""
+    temperature_c = float(temperature_k) - 273.15
+    potassium_weight_fraction = 0.778
+    atomic_weight_k = 39.102
+    atomic_weight_na = 22.9898
+    potassium_atom_fraction = (
+        potassium_weight_fraction / atomic_weight_k
+        / (
+            potassium_weight_fraction / atomic_weight_k
+            + (1.0 - potassium_weight_fraction) / atomic_weight_na
+        )
+    )
+
+    specific_volume_k = 1.0 / (
+        0.8415
+        - 2.172e-4 * temperature_c
+        - 2.7e-8 * temperature_c ** 2
+        + 4.77e-12 * temperature_c ** 3
+    )
+    specific_volume_na = 1.0 / (
+        0.9453 - 2.2473e-4 * temperature_c
+    )
+    density_kg_m3 = 1000.0 / (
+        potassium_atom_fraction * specific_volume_k
+        + (1.0 - potassium_atom_fraction) * specific_volume_na
+    )
+    return density_kg_m3 / 1000.0
+
+
+def _temperature_density_overrides(
+    params,
+    reference_temperature_k,
+    temperature_k
+):
+    """Return reactor-specific coolant and moderator density overrides.
+
+    LTMR uses temperature-dependent NaK and ZrH number densities. GCMR
+    uses constant-pressure helium scaling plus thermal-expansion density
+    corrections for graphite and ZrH. Solid geometry remains fixed, so the
+    graphite and ZrH terms are density-only approximations.
+    """
+    reactor_type = params.get('reactor type')
+
+    if reactor_type == 'LTMR':
+        nak_reference_correlation = _nak_eutectic_density_correlation_g_cm3(
+            reference_temperature_k
+        )
+        nak_target_correlation = _nak_eutectic_density_correlation_g_cm3(
+            temperature_k
+        )
+        nak_density = (
+            NAK_REFERENCE_DENSITY_G_CM3
+            * nak_target_correlation
+            / nak_reference_correlation
+        )
+        linear_scale = 1.0 + ZRH_LINEAR_EXPANSION_PER_K * (
+            float(temperature_k) - float(reference_temperature_k)
+        )
+        return {
+            '_NaK Density Override': float(nak_density),
+            '_ZrH Density Override': float(
+                ZRH_REFERENCE_DENSITY_G_CM3 / linear_scale ** 3
+            ),
+        }
+
+    if reactor_type == 'GCMR':
+        reference_temperature_k = float(reference_temperature_k)
+        temperature_k = float(temperature_k)
+        if reference_temperature_k <= 0.0 or temperature_k <= 0.0:
+            raise ValueError(
+                "GCMR density temperatures must be greater than zero K."
+            )
+
+        # Constant-pressure ideal-gas scaling, anchored to the existing MOUSE
+        # helium density. NIST IR 8474, Introduction (p. 1) describes helium's
+        # near-ideal-gas behavior; a pressure-specific EOS can replace this
+        # relation when the GCMR operating pressure is defined.
+        helium_density = (
+            HELIUM_REFERENCE_DENSITY_G_CM3
+            * reference_temperature_k
+            / temperature_k
+        )
+        graphite_linear_expansion = float(
+            params.get(
+                'Graphite Linear Expansion Coefficient',
+                GRAPHITE_LINEAR_EXPANSION_PER_K
+            )
+        )
+        if graphite_linear_expansion < 0.0:
+            raise ValueError(
+                "Graphite Linear Expansion Coefficient cannot be negative."
+            )
+        graphite_scale = 1.0 + graphite_linear_expansion * (
+            temperature_k - reference_temperature_k
+        )
+        zrh_scale = 1.0 + ZRH_LINEAR_EXPANSION_PER_K * (
+            temperature_k - reference_temperature_k
+        )
+        return {
+            '_Helium Density Override': float(helium_density),
+            '_Graphite Density Override': float(
+                GRAPHITE_REFERENCE_DENSITY_G_CM3 / graphite_scale ** 3
+            ),
+            '_ZrH Density Override': float(
+                ZRH_REFERENCE_DENSITY_G_CM3 / zrh_scale ** 3
+            ),
+        }
+
+    raise ValueError(
+        "Density-aware temperature coefficients are implemented only for "
+        f"LTMR and GCMR, not {reactor_type!r}."
+    )
+
+
+# Keep a permanent, unique plotting color for every entry returned by
+# collect_materials_data, including materials that are not used by a model yet.
+MATERIAL_COLORS = {
+    'UZrH_alloy': 'red',
+    'ZrH': 'yellow',
+    'UO2': 'green',
+    'UC': 'purple',
+    'UCO': 'orange',
+    'UN': 'cyan',
+    'YHx': 'magenta',
+    'NaK': 'blue',
+    'Helium': 'grey',
+    'Be': 'brown',
+    'BeO': 'pink',
+    'Zr': 'lime',
+    'SS304': 'black',
+    'B4C_natural': 'olive',
+    'B4C_enriched': 'deepskyblue',
+    'SiC': 'teal',
+    'Graphite': 'coral',
+    'buffer_graphite': 'gold',
+    'PyC': 'salmon',
+    'homog_TRISO': 'maroon',
+    'heatpipe': 'seashell',
+    'monolith_graphite': 'navy',
+    'UZr': 'darkred',
+    'ZrC': 'slategray',
+    'MgO': 'lightyellow',
+    'WB': 'darkgray',
+    'W2B': 'dimgray',
+    'WB4': 'lightgray',
+    'WC': 'silver',
+    'vtb_air': 'aliceblue',
+    'vtb_shell_ss': 'antiquewhite',
+    'vtb_shell_air_mod': 'aquamarine',
+    'vtb_shell_air_hp': 'azure',
+    'vtb_shell_air_center': 'beige',
+    'vtb_potassium_vapor': 'bisque',
+    'vtb_potassium_liquid': 'blanchedalmond',
+    'vtb_wick': 'blueviolet',
+    'vtb_hp_vapor_liquid_wick': 'burlywood',
+    'vtb_yh_moderator': 'cadetblue',
+    'vtb_buffer': 'chartreuse',
+    'vtb_PyC': 'chocolate',
+    'vtb_SiC': 'cornflowerblue',
+    'vtb_matrix_graphite': 'cornsilk',
+    'vtb_beryllium': 'crimson',
+    'vtb_B4C_drum': 'darkblue',
+    'vtb_B4C_central': 'darkcyan',
+}
 
 
 def circle_area(r):
@@ -110,6 +302,123 @@ def calculate_number_of_rings(rings_over_one_edge):
         2 * rings_over_one_edge - 1
 
 
+def _positive_integer_param(params, name):
+    value = params[name]
+    integer_value = int(value)
+    if integer_value <= 0 or integer_value != value:
+        raise ValueError(f"{name} must be a positive integer, got {value!r}.")
+    return integer_value
+
+
+def validate_gcmr_shutdown_rod_layout(params):
+    """Validate GCMR rod inventory inputs against modeled lattice positions."""
+    shutdown_keys = {
+        'Central Shutdown Rod Ring',
+        'Central Shutdown Rod Count',
+        'Central Shutdown Rod Radius',
+        'Central Shutdown Rod Clad Radius',
+        'Surrounding Shutdown Rod Ring',
+        'Surrounding Shutdown Rod Count',
+        'Surrounding Shutdown Rod Radius',
+        'Surrounding Shutdown Rod Clad Radius',
+        'Surrounding Shutdown Assembly Count',
+        'Shutdown Rod Height',
+    }
+    provided_shutdown_keys = shutdown_keys.intersection(params)
+    if not provided_shutdown_keys:
+        return {
+            'central_count': 0,
+            'surrounding_count_per_assembly': 0,
+            'surrounding_assembly_count': 0,
+            'total_rod_count': 0,
+        }
+    missing_shutdown_keys = shutdown_keys.difference(params)
+    if missing_shutdown_keys:
+        raise KeyError(
+            "Incomplete GCMR shutdown-rod geometry; missing "
+            + ", ".join(sorted(missing_shutdown_keys))
+        )
+
+    assembly_rings = _positive_integer_param(params, 'Assembly Rings')
+    core_rings = _positive_integer_param(params, 'Core Rings')
+    if assembly_rings < 3:
+        raise ValueError("Assembly Rings must be at least 3 for GCMR shutdown rods.")
+    if core_rings < 3:
+        raise ValueError("Core Rings must be at least 3 for the surrounding shutdown assemblies.")
+
+    central_ring = _positive_integer_param(params, 'Central Shutdown Rod Ring')
+    central_count = _positive_integer_param(params, 'Central Shutdown Rod Count')
+    surrounding_ring = _positive_integer_param(params, 'Surrounding Shutdown Rod Ring')
+    surrounding_count = _positive_integer_param(params, 'Surrounding Shutdown Rod Count')
+    surrounding_assemblies = _positive_integer_param(
+        params, 'Surrounding Shutdown Assembly Count'
+    )
+
+    if surrounding_assemblies != 6:
+        raise ValueError(
+            "Surrounding Shutdown Assembly Count must be 6 because the first "
+            "GCMR core ring contains exactly six assemblies."
+        )
+
+    maximum_fuel_ring = assembly_rings - 2
+    for label, ring, count in (
+        ('Central', central_ring, central_count),
+        ('Surrounding', surrounding_ring, surrounding_count),
+    ):
+        if ring > maximum_fuel_ring:
+            raise ValueError(
+                f"{label} Shutdown Rod Ring must be between 1 and "
+                f"{maximum_fuel_ring}; ring {ring} is not a modeled fuel ring."
+            )
+        positions = 6 * ring
+        if count > positions or positions % count != 0:
+            raise ValueError(
+                f"{label} Shutdown Rod Count ({count}) cannot be distributed "
+                f"uniformly over ring {ring}, which has {positions} positions."
+            )
+
+    active_height = float(params['Active Height'])
+    rod_height = float(params['Shutdown Rod Height'])
+    if not np.isclose(rod_height, active_height, rtol=0.0, atol=1e-9):
+        raise ValueError(
+            f"Shutdown Rod Height ({rod_height:.12g} cm) must equal Active "
+            f"Height ({active_height:.12g} cm)."
+        )
+
+    return {
+        'central_count': central_count,
+        'surrounding_count_per_assembly': surrounding_count,
+        'surrounding_assembly_count': surrounding_assemblies,
+        'total_rod_count': (
+            central_count + surrounding_assemblies * surrounding_count
+        ),
+    }
+
+
+def calculate_gcmr_fuel_compact_count(params):
+    """Return the GCMR fuel positions remaining after rod-channel insertion."""
+    layout = validate_gcmr_shutdown_rod_layout(params)
+    original_count = (
+        calculate_number_of_rings(params['Assembly Rings'] - 1)
+        * calculate_number_of_rings(params['Core Rings'])
+    )
+    fuel_compact_count = original_count - layout['total_rod_count']
+    if fuel_compact_count <= 0:
+        raise ValueError("GCMR shutdown rods remove every modeled fuel position.")
+    return fuel_compact_count
+
+
+def gcmr_drum_absorber_plane_coefficient(angle_degrees):
+    """Return the plane coefficient for a symmetric GCMR absorber sector."""
+    angle = float(angle_degrees)
+    if angle <= 0.0 or angle > 180.0:
+        raise ValueError(
+            "Drum Absorber Arc Degrees must be greater than 0 and no greater than "
+            f"180 degrees, got {angle_degrees!r}."
+        )
+    return 1.0 / np.tan(np.radians(angle) / 2.0)
+
+
 def calculate_number_fuel_elements_hpmr(rings_over_one_edge):
     total_number_of_rings = calculate_number_of_rings(rings_over_one_edge)
     number_of_heatpipe_pins = calculate_number_of_rings(int(np.ceil(rings_over_one_edge / 2)))
@@ -129,9 +438,17 @@ def calculate_total_number_of_TRISO_particles(params):
         params['Packing Fraction'] * compact_fuel_vol / one_particle_volume
     )
     params['Number Of TRISO Particles Per Compact Fuel'] = number_of_particles_per_compact_fuel_vol
-    total_number_of_particles = number_of_particles_per_compact_fuel_vol * \
-        calculate_number_of_rings(params['Assembly Rings'] - 1) * \
-        calculate_number_of_rings(params['Core Rings'])
+    if params.get('reactor type') == 'GCMR':
+        fuel_compact_count = calculate_gcmr_fuel_compact_count(params)
+        params['GCMR Fuel Compact Count'] = fuel_compact_count
+    else:
+        fuel_compact_count = (
+            calculate_number_of_rings(params['Assembly Rings'] - 1)
+            * calculate_number_of_rings(params['Core Rings'])
+        )
+    total_number_of_particles = (
+        number_of_particles_per_compact_fuel_vol * fuel_compact_count
+    )
     params['Total Number of TRISO Particles'] = total_number_of_particles
     return total_number_of_particles
 
@@ -146,65 +463,20 @@ def calculate_heat_flux_TRISO(params):
 def create_universe_plot(materials_database, universe, plot_width, num_pixels, font_size, title, fig_size, output_file_name):
     import matplotlib.colors as mcolors
 
-    potential_colors = { 
-        'UZrH_alloy': 'red',
-        'ZrH': 'yellow',
-        'UO2': 'green',
-        'UC': 'purple',
-        'UCO': 'orange',
-        'UN': 'cyan',
-        'YHx': 'magenta',
-        'NaK': 'blue',
-        'Helium': 'grey',
-        'Be': 'brown',
-        'BeO': 'pink',
-        'Zr': 'lime',
-        'SS304': 'black',
-        'B4C_natural': 'olive',
-        'B4C_enriched': 'deepskyblue',
-        'SiC': 'teal',
-        'Graphite': 'coral',
-        'buffer_graphite': 'gold',
-        'PyC': 'salmon',
-        'homog_TRISO': 'maroon',
-        'heatpipe': 'seashell',
-        'monolith_graphite': 'navy',
-        'UZr': 'darkred',
-        'ZrC': 'slategray',
-        'MgO': 'lightyellow',
-        'WB': 'darkgray',
-        'W2B': 'dimgray',
-        'WB4': 'lightgray',
-        'WC': 'silver',
-    }
+    missing_colors = set(materials_database) - set(MATERIAL_COLORS)
+    if missing_colors:
+        raise ValueError(
+            "Materials are missing permanent plotting colors: "
+            + ", ".join(sorted(missing_colors))
+        )
 
-    used_colors = set(mcolors.to_hex(c) for c in potential_colors.values())
-    color_pool = [
-        name for name, hex_val in mcolors.CSS4_COLORS.items()
-        if mcolors.to_hex(hex_val) not in used_colors
-    ]
-
-    for mat_name in materials_database:
-        if mat_name not in potential_colors:
-            if not color_pool:
-                raise ValueError(
-                    f"Could not auto-assign a color for material '{mat_name}': "
-                    f"no unique colors remaining in the CSS4 pool. "
-                    f"Please manually add a color for this material in potential_colors."
-                )
-            auto_color = color_pool.pop(0)
-            potential_colors[mat_name] = auto_color
-            used_colors.add(mcolors.to_hex(auto_color))
-            print(
-                f"\033[93m--- WARNING: Material '{mat_name}' does not have a color specified "
-                f"in potential_colors. Automatically assigned color: '{auto_color}'. "
-                f"Please add a permanent entry for this material in the potential_colors "
-                f"dictionary in create_universe_plot (utils.py) to suppress this warning.\033[0m"
-            )
+    resolved_colors = [mcolors.to_hex(color) for color in MATERIAL_COLORS.values()]
+    if len(resolved_colors) != len(set(resolved_colors)):
+        raise ValueError("MATERIAL_COLORS must assign a unique color to every material")
 
     colors = {
         materials_database[mat_name]: color
-        for mat_name, color in potential_colors.items()
+        for mat_name, color in MATERIAL_COLORS.items()
         if mat_name in materials_database
     }
 
@@ -251,7 +523,7 @@ def create_universe_plot(materials_database, universe, plot_width, num_pixels, f
 
     legend_patches = [
         mpatches.Patch(color=color, label=mat_name)
-        for mat_name, color in potential_colors.items()
+        for mat_name, color in MATERIAL_COLORS.items()
         if mat_name in materials_database and materials_database[mat_name] in used_materials
     ]
     universe_plot.legend(
@@ -320,12 +592,53 @@ def openmc_depletion(params, lattice_geometry, settings):
 
     try:
         pf_summary, pf_per_step = compute_pin_peaking_factors(".")
+        if pf_summary.empty:
+            raise ValueError("No peaking factor results were produced.")
+
+        # Peaking-factor Step is one based, while time_steps is zero based.
+        # Exclude statepoints after the corrected operating keff reaches 1.0.
+        pf_summary = pf_summary.copy()
+        pf_summary['Time_days'] = pf_summary['Step'].apply(
+            lambda step: float(time_steps[int(step) - 1])
+            if 1 <= int(step) <= len(time_steps) else np.nan
+        )
+        invalid_steps = pf_summary['Time_days'].isna()
+        if invalid_steps.any():
+            invalid_step_values = pf_summary.loc[invalid_steps, 'Step'].tolist()
+            raise ValueError(
+                "Peaking factor steps do not map to depletion times: "
+                f"{invalid_step_values}"
+            )
+
+        pf_summary = pf_summary.loc[
+            pf_summary['Time_days'] <= fuel_lifetime_days
+        ].copy()
+        if pf_summary.empty:
+            raise ValueError(
+                "No peaking factor statepoint occurs at or before the "
+                "calculated end of operating life."
+            )
+
         idx_max = pf_summary['Max_PF'].idxmax()
-        params['Max Peaking Factor'] = pf_summary.loc[idx_max, 'Max_PF']
-        params['Step with Max Peaking Factor'] = pf_summary.loc[idx_max, 'Step']
-        params['Region ID with Max Peaking Factor'] = pf_summary.loc[idx_max, 'Region_ID_Max']
-        params['Max Peaking Factors per Step'] = pf_summary['Max_PF'].tolist()
+        params['Max Peaking Factor'] = float(
+            pf_summary.loc[idx_max, 'Max_PF']
+        )
+        params['Step with Max Peaking Factor'] = int(
+            pf_summary.loc[idx_max, 'Step']
+        )
+        params['Region ID with Max Peaking Factor'] = (
+            pf_summary.loc[idx_max, 'Region_ID_Max']
+        )
+        params['Max Peaking Factors per Step'] = [
+            float(value) for value in pf_summary['Max_PF']
+        ]
         params['PF Summary'] = pf_summary.to_dict(orient='list')
+
+        print(
+            "[PF] Limited peaking factor evaluation to "
+            f"{len(pf_summary)} saved statepoints at or before EOL "
+            f"({fuel_lifetime_days:.4f} days)."
+        )
 
     except Exception as e:
         print("[PF] WARNING: compute_pin_peaking_factors failed:", e)
@@ -333,12 +646,50 @@ def openmc_depletion(params, lattice_geometry, settings):
         pf_per_step = None
 
     orig_material = depletion_2d_results_file.export_to_materials(0)
-    mass_U235 = orig_material[0].get_mass('U235')
-    mass_U238 = orig_material[0].get_mass('U238')
+
+    def uranium_mass(material):
+        try:
+            return material.get_mass('U235') + material.get_mass('U238')
+        except Exception:
+            return 0.0
+
+    operating_fuel_material = max(orig_material, key=uranium_mass)
+    if uranium_mass(operating_fuel_material) <= 0.0:
+        raise ValueError(
+            "Could not identify the depleted fuel material from the operating "
+            "depletion results."
+        )
+    params['_Operating Fuel Material ID'] = int(operating_fuel_material.id)
+    mass_U235 = operating_fuel_material.get_mass('U235')
+    mass_U238 = operating_fuel_material.get_mass('U238')
 
     params['keff 2D'] = [float(k) for k in keff_2d_values]
     params['keff 3D (2D corrected)'] = [float(k) for k in keff_2d_values_corrected]
     params['Depletion Time Steps'] = [float(t) for t in time_steps]
+
+    _, keff_with_uncertainty = depletion_2d_results_file.get_keff()
+    keff_2d_uncertainties = [
+        float(value)
+        for value in keff_with_uncertainty[:len(keff_2d_values), 1]
+    ]
+    if len(keff_2d_uncertainties) != len(keff_2d_values):
+        raise ValueError(
+            "The number of operating keff uncertainties does not match the "
+            "number of corrected depletion points."
+        )
+
+    keff_corrected_uncertainties = [
+        raw_uncertainty * corrected_keff / raw_keff
+        for raw_uncertainty, raw_keff, corrected_keff in zip(
+            keff_2d_uncertainties,
+            keff_2d_values,
+            keff_2d_values_corrected
+        )
+    ]
+    params['keff 2D Uncertainty'] = keff_2d_uncertainties
+    params['keff 3D (2D corrected) Uncertainty'] = [
+        float(value) for value in keff_corrected_uncertainties
+    ]
 
     # Beginning-of-life axial leakage metrics from the buckling correction model
     params['BOL Axial Non-Leakage Probability'] = bol_axial_non_leakage_probability
@@ -363,6 +714,32 @@ def run_depletion_analysis(params):
     params['Mass U235'] = mass_U235
     params['Mass U238'] = mass_U238
     params['Uranium Mass'] = (mass_U235 + mass_U238) / 1000
+
+# Use this function and comment the previous one if you run steady state 
+# def run_steady_state_analysis(params):
+#     import glob
+
+#     openmc.run()
+
+#     statepoint_file = sorted(glob.glob("statepoint.*.h5"))[-1]
+
+#     keff_2d, keff_3d_corrected, p_nl_axial = corrected_keff_steady_state(
+#         statepoint_file,
+#         params['Active Height'] + 2 * params['Axial Reflector Thickness'],
+#         core_radius=params.get('Core Radius', np.nan)
+#     )
+
+#     params['keff 2D'] = [float(keff_2d)]
+#     params['keff 3D (2D corrected)'] = [float(keff_3d_corrected)]
+#     params['Depletion Time Steps'] = [0.0]
+
+#     params['BOL Axial Non-Leakage Probability'] = p_nl_axial
+#     params['Estimated Axial Leakage (%)'] = (1.0 - p_nl_axial) * 100.0
+
+#     params['Fuel Lifetime'] = np.nan
+#     params['Mass U235'] = np.nan
+#     params['Mass U238'] = np.nan
+#     params['Uranium Mass'] = np.nan
 
 
 def _sum_nuclide_mass(materials, nuclide):
@@ -465,139 +842,817 @@ def monitor_heat_flux(params):
         print(f"\033[91mERROR: Heat flux is too high: {np.round(params['Heat Flux'], 2)} MW/m^2.\033[0m")
 
 
-def _run_isothermal_temperature_coefficients(build_openmc_model, params):
-    """
-    Run the two OpenMC cases needed for the isothermal temperature coefficient:
-    1) ARO at Common Temperature + Temperature Perturbation
-    2) ARO at Common Temperature
+def _find_lifecycle_points(time_days, corrected_keff):
+    """Locate BOL, nearest saved MOL, and the two EOL bracketing states."""
+    if len(time_days) != len(corrected_keff):
+        raise ValueError("Depletion times and corrected keff must have equal lengths.")
 
-    Stores the following results in params:
-      - keff 2D high temp
-      - keff 3D (2D corrected) high temp
-      - keff 2D ARO
-      - keff 3D (2D corrected) ARO
-      - Temp Coeff 2D
-      - Temp Coeff 3D (2D corrected)
-    """
-    temp_T = copy.deepcopy(params['Common Temperature'])
-    params['Common Temperature'] = temp_T + params['Temperature Perturbation']
+    lower_index = None
+    upper_index = None
+    eol_fraction = None
+    eol_time = None
 
-    openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-    openmc_plugin(params, function=lambda: run_depletion_analysis(params))
-    params['keff 2D high temp'] = params['keff 2D']
-    params['keff 3D (2D corrected) high temp'] = params['keff 3D (2D corrected)']
+    for index in range(1, len(corrected_keff)):
+        k_lower = corrected_keff[index - 1]
+        k_upper = corrected_keff[index]
+        t_lower = time_days[index - 1]
+        t_upper = time_days[index]
 
-    params['Common Temperature'] = temp_T
+        if k_lower == 1.0:
+            lower_index = upper_index = index - 1
+            eol_fraction = 0.0
+            eol_time = t_lower
+            break
+        if k_upper == 1.0:
+            lower_index = upper_index = index
+            eol_fraction = 0.0
+            eol_time = t_upper
+            break
+        if (k_lower - 1.0) * (k_upper - 1.0) < 0.0:
+            lower_index = index - 1
+            upper_index = index
+            eol_fraction = (1.0 - k_lower) / (k_upper - k_lower)
+            eol_time = t_lower + eol_fraction * (t_upper - t_lower)
+            break
 
-    openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-    openmc_plugin(params, function=lambda: run_depletion_analysis(params))
-    params['keff 2D ARO'] = params['keff 2D']
-    params['keff 3D (2D corrected) ARO'] = params['keff 3D (2D corrected)']
-
-    params['Temp Coeff 2D'] = np.max([
-        (y - x) / (y * x) / params['Temperature Perturbation'] * 1e5
-        for x, y in zip(params['keff 2D ARO'], params['keff 2D high temp'])
-    ])
-    params['Temp Coeff 3D (2D corrected)'] = np.max([
-        (y - x) / (y * x) / params['Temperature Perturbation'] * 1e5
-        for x, y in zip(
-            params['keff 3D (2D corrected) ARO'],
-            params['keff 3D (2D corrected) high temp']
+    if lower_index is None:
+        raise ValueError(
+            "Cannot define lifecycle evaluation points because corrected "
+            "operating keff did not reach 1.0. Extend the burnup schedule."
         )
-    ])
+
+    mol_target_time = 0.5 * eol_time
+    mol_index = int(np.argmin(np.abs(np.asarray(time_days) - mol_target_time)))
+
+    return {
+        'bol_index': 0,
+        'mol_index': mol_index,
+        'eol_lower_index': lower_index,
+        'eol_upper_index': upper_index,
+        'eol_fraction': float(eol_fraction),
+        'eol_time': float(eol_time),
+        'mol_target_time': float(mol_target_time),
+    }
+
+
+def _interpolate_value(lower, upper, fraction):
+    return (1.0 - fraction) * lower + fraction * upper
+
+
+def _interpolate_uncertainty(lower, upper, fraction):
+    """Interpolate independent one standard deviation endpoint estimates."""
+    return np.sqrt(
+        ((1.0 - fraction) * lower) ** 2
+        + (fraction * upper) ** 2
+    )
+
+
+def _lifecycle_values(values_by_index, lifecycle):
+    lower_index = lifecycle['eol_lower_index']
+    upper_index = lifecycle['eol_upper_index']
+    fraction = lifecycle['eol_fraction']
+    if lower_index == upper_index:
+        eol_value = values_by_index[lower_index]
+    else:
+        eol_value = _interpolate_value(
+            values_by_index[lower_index],
+            values_by_index[upper_index],
+            fraction
+        )
+    return [
+        float(values_by_index[lifecycle['bol_index']]),
+        float(values_by_index[lifecycle['mol_index']]),
+        float(eol_value),
+    ]
+
+
+def _lifecycle_uncertainties(values_by_index, lifecycle):
+    lower_index = lifecycle['eol_lower_index']
+    upper_index = lifecycle['eol_upper_index']
+    fraction = lifecycle['eol_fraction']
+    if lower_index == upper_index:
+        eol_uncertainty = values_by_index[lower_index]
+    else:
+        eol_uncertainty = _interpolate_uncertainty(
+            values_by_index[lower_index],
+            values_by_index[upper_index],
+            fraction
+        )
+    return [
+        float(values_by_index[lifecycle['bol_index']]),
+        float(values_by_index[lifecycle['mol_index']]),
+        float(eol_uncertainty),
+    ]
+
+
+def _latest_statepoint_file():
+    statepoint_files = glob.glob('statepoint.*.h5')
+    if not statepoint_files:
+        raise FileNotFoundError("Static OpenMC run did not produce a statepoint file.")
+    return max(statepoint_files, key=os.path.getmtime)
+
+
+def _run_static_snapshot(
+    build_openmc_model,
+    params,
+    materials_xml,
+    temperature,
+    shutdown_state,
+    seed=None,
+    particles=None,
+    material_density_overrides=None
+):
+    """Run one nondepleting lifecycle snapshot and return corrected keff data."""
+    original_temperature = params['Common Temperature']
+    original_shutdown_state = params['Shutdown Margin Calc']
+    plotting_was_present = 'plotting' in params
+    original_plotting = params.get('plotting', 'N')
+    seed_was_present = '_OpenMC Seed' in params
+    original_seed = params.get('_OpenMC Seed')
+    particles_were_present = 'Particles' in params
+    original_particles = params.get('Particles')
+    density_override_keys = (
+        '_NaK Density Override',
+        '_ZrH Density Override',
+        '_Helium Density Override',
+        '_Graphite Density Override',
+    )
+    original_density_overrides = {
+        key: (key in params, params.get(key))
+        for key in density_override_keys
+    }
+
+    try:
+        params['_Depleted Fuel Materials XML'] = materials_xml
+        params['Common Temperature'] = temperature
+        params['Shutdown Margin Calc'] = shutdown_state
+        params['plotting'] = 'N'
+        if seed is not None:
+            params['_OpenMC Seed'] = int(seed)
+        if particles is not None:
+            params['Particles'] = int(particles)
+        if material_density_overrides is not None:
+            unknown_keys = (
+                set(material_density_overrides) - set(density_override_keys)
+            )
+            if unknown_keys:
+                raise KeyError(
+                    "Unsupported material-density override(s): "
+                    f"{sorted(unknown_keys)}"
+                )
+            for key, value in material_density_overrides.items():
+                params[key] = float(value)
+
+        build_openmc_model(params)
+        openmc.run()
+
+        return corrected_keff_static(
+            _latest_statepoint_file(),
+            params['Active Height'] + 2 * params['Axial Reflector Thickness'],
+            core_radius=params.get('Core Radius', np.nan)
+        )
+    finally:
+        params.pop('_Depleted Fuel Materials XML', None)
+        params['Common Temperature'] = original_temperature
+        params['Shutdown Margin Calc'] = original_shutdown_state
+        if plotting_was_present:
+            params['plotting'] = original_plotting
+        else:
+            params.pop('plotting', None)
+        if seed_was_present:
+            params['_OpenMC Seed'] = original_seed
+        else:
+            params.pop('_OpenMC Seed', None)
+        if particles_were_present:
+            params['Particles'] = original_particles
+        else:
+            params.pop('Particles', None)
+        for key, (was_present, original_value) in (
+            original_density_overrides.items()
+        ):
+            if was_present:
+                params[key] = original_value
+            else:
+                params.pop(key, None)
+
+
+def _temperature_coefficient(k_base, sigma_base, k_high, sigma_high, delta_t):
+    coefficient = (1.0 / k_base - 1.0 / k_high) * 1e5 / delta_t
+    uncertainty = 1e5 / delta_t * np.sqrt(
+        (sigma_base / k_base ** 2) ** 2
+        + (sigma_high / k_high ** 2) ** 2
+    )
+    return float(coefficient), float(uncertainty)
+
+
+def _shutdown_margin(k_shutdown, sigma_shutdown):
+    margin = (1.0 / k_shutdown - 1.0) * 1e5
+    uncertainty = 1e5 * sigma_shutdown / k_shutdown ** 2
+    return float(margin), float(uncertainty)
+
+
+def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
+    """Evaluate temperature coefficient and shutdown margin at BOL, MOL, EOL."""
+    time_days = [float(value) for value in params['Depletion Time Steps']]
+    operating_corrected_keff = [
+        float(value) for value in params['keff 3D (2D corrected)']
+    ]
+    lifecycle = _find_lifecycle_points(time_days, operating_corrected_keff)
+    selected_indices = sorted({
+        lifecycle['bol_index'],
+        lifecycle['mol_index'],
+        lifecycle['eol_lower_index'],
+        lifecycle['eol_upper_index'],
+    })
+    eol_indices = {
+        lifecycle['eol_lower_index'],
+        lifecycle['eol_upper_index'],
+    }
+
+    depletion_results = openmc.deplete.Results('./depletion_results.h5')
+    snapshot_material_files = {}
+    for index in selected_indices:
+        snapshot_file = f'depleted_materials_lifecycle_{index}.xml'
+        depletion_results.export_to_materials(index).export_to_xml(
+            path=snapshot_file
+        )
+        snapshot_material_files[index] = snapshot_file
+
+    params['Lifecycle Evaluation Times'] = [
+        float(time_days[lifecycle['bol_index']]),
+        float(time_days[lifecycle['mol_index']]),
+        float(lifecycle['eol_time']),
+    ]
+    params['Lifecycle Target Times'] = [
+        float(time_days[lifecycle['bol_index']]),
+        float(lifecycle['mol_target_time']),
+        float(lifecycle['eol_time']),
+    ]
+
+    print("\nLifecycle safety evaluation points:")
+    print(f"  BOL: {params['Lifecycle Evaluation Times'][0]:.4f} days")
+    print(
+        f"  MOL: {params['Lifecycle Evaluation Times'][1]:.4f} days "
+        f"(target {lifecycle['mol_target_time']:.4f} days)"
+    )
+    print(
+        f"  EOL: {lifecycle['eol_time']:.4f} days, interpolated between "
+        f"depletion indices {lifecycle['eol_lower_index']} and "
+        f"{lifecycle['eol_upper_index']}"
+    )
+
+    base_temperature_results = {}
+    high_temperature_results = {}
+    shutdown_results = {}
+    operating_temperature = float(params['Common Temperature'])
+    temperature_particles_by_index = {}
+    base_temperature_seeds = {}
+    high_temperature_seeds = {}
+    shutdown_seeds = {}
+    base_density_overrides = None
+    high_density_overrides = None
+
+    if params['Isothermal Temperature Coefficients']:
+        elevated_temperature = (
+            operating_temperature + float(params['Temperature Perturbation'])
+        )
+        base_density_overrides = _temperature_density_overrides(
+            params,
+            operating_temperature,
+            operating_temperature
+        )
+        high_density_overrides = _temperature_density_overrides(
+            params,
+            operating_temperature,
+            elevated_temperature
+        )
+        params['Temperature Coefficient Density Aware'] = True
+        params['Temperature Coefficient Density Temperatures'] = [
+            operating_temperature,
+            elevated_temperature,
+        ]
+        print("\nDensity-aware lifecycle temperature coefficient model:")
+        density_output_names = {
+            '_NaK Density Override': 'NaK',
+            '_ZrH Density Override': 'ZrH',
+            '_Helium Density Override': 'Helium',
+            '_Graphite Density Override': 'Graphite',
+        }
+        for override_key, material_name in density_output_names.items():
+            if override_key not in base_density_overrides:
+                continue
+            output_key = (
+                f'Temperature Coefficient {material_name} Densities'
+            )
+            params[output_key] = [
+                base_density_overrides[override_key],
+                high_density_overrides[override_key],
+            ]
+            print(
+                f"  {material_name}: "
+                f"{base_density_overrides[override_key]:.8f} g/cm3 at "
+                f"{operating_temperature:.1f} K -> "
+                f"{high_density_overrides[override_key]:.8f} g/cm3 at "
+                f"{elevated_temperature:.1f} K"
+            )
+
+    for case_number, index in enumerate(selected_indices):
+        if params['Isothermal Temperature Coefficients']:
+            base_seed = 104729 + 2000003 * case_number
+            high_seed = 15485863 + 2000033 * case_number
+            if index == lifecycle['bol_index']:
+                case_particles = BOL_TEMPERATURE_COEFFICIENT_PARTICLES
+            elif index in eol_indices:
+                case_particles = EOL_TEMPERATURE_COEFFICIENT_PARTICLES
+            else:
+                case_particles = TEMPERATURE_COEFFICIENT_PARTICLES
+            base_temperature_seeds[index] = base_seed
+            high_temperature_seeds[index] = high_seed
+            temperature_particles_by_index[index] = case_particles
+
+            print(
+                f"\n[Lifecycle] Base-temperature ARO static case at "
+                f"depletion index {index}, {operating_temperature:.1f} K, "
+                f"seed {base_seed}, {case_particles} particles."
+            )
+            base_temperature_results[index] = _run_static_snapshot(
+                build_openmc_model,
+                params,
+                snapshot_material_files[index],
+                operating_temperature,
+                shutdown_state=False,
+                seed=base_seed,
+                particles=case_particles,
+                material_density_overrides=base_density_overrides
+            )
+
+            print(
+                f"\n[Lifecycle] Elevated-temperature ARO static case at "
+                f"depletion index {index}, "
+                f"{operating_temperature + params['Temperature Perturbation']:.1f} K, "
+                f"seed {high_seed}, {case_particles} particles."
+            )
+            high_temperature_results[index] = _run_static_snapshot(
+                build_openmc_model,
+                params,
+                snapshot_material_files[index],
+                operating_temperature + params['Temperature Perturbation'],
+                shutdown_state=False,
+                seed=high_seed,
+                particles=case_particles,
+                material_density_overrides=high_density_overrides
+            )
+
+        if params['Shutdown Margin Calc']:
+            shutdown_seed = 32452843 + 2000081 * case_number
+            shutdown_seeds[index] = shutdown_seed
+            print(
+                f"\n[Lifecycle] Cold ARI static case at depletion index "
+                f"{index}, seed {shutdown_seed}."
+            )
+            shutdown_results[index] = _run_static_snapshot(
+                build_openmc_model,
+                params,
+                snapshot_material_files[index],
+                params['Cold Shutdown Temperature'],
+                shutdown_state=True,
+                seed=shutdown_seed
+            )
+
+    operating_raw = [float(value) for value in params['keff 2D']]
+    operating_raw_uncertainty = [
+        float(value) for value in params['keff 2D Uncertainty']
+    ]
+    operating_corrected_uncertainty = [
+        float(value)
+        for value in params['keff 3D (2D corrected) Uncertainty']
+    ]
+
+    params['keff 2D ARO'] = operating_raw
+    params['keff 2D ARO Uncertainty'] = operating_raw_uncertainty
+    params['keff 3D (2D corrected) ARO'] = operating_corrected_keff
+    params['keff 3D (2D corrected) ARO Uncertainty'] = (
+        operating_corrected_uncertainty
+    )
+
+    labels = ['BOL', 'MOL', 'EOL']
+
+    if params['Isothermal Temperature Coefficients']:
+        delta_t = float(params['Temperature Perturbation'])
+        params['Temperature Coefficient Particles'] = [
+            temperature_particles_by_index[index]
+            for index in selected_indices
+        ]
+        params['Temperature Coefficient Static Depletion Indices'] = list(
+            selected_indices
+        )
+        params['Temperature Coefficient Base Seeds'] = [
+            base_temperature_seeds[index] for index in selected_indices
+        ]
+        params['Temperature Coefficient High Seeds'] = [
+            high_temperature_seeds[index] for index in selected_indices
+        ]
+        temp_coeff_raw = {}
+        temp_coeff_raw_uncertainty = {}
+        temp_coeff_corrected = {}
+        temp_coeff_corrected_uncertainty = {}
+
+        for index in selected_indices:
+            base_result = base_temperature_results[index]
+            high_result = high_temperature_results[index]
+            raw_value, raw_uncertainty = _temperature_coefficient(
+                base_result['keff_2d'],
+                base_result['keff_2d_uncertainty'],
+                high_result['keff_2d'],
+                high_result['keff_2d_uncertainty'],
+                delta_t
+            )
+            corrected_value, corrected_uncertainty = _temperature_coefficient(
+                base_result['keff_corrected'],
+                base_result['keff_corrected_uncertainty'],
+                high_result['keff_corrected'],
+                high_result['keff_corrected_uncertainty'],
+                delta_t
+            )
+            temp_coeff_raw[index] = raw_value
+            temp_coeff_raw_uncertainty[index] = raw_uncertainty
+            temp_coeff_corrected[index] = corrected_value
+            temp_coeff_corrected_uncertainty[index] = corrected_uncertainty
+
+        raw_lifecycle = _lifecycle_values(temp_coeff_raw, lifecycle)
+        raw_uncertainty_lifecycle = _lifecycle_uncertainties(
+            temp_coeff_raw_uncertainty,
+            lifecycle
+        )
+        corrected_lifecycle = _lifecycle_values(temp_coeff_corrected, lifecycle)
+        corrected_uncertainty_lifecycle = _lifecycle_uncertainties(
+            temp_coeff_corrected_uncertainty,
+            lifecycle
+        )
+
+        base_raw = {
+            index: result['keff_2d']
+            for index, result in base_temperature_results.items()
+        }
+        base_raw_uncertainty = {
+            index: result['keff_2d_uncertainty']
+            for index, result in base_temperature_results.items()
+        }
+        base_corrected = {
+            index: result['keff_corrected']
+            for index, result in base_temperature_results.items()
+        }
+        base_corrected_uncertainty = {
+            index: result['keff_corrected_uncertainty']
+            for index, result in base_temperature_results.items()
+        }
+        high_raw = {
+            index: result['keff_2d']
+            for index, result in high_temperature_results.items()
+        }
+        high_raw_uncertainty = {
+            index: result['keff_2d_uncertainty']
+            for index, result in high_temperature_results.items()
+        }
+        high_corrected = {
+            index: result['keff_corrected']
+            for index, result in high_temperature_results.items()
+        }
+        high_corrected_uncertainty = {
+            index: result['keff_corrected_uncertainty']
+            for index, result in high_temperature_results.items()
+        }
+
+        params['keff 2D base temp'] = _lifecycle_values(base_raw, lifecycle)
+        params['keff 2D base temp Uncertainty'] = _lifecycle_uncertainties(
+            base_raw_uncertainty,
+            lifecycle
+        )
+        params['keff 3D (2D corrected) base temp'] = _lifecycle_values(
+            base_corrected,
+            lifecycle
+        )
+        params['keff 3D (2D corrected) base temp Uncertainty'] = (
+            _lifecycle_uncertainties(base_corrected_uncertainty, lifecycle)
+        )
+        params['keff 2D high temp'] = _lifecycle_values(high_raw, lifecycle)
+        params['keff 2D high temp Uncertainty'] = _lifecycle_uncertainties(
+            high_raw_uncertainty,
+            lifecycle
+        )
+        params['keff 3D (2D corrected) high temp'] = _lifecycle_values(
+            high_corrected,
+            lifecycle
+        )
+        params['keff 3D (2D corrected) high temp Uncertainty'] = (
+            _lifecycle_uncertainties(high_corrected_uncertainty, lifecycle)
+        )
+        params['Temp Coeff 2D Lifecycle'] = raw_lifecycle
+        params['Temp Coeff 2D Lifecycle Uncertainty'] = (
+            raw_uncertainty_lifecycle
+        )
+        params['Temp Coeff 3D (2D corrected) Lifecycle'] = corrected_lifecycle
+        params['Temp Coeff 3D (2D corrected) Lifecycle Uncertainty'] = (
+            corrected_uncertainty_lifecycle
+        )
+
+        base_p_nl = {
+            index: result['axial_non_leakage_probability']
+            for index, result in base_temperature_results.items()
+        }
+        high_p_nl = {
+            index: result['axial_non_leakage_probability']
+            for index, result in high_temperature_results.items()
+        }
+        params['Axial Non Leakage Probability base temp'] = (
+            _lifecycle_values(base_p_nl, lifecycle)
+        )
+        params['Axial Non Leakage Probability high temp'] = (
+            _lifecycle_values(high_p_nl, lifecycle)
+        )
+        params['Axial Non Leakage Probability temperature change'] = [
+            float(high_value - base_value)
+            for base_value, high_value in zip(
+                params['Axial Non Leakage Probability base temp'],
+                params['Axial Non Leakage Probability high temp']
+            )
+        ]
+
+        raw_limiting_index = int(np.argmax(raw_lifecycle))
+        corrected_limiting_index = int(np.argmax(corrected_lifecycle))
+        params['Temp Coeff 2D'] = raw_lifecycle[raw_limiting_index]
+        params['Temp Coeff 2D Uncertainty'] = (
+            raw_uncertainty_lifecycle[raw_limiting_index]
+        )
+        params['Temp Coeff 2D Limiting Point'] = labels[raw_limiting_index]
+        params['Temp Coeff 3D (2D corrected)'] = (
+            corrected_lifecycle[corrected_limiting_index]
+        )
+        params['Temp Coeff 3D (2D corrected) Uncertainty'] = (
+            corrected_uncertainty_lifecycle[corrected_limiting_index]
+        )
+        params['Temp Coeff 3D (2D corrected) Limiting Point'] = (
+            labels[corrected_limiting_index]
+        )
+
+        print("\nIsothermal temperature coefficient lifecycle results:")
+        for position, label in enumerate(labels):
+            print(
+                f"  {label}: 2D {raw_lifecycle[position]:.6f} +/- "
+                f"{raw_uncertainty_lifecycle[position]:.6f} pcm/K; "
+                f"axially corrected {corrected_lifecycle[position]:.6f} +/- "
+                f"{corrected_uncertainty_lifecycle[position]:.6f} pcm/K"
+            )
+        print(
+            "  Limiting 2D value: "
+            f"{params['Temp Coeff 2D']:.6f} +/- "
+            f"{params['Temp Coeff 2D Uncertainty']:.6f} pcm/K at "
+            f"{params['Temp Coeff 2D Limiting Point']}"
+        )
+        print(
+            "  Limiting axially corrected value: "
+            f"{params['Temp Coeff 3D (2D corrected)']:.6f} +/- "
+            f"{params['Temp Coeff 3D (2D corrected) Uncertainty']:.6f} "
+            f"pcm/K at "
+            f"{params['Temp Coeff 3D (2D corrected) Limiting Point']}"
+        )
+    else:
+        params['Temp Coeff 2D'] = np.nan
+        params['Temp Coeff 2D Uncertainty'] = np.nan
+        params['Temp Coeff 3D (2D corrected)'] = np.nan
+        params['Temp Coeff 3D (2D corrected) Uncertainty'] = np.nan
+
+    if params['Shutdown Margin Calc']:
+        params['Shutdown Margin Seeds'] = [
+            shutdown_seeds[index] for index in selected_indices
+        ]
+        sdm_raw = {}
+        sdm_raw_uncertainty = {}
+        sdm_corrected = {}
+        sdm_corrected_uncertainty = {}
+
+        for index in selected_indices:
+            static_result = shutdown_results[index]
+            raw_value, raw_uncertainty = _shutdown_margin(
+                static_result['keff_2d'],
+                static_result['keff_2d_uncertainty']
+            )
+            corrected_value, corrected_uncertainty = _shutdown_margin(
+                static_result['keff_corrected'],
+                static_result['keff_corrected_uncertainty']
+            )
+            sdm_raw[index] = raw_value
+            sdm_raw_uncertainty[index] = raw_uncertainty
+            sdm_corrected[index] = corrected_value
+            sdm_corrected_uncertainty[index] = corrected_uncertainty
+
+        raw_lifecycle = _lifecycle_values(sdm_raw, lifecycle)
+        raw_uncertainty_lifecycle = _lifecycle_uncertainties(
+            sdm_raw_uncertainty,
+            lifecycle
+        )
+        corrected_lifecycle = _lifecycle_values(sdm_corrected, lifecycle)
+        corrected_uncertainty_lifecycle = _lifecycle_uncertainties(
+            sdm_corrected_uncertainty,
+            lifecycle
+        )
+
+        shutdown_raw = {
+            index: result['keff_2d']
+            for index, result in shutdown_results.items()
+        }
+        shutdown_raw_uncertainty = {
+            index: result['keff_2d_uncertainty']
+            for index, result in shutdown_results.items()
+        }
+        shutdown_corrected = {
+            index: result['keff_corrected']
+            for index, result in shutdown_results.items()
+        }
+        shutdown_corrected_uncertainty = {
+            index: result['keff_corrected_uncertainty']
+            for index, result in shutdown_results.items()
+        }
+
+        params['keff 2D ARI'] = _lifecycle_values(shutdown_raw, lifecycle)
+        params['keff 2D ARI Uncertainty'] = _lifecycle_uncertainties(
+            shutdown_raw_uncertainty,
+            lifecycle
+        )
+        params['keff 3D (2D corrected) ARI'] = _lifecycle_values(
+            shutdown_corrected,
+            lifecycle
+        )
+        params['keff 3D (2D corrected) ARI Uncertainty'] = (
+            _lifecycle_uncertainties(shutdown_corrected_uncertainty, lifecycle)
+        )
+        params['Shutdown Margin 2D Lifecycle'] = raw_lifecycle
+        params['Shutdown Margin 2D Lifecycle Uncertainty'] = (
+            raw_uncertainty_lifecycle
+        )
+        params['Shutdown Margin 3D (2D corrected) Lifecycle'] = (
+            corrected_lifecycle
+        )
+        params['Shutdown Margin 3D (2D corrected) Lifecycle Uncertainty'] = (
+            corrected_uncertainty_lifecycle
+        )
+
+        raw_limiting_index = int(np.argmin(raw_lifecycle))
+        corrected_limiting_index = int(np.argmin(corrected_lifecycle))
+        params['Most Limiting Shutdown Margin 2D'] = (
+            raw_lifecycle[raw_limiting_index]
+        )
+        params['Most Limiting Shutdown Margin 2D Uncertainty'] = (
+            raw_uncertainty_lifecycle[raw_limiting_index]
+        )
+        params['Most Limiting Shutdown Margin 2D Point'] = (
+            labels[raw_limiting_index]
+        )
+        params['Maximum Shutdown Margin 2D'] = float(np.max(raw_lifecycle))
+        params['Most Limiting Shutdown Margin 3D (2D corrected)'] = (
+            corrected_lifecycle[corrected_limiting_index]
+        )
+        params['Most Limiting Shutdown Margin 3D (2D corrected) Uncertainty'] = (
+            corrected_uncertainty_lifecycle[corrected_limiting_index]
+        )
+        params['Most Limiting Shutdown Margin 3D (2D corrected) Point'] = (
+            labels[corrected_limiting_index]
+        )
+        params['Maximum Shutdown Margin 3D (2D corrected)'] = float(
+            np.max(corrected_lifecycle)
+        )
+
+        print("\nShutdown margin lifecycle results:")
+        for label, value, uncertainty in zip(
+            labels,
+            corrected_lifecycle,
+            corrected_uncertainty_lifecycle
+        ):
+            print(f"  {label}: {value:.3f} +/- {uncertainty:.3f} pcm")
+        print(
+            "  Limiting value: "
+            f"{params['Most Limiting Shutdown Margin 3D (2D corrected)']:.3f} "
+            f"+/- "
+            f"{params['Most Limiting Shutdown Margin 3D (2D corrected) Uncertainty']:.3f} "
+            f"pcm at "
+            f"{params['Most Limiting Shutdown Margin 3D (2D corrected) Point']}"
+        )
+    else:
+        params['Most Limiting Shutdown Margin 2D'] = np.nan
+        params['Most Limiting Shutdown Margin 2D Uncertainty'] = np.nan
+        params['Maximum Shutdown Margin 2D'] = np.nan
+        params['Most Limiting Shutdown Margin 3D (2D corrected)'] = np.nan
+        params['Most Limiting Shutdown Margin 3D (2D corrected) Uncertainty'] = (
+            np.nan
+        )
+        params['Maximum Shutdown Margin 3D (2D corrected)'] = np.nan
+
+
+def _run_operating_depletion_and_lifecycle(
+    build_openmc_model,
+    params,
+    shutdown_margin_requested,
+    temperature_coefficient_requested
+):
+    """Run the operating depletion once, then evaluate requested snapshots."""
+    params['Shutdown Margin Calc'] = shutdown_margin_requested
+    params['Isothermal Temperature Coefficients'] = (
+        temperature_coefficient_requested
+    )
+    run_depletion_analysis(params)
+    params['keff 2D ARO'] = list(params['keff 2D'])
+    params['keff 2D ARO Uncertainty'] = list(params['keff 2D Uncertainty'])
+    params['keff 3D (2D corrected) ARO'] = list(
+        params['keff 3D (2D corrected)']
+    )
+    params['keff 3D (2D corrected) ARO Uncertainty'] = list(
+        params['keff 3D (2D corrected) Uncertainty']
+    )
+
+    if (
+        params['Isothermal Temperature Coefficients']
+        or params['Shutdown Margin Calc']
+    ):
+        _run_lifecycle_snapshot_calculations(build_openmc_model, params)
+    else:
+        params['Temp Coeff 2D'] = np.nan
+        params['Temp Coeff 2D Uncertainty'] = np.nan
+        params['Temp Coeff 3D (2D corrected)'] = np.nan
+        params['Temp Coeff 3D (2D corrected) Uncertainty'] = np.nan
+        params['Most Limiting Shutdown Margin 2D'] = np.nan
+        params['Most Limiting Shutdown Margin 2D Uncertainty'] = np.nan
+        params['Maximum Shutdown Margin 2D'] = np.nan
+        params['Most Limiting Shutdown Margin 3D (2D corrected)'] = np.nan
+        params['Most Limiting Shutdown Margin 3D (2D corrected) Uncertainty'] = (
+            np.nan
+        )
+        params['Maximum Shutdown Margin 3D (2D corrected)'] = np.nan
 
 
 def run_openmc(build_openmc_model, heat_flux_monitor, params):
-
     params.setdefault('Shutdown Margin Calc', False)
     params.setdefault('Isothermal Temperature Coefficients', False)
     params.setdefault('Cold Shutdown Temperature', 300)
 
     original_shutdown_margin_calc = params['Shutdown Margin Calc']
-    original_isothermal_temperature_coefficients = params['Isothermal Temperature Coefficients']
+    original_isothermal_temperature_coefficients = (
+        params['Isothermal Temperature Coefficients']
+    )
     original_common_temperature = params['Common Temperature']
 
     if params['Isothermal Temperature Coefficients']:
         if 'Temperature Perturbation' not in params:
             raise ValueError(
-                "\n\n--- INPUT ERROR ---\n"
-                "'Temperature Perturbation' is not defined in params.\n"
-                "This parameter is required when 'Isothermal Temperature Coefficients' is True.\n"
-                "Please add it to your params (e.g. 'Temperature Perturbation': 100  # Kelvin)\n"
-                "Typical range: 50-300K depending on your Monte Carlo statistical noise level.\n"
+                "\n\nINPUT ERROR\n"
+                "'Temperature Perturbation' is required when "
+                "'Isothermal Temperature Coefficients' is True.\n"
             )
+        if params['Temperature Perturbation'] <= 0.0:
+            raise ValueError("'Temperature Perturbation' must be greater than zero.")
+
+        print(
+            f"Using {BOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
+            "batch for the BOL temperature-coefficient snapshot, "
+            f"{TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch for "
+            "the MOL snapshot, and "
+            f"{EOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
+            "for both EOL bracketing snapshots. The operating depletion and "
+            "cold-shutdown calculations retain their normal particle settings."
+        )
 
     try:
         print(f"\n\nThe results/plots are saved at: {watts.Database().path}\n\n")
 
-        if params['Shutdown Margin Calc']:
+        params['Shutdown Margin Calc'] = False
+        params['Common Temperature'] = original_common_temperature
+        openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
+        openmc_plugin(
+            params,
+            function=lambda: _run_operating_depletion_and_lifecycle(
+                build_openmc_model,
+                params,
+                original_shutdown_margin_calc,
+                original_isothermal_temperature_coefficients
+            )
+        )
 
-            if params['Isothermal Temperature Coefficients']:
-                params['Shutdown Margin Calc'] = False
-                params['Common Temperature'] = original_common_temperature
-                _run_isothermal_temperature_coefficients(build_openmc_model, params)
-                params['Shutdown Margin Calc'] = True
-            else:
-                params['Temp Coeff 2D'] = np.nan
-                params['Temp Coeff 3D (2D corrected)'] = np.nan
-
-            params['Common Temperature'] = params['Cold Shutdown Temperature']
-            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-            openmc_plugin(params, function=lambda: run_depletion_analysis(params))
-            params['keff 2D ARI'] = params['keff 2D']
-            params['keff 3D (2D corrected) ARI'] = params['keff 3D (2D corrected)']
-
-            params['Shutdown Margin Calc'] = False
-            params['Common Temperature'] = original_common_temperature
-            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-            openmc_plugin(params, function=lambda: run_depletion_analysis(params))
-            params['keff 2D ARO'] = params['keff 2D']
-            params['keff 3D (2D corrected) ARO'] = params['keff 3D (2D corrected)']
-
-            sdm_2d_per_step = [
-                    ((1.0 - k_s) / k_s) * 1e5
-                    for k_s in params['keff 2D ARI']
-            ]
-
-            sdm_3d_per_step = [
-                    ((1.0 - k_s) / k_s) * 1e5
-                    for k_s in params['keff 3D (2D corrected) ARI']
-            ]
-            params['Most Limiting Shutdown Margin 2D'] = np.min(sdm_2d_per_step)
-            params['Maximum Shutdown Margin 2D'] = np.max(sdm_2d_per_step)
-
-            params['Most Limiting Shutdown Margin 3D (2D corrected)'] = np.min(sdm_3d_per_step)
-            params['Maximum Shutdown Margin 3D (2D corrected)'] = np.max(sdm_3d_per_step)
-
-        else:
-            params['Most Limiting Shutdown Margin 2D'] = np.nan
-            params['Maximum Shutdown Margin 2D'] = np.nan
-            params['Most Limiting Shutdown Margin 3D (2D corrected)'] = np.nan
-            params['Maximum Shutdown Margin 3D (2D corrected)'] = np.nan
-
-            if params['Isothermal Temperature Coefficients']:
-                _run_isothermal_temperature_coefficients(build_openmc_model, params)
-            else:
-                params['Temp Coeff 2D'] = np.nan
-                params['Temp Coeff 3D (2D corrected)'] = np.nan
-
-                openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-                openmc_plugin(params, function=lambda: run_depletion_analysis(params))
-                params['keff 2D ARO'] = params['keff 2D']
-                params['keff 3D (2D corrected) ARO'] = params['keff 3D (2D corrected)']
-
-    except Exception as e:
+    except Exception:
         print("\n\n\033[91mAn error occurred while running the OpenMC simulation:\033[0m\n\n")
         traceback.print_exc()
         raise
 
     finally:
+        params.pop('_Depleted Fuel Materials XML', None)
+        params.pop('_Operating Fuel Material ID', None)
         params['Shutdown Margin Calc'] = original_shutdown_margin_calc
-        params['Isothermal Temperature Coefficients'] = original_isothermal_temperature_coefficients
+        params['Isothermal Temperature Coefficients'] = (
+            original_isothermal_temperature_coefficients
+        )
         params['Common Temperature'] = original_common_temperature
 
 
 def run_openmc_3d(build_openmc_model, heat_flux_monitor, params):
+    """Run the existing explicit 3D MOUSE depletion workflow."""
     params.setdefault('Shutdown Margin Calc', False)
     params.setdefault('Isothermal Temperature Coefficients', False)
     params.setdefault('Cold Shutdown Temperature', 300)
@@ -609,40 +1664,64 @@ def run_openmc_3d(build_openmc_model, heat_flux_monitor, params):
         print(f"\n\nThe results/plots are saved at: {watts.Database().path}\n\n")
 
         if params['Isothermal Temperature Coefficients']:
-            print("[3D] WARNING: Isothermal Temperature Coefficients are not implemented for run_openmc_3d yet.")
-            params['Temp Coeff 3D'] = np.nan
-        else:
-            params['Temp Coeff 3D'] = np.nan
+            print(
+                "[3D] WARNING: Isothermal Temperature Coefficients are not "
+                "implemented for run_openmc_3d yet."
+            )
+        params['Temp Coeff 3D'] = np.nan
 
         if params['Shutdown Margin Calc']:
             params['Common Temperature'] = params['Cold Shutdown Temperature']
             params['Shutdown Margin Calc'] = True
-            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-            openmc_plugin(params, function=lambda: run_depletion_analysis_3d(params))
+            openmc_plugin = watts.PluginOpenMC(
+                build_openmc_model,
+                show_stderr=True
+            )
+            openmc_plugin(
+                params,
+                function=lambda: run_depletion_analysis_3d(params)
+            )
             params['keff 3D ARI'] = params['keff 3D']
 
             params['Common Temperature'] = original_common_temperature
             params['Shutdown Margin Calc'] = False
-            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-            openmc_plugin(params, function=lambda: run_depletion_analysis_3d(params))
+            openmc_plugin = watts.PluginOpenMC(
+                build_openmc_model,
+                show_stderr=True
+            )
+            openmc_plugin(
+                params,
+                function=lambda: run_depletion_analysis_3d(params)
+            )
             params['keff 3D ARO'] = params['keff 3D']
 
             sdm_3d_per_step = [
-                ((1.0 - k_s) / k_s) * 1e5
-                for k_s in params['keff 3D ARI']
+                ((1.0 - k_shutdown) / k_shutdown) * 1e5
+                for k_shutdown in params['keff 3D ARI']
             ]
-            params['Most Limiting Shutdown Margin 3D'] = np.min(sdm_3d_per_step)
+            params['Most Limiting Shutdown Margin 3D'] = np.min(
+                sdm_3d_per_step
+            )
             params['Maximum Shutdown Margin 3D'] = np.max(sdm_3d_per_step)
         else:
             params['Most Limiting Shutdown Margin 3D'] = np.nan
             params['Maximum Shutdown Margin 3D'] = np.nan
 
-            openmc_plugin = watts.PluginOpenMC(build_openmc_model, show_stderr=True)
-            openmc_plugin(params, function=lambda: run_depletion_analysis_3d(params))
+            openmc_plugin = watts.PluginOpenMC(
+                build_openmc_model,
+                show_stderr=True
+            )
+            openmc_plugin(
+                params,
+                function=lambda: run_depletion_analysis_3d(params)
+            )
             params['keff 3D ARO'] = params['keff 3D']
 
     except Exception:
-        print("\n\n\033[91mAn error occurred while running the 3D OpenMC simulation:\033[0m\n\n")
+        print(
+            "\n\n\033[91mAn error occurred while running the 3D OpenMC "
+            "simulation:\033[0m\n\n"
+        )
         traceback.print_exc()
         raise
 

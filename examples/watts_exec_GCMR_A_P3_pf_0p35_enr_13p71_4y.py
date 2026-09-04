@@ -2,6 +2,7 @@
 
 """
 This script performs a bottom-up cost estimate for a Gas Cooled Microreactor (GCMR).
+Parallel screening case: P3_pf_0p35_enr_13p71.
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
 """
@@ -44,7 +45,7 @@ update_params({
     'reactor type': "GCMR",  # LTMR or GCMR
     'TRISO Fueled': "Yes",
     'Fuel': 'UCO',
-    'Enrichment': 0.12,  # The enrichment is a fraction. It has to be between 0 and 1
+    'Enrichment': 0.13714285714285715,  # The enrichment is a fraction. It has to be between 0 and 1
     'UO2 atom fraction': 0.7,  # Mixing UO2 and UC by atom fraction
     'Radial Reflector': 'Graphite',
     'Axial Reflector': 'Graphite',
@@ -72,7 +73,7 @@ update_params({
     'Fuel Pin Materials': ['UCO', 'buffer_graphite', 'PyC', 'SiC', 'PyC'],
     'Fuel Pin Radii': [0.0250, 0.0350, 0.0390, 0.0425, 0.0465],  # cm # https://art.inl.gov/NRC%20Training%202019/04_TRISO_Fuel.pdf
     'Compact Fuel Radius': 0.6225,  # cm # The radius of the area that is occupied by the TRISO particles (fuel compact/ fuel element)
-    'Packing Fraction': 0.4,
+    'Packing Fraction': 0.35,
     'TRISO Packing Seed': 1,
     
     # Coolant channel and booster dimensions
@@ -170,6 +171,13 @@ params['Temperature Perturbation'] = 100  # K
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
+
+# --- Previously calculated OpenMC results ---
+# To bypass OpenMC later, comment out run_openmc(...) above and uncomment these assignments.
+# params['Fuel Lifetime'] = 1457  # days
+# params['Mass U235'] = 68525.70189153319  # g
+# params['Mass U238'] = 430215.7774253606  # g
+# params['Uranium Mass'] = 498.7414793168938  # kg
 
 # **************************************************************************************************************************
 #                                         Sec. 6: Primary Loop + Balance of Plant

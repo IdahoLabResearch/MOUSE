@@ -2,6 +2,7 @@
 
 """
 This script performs a bottom-up cost estimate for a Gas Cooled Microreactor (GCMR).
+Parallel screening case: H1_height_180.
 OpenMC is used for core design calculations, and other Balance of Plant components are estimated.
 Users can modify parameters in the "params" dictionary below.
 """
@@ -98,11 +99,11 @@ update_params({
     # Explicit geometry values for this design. The geometry helper validates
     # these values and does not replace them with calculated dimensions.
     'Assembly FTF': 19.48557158514987,  # cm
-    'Active Height': 200.0,  # cm
+    'Active Height': 180.0,  # cm
     'Radial Reflector Thickness': 9.742785792574935,  # cm
     'Axial Reflector Thickness': 9.742785792574935,  # cm
     'Core Radius': 107.17064371832429,  # cm
-    'Shutdown Rod Height': 200.0,  # cm
+    'Shutdown Rod Height': 180.0,  # cm
 })
 
 # **************************************************************************************************************************
@@ -114,7 +115,7 @@ update_params({
     'Drum Tube Radius': 9.742785792574935,  # cm
     'Drum Absorber Thickness': 1, # cm
     'Drum Absorber Arc Degrees': 120.0,
-    'Drum Height': 219.48557158514987,  # cm
+    'Drum Height': 199.48557158514987,  # cm
     })
 calculate_drums_volumes_and_masses(params)
 calculate_gcmr_shutdown_rods_volumes_and_masses(params)
@@ -170,6 +171,13 @@ params['Temperature Perturbation'] = 100  # K
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
+
+# --- Previously calculated OpenMC results ---
+# To bypass OpenMC later, comment out run_openmc(...) above and uncomment these assignments.
+# params['Fuel Lifetime'] = 1035  # days
+# params['Mass U235'] = 61674.44562249709  # g
+# params['Mass U238'] = 451446.6628824086  # g
+# params['Uranium Mass'] = 513.1211085049057  # kg
 
 # **************************************************************************************************************************
 #                                         Sec. 6: Primary Loop + Balance of Plant

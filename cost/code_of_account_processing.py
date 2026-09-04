@@ -9,9 +9,12 @@ def remove_irrelevant_account(df, params):
     for index, row in df.iterrows():
         def _optional_matches(param_val, expected_val):
             """Return True if param_val equals expected_val, or if param_val is a list that contains expected_val."""
+            def _normalized(value):
+                return value.strip() if isinstance(value, str) else value
+
             if isinstance(param_val, list):
-                return expected_val in param_val
-            return param_val == expected_val
+                return _normalized(expected_val) in [_normalized(value) for value in param_val]
+            return _normalized(param_val) == _normalized(expected_val)
 
         # Check for 'Optional Variable'
         if not pd.isna(row['Optional Variable']):
@@ -111,10 +114,24 @@ def create_cost_dictionary(df, params, tracked_params_list):
     # Physics safety metrics — tracked from params directly (not from the cost dataframe)
     # These are always included if present in params; set to nan if not calculated
     # (e.g. when Shutdown Margin Calc or Isothermal Temperature Coefficients are False)
-    physics_metrics = ['Temp Coeff 3D (2D corrected)', 'SDM 3D (2D corrected)']
+    physics_metrics = [
+        'Temp Coeff 3D (2D corrected)',
+        'Temp Coeff 3D (2D corrected) Uncertainty',
+        'Most Limiting Shutdown Margin 3D (2D corrected)',
+        'Most Limiting Shutdown Margin 3D (2D corrected) Uncertainty',
+    ]
     for metric in physics_metrics:
         if metric in params.keys():
             filtered_params[metric] = params[metric]
+
+    # Preserve the historical SDM output name for downstream scripts while
+    # using the current descriptive key everywhere in MOUSE itself.
+    current_sdm_key = 'Most Limiting Shutdown Margin 3D (2D corrected)'
+    legacy_sdm_key = 'SDM 3D (2D corrected)'
+    if current_sdm_key in params:
+        filtered_params[legacy_sdm_key] = params[current_sdm_key]
+    elif legacy_sdm_key in params:
+        filtered_params[legacy_sdm_key] = params[legacy_sdm_key]
 
     # ITC-related accounts — only present if user provided 'ITC credit level' in params
     itc_accounts = [

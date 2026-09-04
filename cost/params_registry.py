@@ -10,7 +10,8 @@ Each entry maps a parameter name to its metadata:
   - source      : 'User Input' or 'Calculated'
   - hidden      : If True, the parameter is excluded from the Parameters sheet
   - array_mode  : How to display list/array values:
-                    'summary'  → show BOL, EOL, min, max as separate rows
+                    'summary'  → show first, last, min, max as separate rows
+                    'lifecycle' → show BOL, MOL, EOL as separate rows
                     'steps'    → show first step, last step, number of steps
                     'as_is'    → show the value directly (short lists)
                     None       → not an array
@@ -123,6 +124,22 @@ PARAMS_REGISTRY = {
         'group': 'Materials', 'units': '',
         'description': 'Neutron moderator material type (e.g. ZrH, Graphite, monolith_graphite)',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Absorber': {
+        'group': 'Materials', 'units': '',
+        'description': 'Neutron absorber material used in the movable shutdown rods',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Cladding': {
+        'group': 'Materials', 'units': '',
+        'description': 'Cladding material that moves with each shutdown-rod absorber',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Graphite Linear Expansion Coefficient': {
+        'group': 'Materials', 'units': '1/K',
+        'description': 'Mean linear thermal-expansion coefficient used to adjust GCMR graphite number density in density-aware temperature-coefficient cases.',
+        'source': 'User Input; IG-110 proxy from ORNL/TM-2017/705, Table 2.2, page 3',
+        'hidden': False, 'array_mode': None},
 
     'Moderator Booster Materials': {
         'group': 'Materials', 'units': '',
@@ -247,6 +264,11 @@ PARAMS_REGISTRY = {
         'description': 'Volume fraction of TRISO particles within the fuel compact',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'TRISO Packing Seed': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Deterministic random seed used by OpenMC when packing TRISO particles in the representative fuel compact.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'Coolant Channel Radius': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Radius of the coolant channels in the GCMR assembly',
@@ -272,6 +294,51 @@ PARAMS_REGISTRY = {
         'description': 'Number of assembly rings along the side of the hexagonal core (GCMR)',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'Central Shutdown Rod Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'B4C absorber radius for each shutdown rod in the central GCMR assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Central Shutdown Rod Clad Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Outer SS304 cladding radius for each shutdown rod in the central GCMR assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Central Shutdown Rod Ring': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Hexagonal pin-lattice ring containing the central-assembly shutdown rods.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Central Shutdown Rod Count': {
+        'group': 'Geometry', 'units': 'rods',
+        'description': 'Number of shutdown rods in the central GCMR assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'B4C absorber radius for each shutdown rod in a surrounding GCMR shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Clad Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Outer SS304 cladding radius for each shutdown rod in a surrounding GCMR shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Ring': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Hexagonal pin-lattice ring containing shutdown rods in each surrounding shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Rod Count': {
+        'group': 'Geometry', 'units': 'rods per assembly',
+        'description': 'Number of shutdown rods in each surrounding GCMR shutdown assembly.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Surrounding Shutdown Assembly Count': {
+        'group': 'Geometry', 'units': 'assemblies',
+        'description': 'Number of first-ring GCMR assemblies containing the smaller surrounding shutdown rods.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'Lattice Apothem': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Distance from the hex lattice center to the midpoint of a flat face of the outermost pin lattice.',
@@ -285,12 +352,12 @@ PARAMS_REGISTRY = {
     'Assembly FTF': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Assembly flat-to-flat distance (distance between opposite parallel faces of the hexagonal assembly).',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'Core Radius': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Total core radius including the radial reflector',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'hexagonal Core Edge Length': {
         'group': 'Geometry', 'units': 'cm',
@@ -306,6 +373,26 @@ PARAMS_REGISTRY = {
         'group': 'Geometry', 'units': '',
         'description': 'Total number of moderator pins in the entire core',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Number of Shutdown Rods': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Total shutdown-rod count. LTMR accepts user-selected 6- or 12-rod predefined layouts; GCMR calculates the total from the central and surrounding assembly inputs.',
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Absorber Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Outer radius of the LTMR shutdown-rod B4C absorber',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Clad Radius': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Outer radius of the LTMR shutdown-rod cladding',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Height': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Physical height of each LTMR shutdown rod; defaults to the active core height in the example input',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Fuel Pin Count per Assembly': {
         'group': 'Geometry', 'units': '',
@@ -337,7 +424,7 @@ PARAMS_REGISTRY = {
 
     'Drum Absorber Arc Degrees': {
         'group': 'Control Drums', 'units': 'degrees',
-        'description': 'Angular span of the absorber arc on each control drum',
+        'description': 'Angular span of the absorber arc on each control drum; used by both OpenMC geometry and material inventory calculations',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Drum Radius': {
@@ -357,13 +444,13 @@ PARAMS_REGISTRY = {
 
     'Drum Tube Radius': {
         'group': 'Control Drums', 'units': 'cm',
-        'description': 'Outer radius of the control drum tube (slightly larger than drum radius)',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'description': 'Outer radius of the control drum tube. It is explicit and validated for the GCMR example and may be calculated for other models.',
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'Drum Count': {
         'group': 'Control Drums', 'units': '',
-        'description': 'Total number of control drums in the core',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'description': 'Total number of control drums in the core; explicit and validated against the GCMR lattice.',
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'All Drums Volume': {
         'group': 'Control Drums', 'units': 'cm³',
@@ -373,6 +460,11 @@ PARAMS_REGISTRY = {
     'All Drums Area': {
         'group': 'Control Drums', 'units': 'cm²',
         'description': 'Total cross-sectional area of all control drums',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'All Drum Tubes Area': {
+        'group': 'Control Drums', 'units': 'cm²',
+        'description': 'Total cross-sectional area removed from the reflector by all control-drum tubes, including clearance around each physical drum',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Control Drum Absorber Mass': {
@@ -393,6 +485,46 @@ PARAMS_REGISTRY = {
     # =========================================================
     # Core Design
     # =========================================================
+    'Shutdown Rod Absorber Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'Total B4C absorber volume in all shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Cladding Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'Total cladding volume in all shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Absorber Mass': {
+        'group': 'Core Design', 'units': 'kg',
+        'description': 'Total B4C absorber mass in all shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rod Cladding Mass': {
+        'group': 'Core Design', 'units': 'kg',
+        'description': 'Total cladding mass in all shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Rods Mass': {
+        'group': 'Core Design', 'units': 'kg',
+        'description': 'Combined absorber and cladding mass of all shutdown rods',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'GCMR Fuel Compact Count': {
+        'group': 'Core Design', 'units': 'compacts',
+        'description': 'Number of GCMR fuel-compact positions remaining after shutdown-rod channels replace fuel positions',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Radial Reflector Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'LTMR radial reflector volume over the active core height, excluding the hexagonal core and control-drum tubes',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Axial Reflector Volume': {
+        'group': 'Core Design', 'units': 'cm³',
+        'description': 'Combined volume of both LTMR axial reflectors, excluding control-drum tubes',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
     'Radial Reflector Mass': {
         'group': 'Core Design', 'units': 'kg',
         'description': 'Total mass of the radial neutron reflector',
@@ -525,6 +657,22 @@ PARAMS_REGISTRY = {
         'hidden': False,
         'array_mode': 'as_is'},
 
+    'Lifecycle Evaluation Times': {
+        'group': 'Physics Results',
+        'units': 'days',
+        'description': 'Actual times used for the BOL, MOL, and EOL static safety evaluations. MOL is the closest saved depletion state to half the exact operating lifetime. EOL is interpolated to the corrected operating keff crossing of 1.0.',
+        'source': 'Calculated',
+        'hidden': False,
+        'array_mode': 'lifecycle'},
+
+    'Lifecycle Target Times': {
+        'group': 'Debug / Intermediate Values',
+        'units': 'days',
+        'description': 'Target BOL, half-life, and exact EOL times before selecting the nearest saved MOL depletion composition.',
+        'source': 'Calculated',
+        'hidden': False,
+        'array_mode': 'lifecycle'},
+
     'BOL Axial Non-Leakage Probability': {
         'group': 'Physics Results',
         'units': 'fraction',
@@ -589,56 +737,136 @@ PARAMS_REGISTRY = {
 
     'Temp Coeff 2D': {
         'group': 'Physics Results', 'units': 'pcm/K',
-        'description': 'Most limiting (least negative) isothermal temperature coefficient from the 2D simulation. '
+        'description': 'Most limiting, numerically largest isothermal temperature coefficient among the BOL, MOL, and EOL evaluations from the 2D simulation. '
                        'Negative values indicate self-stabilizing behavior. '
                        'Note: 2D simulation overestimates keff — use 3D corrected value for safety conclusions.',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
+
+    'Temp Coeff 2D Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm/K',
+        'description': 'One standard deviation OpenMC statistical uncertainty associated with the reported limiting 2D isothermal temperature coefficient. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
+
+    'Temp Coeff 2D Limiting Point': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Lifecycle point, BOL, MOL, or EOL, at which the limiting 2D isothermal temperature coefficient occurs.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
+
+    'Temp Coeff 2D Lifecycle': {
+        'group': 'Physics Results', 'units': 'pcm/K',
+        'description': 'Isothermal temperature coefficient evaluated using operating depletion compositions at three lifecycle points.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'Temp Coeff 2D Lifecycle Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm/K',
+        'description': 'One standard deviation OpenMC statistical uncertainty for the three 2D lifecycle temperature coefficient evaluations.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
 
     'Temp Coeff 3D (2D corrected)': {
         'group': 'Physics Results', 'units': 'pcm/K',
-        'description': 'Most limiting (least negative) isothermal temperature coefficient corrected from 2D to 3D '
+        'description': 'Most limiting, numerically largest isothermal temperature coefficient among the BOL, MOL, and EOL evaluations, corrected from 2D to 3D '
                        'using axial neutron leakage correction. Negative values confirm self-stabilizing behavior. '
                        'Use this value for safety analysis.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
+    'Temp Coeff 3D (2D corrected) Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm/K',
+        'description': 'One standard deviation OpenMC statistical uncertainty associated with the reported limiting axial-leakage-corrected temperature coefficient. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Temp Coeff 3D (2D corrected) Limiting Point': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Lifecycle point, BOL, MOL, or EOL, at which the limiting axial-leakage-corrected isothermal temperature coefficient occurs.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Temp Coeff 3D (2D corrected) Lifecycle': {
+        'group': 'Physics Results', 'units': 'pcm/K',
+        'description': 'Isothermal temperature coefficient evaluated at BOL, MOL, and EOL and corrected from 2D to 3D using the axial leakage approximation.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'Temp Coeff 3D (2D corrected) Lifecycle Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm/K',
+        'description': 'One standard deviation OpenMC statistical uncertainty for the three axial-leakage-corrected lifecycle temperature coefficient evaluations. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
     'Most Limiting Shutdown Margin 2D': {
-    'group': 'Physics Results', 'units': 'pcm',
-    'description': 'Most limiting shutdown margin from the 2D simulation, computed as min((1 - k_s) / k_s) over depletion steps, where k_s is the shutdown-state keff with the absorber facing the core (ARI) at Cold Shutdown Temperature.',
-    'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'group': 'Physics Results', 'units': 'pcm',
+        'description': 'Minimum shutdown margin among the BOL, MOL, and EOL evaluations from the 2D simulation, computed as ((1 - k_s) / k_s) × 1e5, where k_s is the cold shutdown-state keff with all rods inserted and drum absorbers facing the core.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
+
+    'Most Limiting Shutdown Margin 2D Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm',
+        'description': 'One standard deviation OpenMC statistical uncertainty associated with the reported minimum 2D shutdown margin.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
+
+    'Most Limiting Shutdown Margin 2D Point': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Lifecycle point, BOL, MOL, or EOL, at which the minimum 2D shutdown margin occurs.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
+
+    'Shutdown Margin 2D Lifecycle': {
+        'group': 'Physics Results', 'units': 'pcm',
+        'description': 'Subcritical margin relative to criticality evaluated at BOL, MOL, and EOL using the operating depletion compositions in the cold shutdown geometry.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'Shutdown Margin 2D Lifecycle Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm',
+        'description': 'One standard deviation OpenMC statistical uncertainty for the three 2D lifecycle shutdown margin evaluations.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
 
     'Maximum Shutdown Margin 2D': {
         'group': 'Physics Results', 'units': 'pcm',
-        'description': 'Maximum shutdown margin from the 2D simulation, computed as max((1 - k_s) / k_s) over depletion steps, where k_s is the shutdown-state keff with the absorber facing the core (ARI) at Cold Shutdown Temperature.',
-        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+        'description': 'Maximum shutdown margin among the BOL, MOL, and EOL evaluations from the 2D simulation.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
 
     'Most Limiting Shutdown Margin 3D (2D corrected)': {
         'group': 'Physics Results', 'units': 'pcm',
-        'description': 'Most limiting shutdown margin corrected from 2D to 3D using axial neutron leakage correction, computed as min((1 - k_s) / k_s) over depletion steps, where k_s is the shutdown-state corrected keff with the absorber facing the core (ARI) at Cold Shutdown Temperature.',
+        'description': 'Minimum shutdown margin among the BOL, MOL, and EOL evaluations after correcting shutdown-state keff from 2D to 3D using the axial leakage approximation.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Most Limiting Shutdown Margin 3D (2D corrected) Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm',
+        'description': 'One standard deviation OpenMC statistical uncertainty associated with the reported minimum axial-leakage-corrected shutdown margin. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Most Limiting Shutdown Margin 3D (2D corrected) Point': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Lifecycle point, BOL, MOL, or EOL, at which the minimum axial-leakage-corrected shutdown margin occurs.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Margin 3D (2D corrected) Lifecycle': {
+        'group': 'Physics Results', 'units': 'pcm',
+        'description': 'Subcritical margin relative to criticality evaluated at BOL, MOL, and EOL using cold shutdown keff corrected from 2D to 3D with the axial leakage approximation.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'Shutdown Margin 3D (2D corrected) Lifecycle Uncertainty': {
+        'group': 'Physics Results', 'units': 'pcm',
+        'description': 'One standard deviation OpenMC statistical uncertainty for the three axial-leakage-corrected lifecycle shutdown margin evaluations. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
 
     'Maximum Shutdown Margin 3D (2D corrected)': {
         'group': 'Physics Results', 'units': 'pcm',
-        'description': 'Maximum shutdown margin corrected from 2D to 3D using axial neutron leakage correction, computed as max((1 - k_s) / k_s) over depletion steps, where k_s is the shutdown-state corrected keff with the absorber facing the core (ARI) at Cold Shutdown Temperature.',
+        'description': 'Maximum shutdown margin among the BOL, MOL, and EOL evaluations after correcting shutdown-state keff from 2D to 3D using the axial leakage approximation.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},    
 
     'Max Peaking Factor': {
         'group': 'Physics Results', 'units': 'unitless',
-        'description': 'Maximum pin peaking factor across all depletion steps — the most limiting value over the fuel lifetime',
+        'description': 'Maximum pin peaking factor among saved depletion states at or before the calculated end of operating life',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Step with Max Peaking Factor': {
         'group': 'Physics Results', 'units': 'unitless',
-        'description': 'Depletion step number at which the maximum peaking factor occurs',
+        'description': 'Saved depletion step at or before EOL at which the maximum peaking factor occurs',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Region ID with Max Peaking Factor': {
         'group': 'Physics Results', 'units': 'unitless',
-        'description': 'Region ID with the highest peaking factor across all depletion steps; for LTMR this is typically a pin/distribcell ID, while for GCMR it is a mesh-region index',
+        'description': 'Region ID with the highest peaking factor among saved depletion states at or before EOL; for LTMR this is typically a pin/distribcell ID, while for GCMR it is a mesh-region index',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Max Peaking Factors per Step': {
         'group': 'Physics Results', 'units': 'unitless',
-        'description': 'List of the maximum pin peaking factor at each depletion step, in step order',
+        'description': 'List of the maximum pin peaking factor at each saved depletion state at or before EOL, in step order',
         'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
 
     # PF Summary is a nested dict — hidden from the Parameters sheet.
@@ -646,18 +874,28 @@ PARAMS_REGISTRY = {
     # Rod ID with Max Peaking Factor) carry the actionable information.
     'PF Summary': {
         'group': 'Physics Results', 'units': '',
-        'description': 'Full peaking factor summary table across all depletion steps — see log output for per-pin results',
+        'description': 'Peaking factor summary table for saved depletion states at or before EOL — see log output for per-pin results',
         'source': 'Calculated', 'hidden': True, 'array_mode': None},
 
     'keff 2D': {
         'group': 'Physics Results', 'units': '',
         'description': 'keff at each burnup step for the operating configuration (ARO) from the 2D OpenMC simulation, evaluated at Common Temperature.',
-        'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'keff 2D Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for operating 2D keff at each depletion point.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'summary'},
 
     'keff 3D (2D corrected)': {
         'group': 'Physics Results', 'units': '',
         'description': 'keff at each burnup step for the operating configuration (ARO), corrected from 2D to 3D using axial leakage correction and evaluated at Common Temperature.',
         'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'keff 3D (2D corrected) Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for the axial-leakage-corrected operating keff values. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
 
     # =========================================================
     # Primary Loop & Balance of Plant
@@ -833,6 +1071,11 @@ PARAMS_REGISTRY = {
     'Outer Shield Outer Radius': {
         'group': 'Shielding', 'units': 'cm',
         'description': 'Outer radius of the out-of-vessel shield (outermost boundary of the shielded assembly)',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Outer Shield Inner Radius': {
+        'group': 'Shielding', 'units': 'cm',
+        'description': 'Inner radius of the out-of-vessel shield',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     # =========================================================
@@ -2050,26 +2293,136 @@ PARAMS_REGISTRY = {
     # =========================================================
     # Debug / Intermediate Values
     # =========================================================
+    'keff 2D base temp': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': '2D keff from the dedicated nominal-temperature ARO static calculations used to evaluate the temperature coefficient at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'keff 2D base temp Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for the dedicated nominal-temperature 2D keff values used in the temperature coefficient calculations.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'keff 3D (2D corrected) base temp': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Axial-leakage-corrected keff from the dedicated nominal-temperature ARO static calculations used to evaluate the temperature coefficient at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'keff 3D (2D corrected) base temp Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for the dedicated nominal-temperature axial-leakage-corrected keff values used in the temperature coefficient calculations. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'Temperature Coefficient Particles': {
+        'group': 'Debug / Intermediate Values', 'units': 'particles per batch',
+        'description': 'Particle counts used for each unique depletion index required by the BOL, MOL, and EOL temperature-coefficient snapshot pairs.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient Static Depletion Indices': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Unique operating depletion indices used for the BOL, MOL, and EOL temperature-coefficient snapshot pairs.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient Density Aware': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Whether reactor-specific coolant and moderator densities were adjusted between the base and elevated-temperature coefficient cases.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': None},
+
+    'Temperature Coefficient Density Temperatures': {
+        'group': 'Debug / Intermediate Values', 'units': 'K',
+        'description': 'Base and elevated temperatures associated with the reported coolant and moderator densities.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient NaK Densities': {
+        'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
+        'description': 'NaK densities used at the base and elevated temperatures.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient ZrH Densities': {
+        'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
+        'description': 'ZrH densities used at the base and elevated temperatures.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient Helium Densities': {
+        'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
+        'description': 'GCMR helium densities used at the base and elevated temperatures under the constant-pressure scaling assumption.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient Graphite Densities': {
+        'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
+        'description': 'GCMR graphite densities used at the base and elevated temperatures using the configured linear thermal-expansion coefficient.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient Base Seeds': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Independent OpenMC random seeds used for the base-temperature lifecycle snapshots.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient High Seeds': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Independent OpenMC random seeds used for the elevated-temperature lifecycle snapshots.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'as_is'},
+
+    'Shutdown Margin Seeds': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Independent OpenMC random seeds used for the cold ARI lifecycle shutdown-margin snapshots.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
     'keff 2D high temp': {
         'group': 'Debug / Intermediate Values', 'units': '',
-        'description': 'keff at each burnup step from 2D simulation at elevated temperature (Common Temperature + Perturbation) — '
+        'description': 'keff at BOL, MOL, and EOL from 2D static simulations at elevated temperature (Common Temperature + Perturbation) — '
                        'used to calculate isothermal temperature coefficient',
-        'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'keff 2D high temp Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for elevated-temperature 2D keff at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
 
     'keff 3D (2D corrected) high temp': {
         'group': 'Debug / Intermediate Values', 'units': '',
-        'description': 'keff at elevated temperature corrected to 3D — used to calculate temperature coefficient',
-        'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
+        'description': 'keff at BOL, MOL, and EOL at elevated temperature corrected to 3D — used to calculate temperature coefficient',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'keff 3D (2D corrected) high temp Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for elevated-temperature axial-leakage-corrected keff at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'Axial Non Leakage Probability base temp': {
+        'group': 'Debug / Intermediate Values', 'units': 'fraction',
+        'description': 'Axial non-leakage probabilities for the base-temperature BOL, MOL, and EOL snapshots.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'Axial Non Leakage Probability high temp': {
+        'group': 'Debug / Intermediate Values', 'units': 'fraction',
+        'description': 'Axial non-leakage probabilities for the elevated-temperature BOL, MOL, and EOL snapshots.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'Axial Non Leakage Probability temperature change': {
+        'group': 'Debug / Intermediate Values', 'units': 'fraction',
+        'description': 'Elevated-minus-base axial non-leakage probability at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
 
     'keff 2D ARI': {
         'group': 'Debug / Intermediate Values', 'units': '',
-        'description': 'keff at each burnup step for the shutdown configuration with all control drums inserted (ARI) from the 2D simulation, evaluated at Cold Shutdown Temperature for shutdown margin calculation.',
-        'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
+        'description': 'keff at BOL, MOL, and EOL for the cold shutdown configuration with all shutdown rods inserted and drum absorbers facing the core from the 2D simulation.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
+
+    'keff 2D ARI Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for cold shutdown 2D keff at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'lifecycle'},
 
     'keff 3D (2D corrected) ARI': {
         'group': 'Debug / Intermediate Values', 'units': '',
-        'description': 'keff at each burnup step for the shutdown configuration with all control drums inserted (ARI), corrected from 2D to 3D and evaluated at Cold Shutdown Temperature for shutdown margin calculation.',
-        'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
+        'description': 'keff at BOL, MOL, and EOL for the cold shutdown configuration, corrected from 2D to 3D using the axial leakage approximation.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'keff 3D (2D corrected) ARI Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for cold shutdown axial-leakage-corrected keff at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
 
     'number of drums': {
         'group': 'Debug / Intermediate Values', 'units': '',
@@ -2079,12 +2432,42 @@ PARAMS_REGISTRY = {
     'keff 2D ARO': {
         'group': 'Debug / Intermediate Values', 'units': '',
         'description': 'keff at each burnup step for the operating configuration with all control drums withdrawn (ARO) from the 2D simulation, evaluated at Common Temperature.',
-        'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'summary'},
+
+    'keff 2D ARO Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for operating 2D keff at each depletion point.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'summary'},
 
     'keff 3D (2D corrected) ARO': {
         'group': 'Debug / Intermediate Values', 'units': '',
         'description': 'keff at each burnup step for the operating configuration with all control drums withdrawn (ARO), corrected from 2D to 3D and evaluated at Common Temperature.',
         'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
+
+    'keff 3D (2D corrected) ARO Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for axial-leakage-corrected operating keff at each depletion point. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'summary'},
+
+    'keff 2D ARO Lifecycle': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Operating 2D keff with all control drums withdrawn at the BOL, MOL, and exact interpolated EOL lifecycle points.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'keff 2D ARO Lifecycle Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for operating 2D keff at BOL, MOL, and EOL.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'keff 3D (2D corrected) ARO Lifecycle': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'Axial-leakage-corrected operating keff with all control drums withdrawn at BOL, MOL, and exact interpolated EOL.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
+
+    'keff 3D (2D corrected) ARO Lifecycle Uncertainty': {
+        'group': 'Debug / Intermediate Values', 'units': '',
+        'description': 'One standard deviation OpenMC statistical uncertainty for axial-leakage-corrected operating keff at BOL, MOL, and EOL. Axial leakage model uncertainty is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': 'lifecycle'},
 
     'Constant': {
         'group': 'Debug / Intermediate Values', 'units': '',
