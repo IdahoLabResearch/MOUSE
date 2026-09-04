@@ -16,6 +16,7 @@ from reactor_engineering_evaluation.fuel_calcs import fuel_calculations
 from reactor_engineering_evaluation.BOP import *
 from reactor_engineering_evaluation.vessels_calcs import *
 from reactor_engineering_evaluation.tools import *
+from reactor_engineering_evaluation.operation import reactor_operation
 from cost.cost_estimation import detailed_bottom_up_cost_estimate
 from cost.fleet_mode import (
     servicing_facility_allocation,
@@ -187,7 +188,7 @@ fuel_calculations(params)  # calculate the fuel mass and SWU
 #                                         Sec. 6: Primary Loop + Balance of Plant
 # ************************************************************************************************************************** 
 params.update({
-    'Primary Loop Purification': True,
+    'Primary Loop Purification': False,
     'Secondary HX Mass': 0,
     'Compressor Pressure Ratio': 4,
     'Compressor Isentropic Efficiency': 0.8,
@@ -263,14 +264,16 @@ calculate_shielding_masses(params)
 update_params({
     'Operation Mode': "Remotely Monitored",
     'Number of Operators': 2,
-    'Levelization Period': 60,  # years
-    'Refueling Period': 7,
+    'Levelization Period': 40,  # years
+    'Refueling Period': 30,
     'Emergency Shutdowns Per Year': 0.2,
     'Startup Duration after Refueling': 2,
     'Startup Duration after Emergency Shutdown': 14,
-    'Reactors Monitored Per Operator': 10,
+    'Reactors Monitored Per Operator': 9,
     'Security Staff Per Shift': 1
 })
+
+reactor_operation(params)
 
 # Based on https://digital.library.unt.edu/ark:/67531/metadc893980/m2/1/high_res_d/919556.pdf (tables 17 and 18):
 # Estimated helium mass per MWt is 3.3 kg/MWt.
@@ -279,7 +282,7 @@ params['Onsite Coolant Inventory'] = 3.3 * params['Power MWt']  # kg
 # so 1/10 of the initial inventory is replenished annually.
 # Without purification, helium needs to be replaced more frequently.
 params['Replacement Coolant Inventory'] = params['Onsite Coolant Inventory'] / 10
-params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 6
+params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purification'] else 4
 
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
@@ -404,9 +407,9 @@ params['Fleet Mode'] = True
 params['Production Rate'] = 100 #reactors per year
 params['Deployment Period'] = 10 # years
 params['Fleet'] = params['Deployment Period'] * params['Production Rate']
-params['Generating Sites Count'] = params['Fleet']  # i think that there was something here to account for capacity factor or something but ..
-#my concern here is that we are double counting since the capacity factor is already included in the electricity generation estimation
-
+params['Generating Sites Count'] = int(
+    np.ceil(params['Capacity Factor'] * params['Fleet'])
+)
 params['Average Distance From Serv to GenSite'] = 1000 #miles (statutory miles)
 params['Max Reactors Per Servicing Facility'] = 1000
 params['Servicing Facility OCC Learning Rate'] = 0.30
@@ -447,7 +450,7 @@ params['GenSite Downtime'] = 1/12 # years (one month)
 
 ## MANUFACTURING CAMPUS
 
-params['MFG Construction Duration'] = 120  # months; REVIEW NEEDED: provisional campus construction duration.
+params['MFG Construction Duration'] = 36  # months
 params['Manufacturing Campus Area'] = 56.1651 + 1.2066 * params['Production Rate'] ** 0.3919
 params['MFG Campus Land Area'] = params['Manufacturing Campus Area']
 params['MFG Emergency Generator Power'] = -10851.2764 + 10851.2773 * params['Production Rate'] ** 0.0001
@@ -487,7 +490,7 @@ params['MFG Motion Detector Count'] = 93.59999999999997 + 2.8444444444444628 * (
 
 ## SERVICING CAMPUS
 
-params['SER Construction Duration'] = 120 #months; carried over from the former central-facility assumption.
+params['SER Construction Duration'] = 36  # months
 params['Servicing Rate'] = params['Fleet'] / params['Cycle Length']  # reactors/year
 (
     params['Servicing Facility Count'],
