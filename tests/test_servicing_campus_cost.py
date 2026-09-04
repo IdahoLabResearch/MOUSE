@@ -4,8 +4,12 @@ import unittest
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
-from cost.cost_estimation import bottom_up_cost_estimate_servicing_campus
+from cost.cost_estimation import (
+    bottom_up_cost_estimate_servicing_campus,
+    create_fleet_total_cost_dictionary,
+)
 from cost.fleet_mode import (
     cumulative_unit_learning_multiplier,
     servicing_facility_allocation,
@@ -40,6 +44,40 @@ def servicing_params():
 
 
 class ServicingCampusCostTest(unittest.TestCase):
+    def test_parametric_output_exposes_additive_fleet_lcoe_components(self):
+        total = 9.75
+        accounts = [
+            10, 20, 30, 40, 60, 70, 80, 'OCC', 'OCC per reactor',
+            'TCI', 'TCI per reactor', 'Annual Cost During Deployment',
+            'Annual Cost per reactor During Deployment',
+            'Steady-State Annual Cost',
+            'Steady-State Annual Cost per reactor', 'LCOE',
+        ]
+        table = pd.DataFrame({
+            'Account': accounts,
+            'Total Fleet': [0.0] * (len(accounts) - 1) + [total],
+            'Total Fleet std': [0.0] * (len(accounts) - 1) + [0.40],
+            'Reactor Fleet': [0.0] * len(accounts),
+            'Reactor Fleet std': [0.0] * len(accounts),
+            'Manufacturing Campus': [0.0] * len(accounts),
+            'Manufacturing Campus std': [0.0] * len(accounts),
+            'Servicing Campus': [0.0] * len(accounts),
+            'Servicing Campus std': [0.0] * len(accounts),
+        })
+        table.loc[table['Account'] == 'LCOE', [
+            'Reactor Fleet', 'Reactor Fleet std',
+            'Manufacturing Campus', 'Manufacturing Campus std',
+            'Servicing Campus', 'Servicing Campus std',
+        ]] = [7.00, 0.30, 1.25, 0.15, 1.50, 0.20]
+        output = create_fleet_total_cost_dictionary(table)
+
+        component_sum = sum(output[name] for name in [
+            'Total Fleet Reactor LCOE Contribution',
+            'Total Fleet Manufacturing LCOE Contribution',
+            'Total Fleet Servicing LCOE Contribution',
+        ])
+        self.assertAlmostEqual(component_sum, output['Total Fleet LCOE'])
+
     @classmethod
     def setUpClass(cls):
         cls.params = servicing_params()

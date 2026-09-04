@@ -1619,7 +1619,7 @@ def estimate_fleet_mode_costs(cost_database_filename, params):
 
 
 def create_fleet_total_cost_dictionary(df):
-    """Extract total-fleet value/std columns for one parametric-study row."""
+    """Extract total-fleet values and LCOE components for a parametric row."""
     labels = {
         10: 'Capitalized Pre-Construction Costs',
         20: 'Capitalized Direct Costs',
@@ -1652,6 +1652,15 @@ def create_fleet_total_cost_dictionary(df):
         row = rows.iloc[0]
         tracked_costs[f'Total Fleet {label}'] = row['Total Fleet']
         tracked_costs[f'Total Fleet {label} std'] = row['Total Fleet std']
+
+    lcoe_row = df.loc[df['Account'] == 'LCOE'].iloc[0]
+    for column, label in {
+        'Reactor Fleet': 'Reactor LCOE Contribution',
+        'Manufacturing Campus': 'Manufacturing LCOE Contribution',
+        'Servicing Campus': 'Servicing LCOE Contribution',
+    }.items():
+        tracked_costs[f'Total Fleet {label}'] = lcoe_row[column]
+        tracked_costs[f'Total Fleet {label} std'] = lcoe_row[f'{column} std']
     return tracked_costs
 
 
