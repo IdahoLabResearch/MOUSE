@@ -17,6 +17,7 @@ import pandas
 
 # Dedicated particle counts for lifecycle temperature-coefficient snapshots.
 # Depletion and cold-shutdown calculations retain their normal particle count.
+BOL_TEMPERATURE_COEFFICIENT_PARTICLES = 30000
 TEMPERATURE_COEFFICIENT_PARTICLES = 4000
 EOL_TEMPERATURE_COEFFICIENT_PARTICLES = 15000
 
@@ -1159,7 +1160,9 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
         if params['Isothermal Temperature Coefficients']:
             base_seed = 104729 + 2000003 * case_number
             high_seed = 15485863 + 2000033 * case_number
-            if index in eol_indices:
+            if index == lifecycle['bol_index']:
+                case_particles = BOL_TEMPERATURE_COEFFICIENT_PARTICLES
+            elif index in eol_indices:
                 case_particles = EOL_TEMPERATURE_COEFFICIENT_PARTICLES
             else:
                 case_particles = TEMPERATURE_COEFFICIENT_PARTICLES
@@ -1608,8 +1611,10 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
             raise ValueError("'Temperature Perturbation' must be greater than zero.")
 
         print(
-            f"Using {TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
-            "for BOL/MOL temperature-coefficient snapshots and "
+            f"Using {BOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
+            "batch for the BOL temperature-coefficient snapshot, "
+            f"{TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch for "
+            "the MOL snapshot, and "
             f"{EOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
             "for both EOL bracketing snapshots. The operating depletion and "
             "cold-shutdown calculations retain their normal particle settings."
