@@ -17,6 +17,9 @@ import pandas
 
 # Dedicated particle counts for lifecycle temperature-coefficient snapshots.
 # Depletion and cold-shutdown calculations retain their normal particle count.
+# LTMR's limiting BOL coefficient receives additional statistics without
+# increasing the cost of the corresponding GCMR calculation.
+LTMR_BOL_TEMPERATURE_COEFFICIENT_PARTICLES = 250000
 BOL_TEMPERATURE_COEFFICIENT_PARTICLES = 30000
 TEMPERATURE_COEFFICIENT_PARTICLES = 4000
 EOL_TEMPERATURE_COEFFICIENT_PARTICLES = 15000
@@ -1161,7 +1164,10 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
             base_seed = 104729 + 2000003 * case_number
             high_seed = 15485863 + 2000033 * case_number
             if index == lifecycle['bol_index']:
-                case_particles = BOL_TEMPERATURE_COEFFICIENT_PARTICLES
+                if str(params['reactor type']).upper() == 'LTMR':
+                    case_particles = LTMR_BOL_TEMPERATURE_COEFFICIENT_PARTICLES
+                else:
+                    case_particles = BOL_TEMPERATURE_COEFFICIENT_PARTICLES
             elif index in eol_indices:
                 case_particles = EOL_TEMPERATURE_COEFFICIENT_PARTICLES
             else:
@@ -1610,8 +1616,13 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
         if params['Temperature Perturbation'] <= 0.0:
             raise ValueError("'Temperature Perturbation' must be greater than zero.")
 
+        bol_temperature_particles = (
+            LTMR_BOL_TEMPERATURE_COEFFICIENT_PARTICLES
+            if str(params['reactor type']).upper() == 'LTMR'
+            else BOL_TEMPERATURE_COEFFICIENT_PARTICLES
+        )
         print(
-            f"Using {BOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
+            f"Using {bol_temperature_particles} particles per "
             "batch for the BOL temperature-coefficient snapshot, "
             f"{TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch for "
             "the MOL snapshot, and "
