@@ -233,11 +233,11 @@ params['Annual Coolant Supply Frequency'] = 1 if params['Primary Loop Purificati
 
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
-params['A75: Vessel Replacement Period (cycles)']        = np.floor(16/total_refueling_period_yr)
-params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(16/total_refueling_period_yr)
+params['A75: Outer Vessel Structure Replacement Period (years)'] = 20
+params['A75: Inner Vessel Structure Replacement Period (cycles)'] = np.floor(16/total_refueling_period_yr)
 params['A75: Reflector Replacement Period (cycles)']     = 1
-params['A75: Drum Replacement Period (cycles)']          = 1
-params['A75: Integrated HX Replacement Period (cycles)'] = 1
+params['A75: Reactor Control Devices Replacement Period (cycles)'] = 1
+params['A75: Moderator Booster Replacement Period (cycles)'] = 1
 params['Maintenance to Direct Cost Ratio']                = 0.015
 params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
 
