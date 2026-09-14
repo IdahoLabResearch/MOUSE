@@ -1,0 +1,52 @@
+Variable,Value,Units,Description
+Overall System,,,
+Thermal power,83,kWth, —
+Electric Power,20,kWe,
+Core outer radius,5.5,inches, —
+Reflector outer radius,16.5,inches, —
+Fuel,,,
+Fuel mass,145.3,kg,UZrH
+U Weight fraction,30,wt%,U/UZrH
+U enrichment,19.75,wt%,High-assay low-enriched uranium (HALEU)
+Pins,36,#, —
+Reflector,,,
+Outer reflector material,BeO, —,99% theoretical density
+Elements,124,#,Quarter plates
+Reflector plate thickness,1,inches, —
+Reflector plate volume,818.4,cm3/plate, —
+Mass of BeO reflector,318,Kg,
+Insert volume,570,cm3/plate, —
+Mass of Be-metal reflector,0.019,MT, —
+Control Elements,,,
+Control drums,4,#, —
+Shutdown rods,1,#, —
+Control drum elements,124,#,Discs
+Drum disc thickness,1,inches, —
+Drum reflector volume,880.8,cm3/plate,BeO 99%
+Mass of drum reflector,309,Kg, —
+Drum poison volume,49.2,cm3/plate,B4C
+Mass of drum poison,14,Kg, —
+Mass of rod poison,14,Kg,B4C
+Instruments and Controls,,,
+Control cabinet,5,, —
+Instrument cabinet,2,, —
+Nuclear input/output (IO),9,, —
+Non-nuclear IO,213,, —
+Stirling engine IO,48, —,These should be excluded if there no stirling engine?
+TOTAL,277,,
+Shielding in Vessel,,,
+Stainless Steel cans,54.2,Kg, Stainless Steel cans of the boron carbide shielding material (SS316H)
+Gamma shield material,56.3,Kg,Gamma shield material inside the guard vessel (of Tungsten)
+Neutron shield material in the guard vessel ,39.7,Kg, made of natural B4C powder and is located above the core (a donut around the core barrel)—
+Boron Carbine shielding ,95.3,Kg, made of natural B4C (called base shield) below the core
+Radial (lead),2571.9,Kg, lead
+Radial (WEP),925.3,Kg,made of Water Extended Polyster (WEP) 
+Shielding in Pit,,,
+Mass of the pit neutron shielding,8.3,MT,Approximated 6-in.-thick covering whole pit and made of Water-extruded poly (WEP)
+Heat Transfer,,,
+Mass of coolant  ,156,Kg,—
+Number of loops,4,#,— 
+Mass of PCSs,0.86,MT,SS316H
+Subassembly Structure Masses,,,
+Reactor support frame,1.11,MT,—
+Guard vessel,1.587,MT,—

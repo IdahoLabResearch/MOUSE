@@ -1,0 +1,79 @@
+Account ID,Account Title,TOTAL COST (2024 USD)
+,,
+10,Capitalized Pre-Construction Costs,5210451
+15,Plant Studies,5210451
+20,Capitalized Direct Costs,30295715.422
+21,Structures and Improvements,2799006.731999998
+211,Site Preparation/Yard Work,
+212,Reactor Island Civil Structures,2573469.871999998
+213,Main Function Buildings,
+214,Buildings to Support Main Function ,225536.86
+214.7,Emergency and Start-up Power Systems,225536.86
+217,Miscellaneous Other Structures,
+22,Reactor System,17586712.57
+221,Reactor Components,8937296.6
+221.1,Reactor vessel and accessories,2004852
+221.11,Reactor support,762382.4
+221.12,Outer vessel structure,1201688.6
+221.13,Inner vessel structure,40781
+221.2,Reactor control devices,2114223
+221.21,Reactivity control system,2114223
+221.211,Reactivity Control System Fabrication,1391560
+221.212,Installation,322663
+221.213,Control Drums Materials (Absorber),400000
+221.214,Control Drums Materials (Reflector),
+221.3,Non-fuel core internals,4818221.6
+221.31,Reflector,4170231
+221.311,Reflector (Materials: BeO),3200000
+221.312,Reflector (Materials: Be Metal),850000
+221.313,Reflector (installation,120231
+221.32,Shield,647990.6
+221.33,Moderator,0
+222,Main Heat Transport System,5908950.6
+222.1,Fluid circulation drive system,0
+222.2,Reactor Heat Hransfer Piping System,4890230.6
+222.21,Reactor Heat Hransfer Piping System (Mat),1520786
+222.22,Reactor Heat Hransfer Piping System (Fabrication),3341486
+222.23,Reactor Heat Hransfer Piping System (Installation),27958.6
+222.3,Heat Exchangers,0
+222.4,Pressurizer System,0
+222.5,Initial Heat Transfer Fluid Inventory,1018720
+224,Radioactive Byproduct Processing Systems,
+226,Other Reactor Plant Equipment,456297
+227,Reactor Instrumentation and Control (I&C),2253208.37
+228,Reactor Plant Miscellaneous Items,30960
+23,Energy Conversion System,0
+232,Energy Applications,0
+232.1,Electricity Generation Systems,0
+24,Electrical Equipment,73415.62000000001
+244,Protective Systems Equipment,1627.02
+245,Electrical Raceway Systems,0
+246,Power and Control Cables and Wiring,71788.6
+25,Initial Fuel Inventory,9836580.5
+254 ,First Core Fuel Assembly Fabrication ,9836580.5
+26,Miscellaneous Equipment,
+30,Capitalized Indirect Services Cost,6442742.523737831
+31,Factory & Field Indirect Costs ,1333020.8
+317,Field Shops,1333020.8
+33,Startup Costs,2407166.4
+331,Commissioning and Trial Test Runs,2407166.4
+331.3,Initial Fuel Loading Operations,215000
+331.5,Test Runs,2192166.4
+34,Shipping and Transportation Costs,1665282.8
+341,Fuel Shipping and Transportation ,1635355.8
+345,Other Shipping and Transportation Costs,29927
+35,Engineering Services,620313.5877378316
+351,Off-Site,257261.4
+352,On-Site,363052.1877378316
+36,PM/CM Services,416958.9359999997
+361,Off-Site,
+362,On-Site,416958.9359999997
+40,Capitalized Training Costs,4169765
+41,Staff Recruitment and Training,4169765
+50,Capitalized Supplementary Costs,16408781.6
+54,Decommissioning,16408781.6
+60,Capitalized Financial Costs ,6160606
+61,Escalation,6160606
+70,Annualized O&M Cost ,2456659.2
+71,O&M Staff,2456659.2
+Non-Recurrung Costs,Non-Recurrung Costs,33779050.13826217

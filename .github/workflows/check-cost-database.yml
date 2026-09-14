@@ -1,0 +1,37 @@
+name: Check cost database CSV mirrors
+
+on:
+  pull_request:
+    paths:
+      - "cost/Cost_Database.xlsx"
+      - "cost/Cost_Database*.csv"
+      - "cost/cost_database_csv.py"
+  workflow_dispatch:
+
+jobs:
+  check-cost-database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install CSV synchronization dependencies
+        run: python -m pip install pandas openpyxl
+
+      - name: Regenerate cost database CSV mirrors
+        run: python -m cost.cost_database_csv
+
+      - name: Verify committed mirrors are current
+        shell: bash
+        run: |
+          if [[ -n "$(git status --porcelain --untracked-files=all -- 'cost/Cost_Database*.csv')" ]]; then
+            echo "Cost database CSV mirrors do not match cost/Cost_Database.xlsx."
+            echo "Run 'python -m cost.cost_database_csv' and commit the resulting CSV changes."
+            git status --short -- 'cost/Cost_Database*.csv'
+            git diff -- 'cost/Cost_Database*.csv'
+            exit 1
+          fi

@@ -1,0 +1,19 @@
+Parameter,Value,Note,Reference,Notes
+indirect to direct field-related cost,0.06538993205254329,,,
+FTEs Per Onsite Operator (24/7),5,,,
+FTEs Per Offsite Operator (24/7),5,,,
+FTEs Per Security Staff (24/7),5,,,
+Hours Per FTE,1800,,,
+Work Hours Per Shift,10,,,
+Maintenance to Direct Cost Ratio,0.03,,,
+Onsite Learning,0.08,FOAK to NOAK Learning Rates,"Assessment of Factory Fabrication Considerations
+for Nuclear Microreactors
+ 10.1080/00295450.2023.2206779",Calculated based on Refernce Paper + Gyutae's work. Refer to TEM Slides for rationale and methodology
+No Learning,0,,,
+Licensing Learning,0,,,
+Factory Primary Structure,0.1844316982010974,,,
+Factory Drums,0.24138,,,
+Factory Other,0.2296284802211553,,,
+Factory Be,0.4150537767859926,,,
+Factory BeO,0.3991490581140172,,,
+Non-nuclear off-the-shelf,0.05,,"Park, et al., Bottom-up levelized cost estimation of low-enriched and low-pressure nuclear batteries. Nuclear Engineering and Design. 2025.",For off-the-shelf commercial components that are not produced in the FB Factory

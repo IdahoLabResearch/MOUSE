@@ -1,0 +1,375 @@
+Account,Level,Account Name,Account Title,Standard Cost Equation?,Count Scaling Variable,Count per Variable,Optional Variable,Optional Value,Fixed Cost ($),Unit Cost,Unit Cost (units),Scaling Variable,Scaling Variable Ref Value,Units,Exponent,Dollar Year,Type,Source,Ref,Link,Notes,FOAK to NOAK Multiplier Type,Fixed Cost Low End,Fixed Cost High End,Fixed Cost Distribution,Unit Cost Low End,Unit Cost High End,Unit Cost Distribution,Exponent std,Exponent Max,Exponent Min,Exponent Distribution
+10,0,Capitalized Pre-Construction Costs,Capitalized Pre-Construction Costs,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+11,1,Land Cost,      Land Cost,standard,Constant,1,,,,3800,$/acres,Land Area,,acres,,2022,General,The average cost per acre for rural land in 2022 from the US Department of Agriculture,"Abou-Jaoude, A., Lohse, C. S., Larsen, L. M., Guaita, N., Trivedi, I., Joseck, F. C., ... & Stein, A. (2024). Meta-analysis of advanced nuclear reactor cost estimations (No. INL/RPT-24-77048-Rev001). Idaho National Laboratory (INL), Idaho Falls, ID (United States).",https://inldigitallibrary.inl.gov/sites/sti/sti/Sort_107010.pdf,,No Learning,0,0,Lognormal,3420,4940,Lognormal,0.1,1,0,Truncated Normal
+12,1,Site Permits,      Site Permits,standard,Constant,1,,,,10030,$/MWe,Power MWe,,MWe,,2022,Labor,Data from SMR MHTGRs,,,,No Learning,0,0,Lognormal,9027,13039,Lognormal,0.1,1,0,Truncated Normal
+13,1,Plant Licensing,      Plant Licensing,standard,Constant,1,,,57500000,,,,,,,2009,Labor,NGNP project,"Gandrik, A., B. Wallace, L. Demick, S. Melancon and M. Patterson (2011). ""Assessment of high temperature gas-cooled reactor (HTGR) capital and operating costs."" Idaho National Laboratory, TEV-1196, Idaho Falls, ID.",https://art.inl.gov/NGNP/INL%20Documents/Year%202012/Assessment%20of%20High%20Temperature%20Gas-Cooled%20Reactor%20-%20HTGR%20-%20Capital%20and%20Operating%20Costs.pdf,,No Learning,45000000,70000000,Uniform,0,0,Lognormal,0.1,1,0,Truncated Normal
+14,1,Plant Permits,      Plant Permits,standard,Constant,1,,,3000000,,,,,,,2009,Labor,NGNP project,,,,No Learning,2700000,4500000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+15,1,Plant Studies,      Plant Studies,standard,Constant,1,,,5210451,,,,,,,2024,Labor,MARVEL Project (Labor-adjusted Cost),"Hanna, B. N., Gonzaga de Oliveira, R. G., Mohammad Al Dawood, K. A., Patterson, M. D., Abou Jaoude, A., & Garcia, S. (2024). Technoeconomic Evaluation of Microreactor Using Detailed Bottom-up Estimate (No. INL/RPT-24-80433-Rev000). Idaho National Laboratory (INL), Idaho Falls, ID (United States).",https://inldigitallibrary.inl.gov/sites/sti/sti/Sort_129862.pdf,MARVEL's data were updated,No Learning,4689405.9,7815676.5,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+20,0,Capitalized Direct Costs,Capitalized Direct Costs,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+21,1,Structures and Improvements,      Structures and Improvements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+211,2,Site Preparation/ Yard Work,            Site Preparation/ Yard Work,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+211.1,3,Cleaning and Grubbing,                  Cleaning and Grubbing,standard,Constant,1,,,,5862.879400000001,$/acres,Land Area,,acres,,2024,Lab and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have been applied to adjust the costs for nuclear-site-related work","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,5276.591460000001,7621.743220000001,Lognormal,0.1,1,0,Truncated Normal
+211.2,3,Stripping Topsoil,                  Stripping Topsoil,standard,Constant,1,,,,3411.716,$/acres,Land Area,,acres,,2024,Lab and Equip,,,,,No Learning,0,0,Lognormal,3070.5443999999998,4435.2308,Lognormal,0.1,1,0,Truncated Normal
+211.3,3,Excavation,                  Excavation,standard,Constant,1,,,,32.004,$/m^3,Excavation Volume,,m^3,,2024,Lab and Equip,,,,,No Learning,0,0,Lognormal,28.8036,41.605199999999996,Lognormal,0.1,1,0,Truncated Normal
+211.4,3,Roadwork,                  Roadwork,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+211.9,3,Security Fencing,                  Security Fencing,standard,Constant,1,,,,246.06299212598424,$/m,Site Perimeter,,,,2009,Lab and Equip,Ref Table 2-8,Kessler. Cost Estimate for an Away-From-Reactor Generic Interim Storage Facility (GISF) for Spent Nuclear Fuel. EPRI. 2009.,https://www.epri.com/research/products/1018722,,No Learning,0,0,Lognormal,221.4566929133858,319.8818897637795,Lognormal,0.1,1,0,Truncated Normal
+213,2,Manufacturing Facility,            Manufacturing Facility,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+213.1,3,Fabrication Building,                  Fabrication Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+213.11,4,Fabrication Building Roof,                        Fabrication Building Roof,standard,Constant,1,,,,1200,$/m^3,Fabrication Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+213.12,4,Fabrication Building Basement,                        Fabrication Building Basement,standard,Constant,1,,,,943.9,$/m^3,Fabrication Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+213.13,4,Fabrication Building Walls,                        Fabrication Building Walls,standard,Constant,1,,,,721.21,$/m^3,Fabrication Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+213.19,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Fabrication Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+213.2,3,Feed and Product Warehouse Building,                  Feed and Product Warehouse Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+213.21,4,Feed and Product Warehouse Building Roof,                        Feed and Product Warehouse Building Roof,standard,Constant,1,,,,1200,$/m^3,Feed and Product Warehouse Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+213.22,4,Feed and Product Warehouse Building Basement,                        Feed and Product Warehouse Building Basement,standard,Constant,1,,,,943.9,$/m^3,Feed and Product Warehouse Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+213.23,4,Feed and Product Warehouse Building Walls,                        Feed and Product Warehouse Building Walls,standard,Constant,1,,,,721.21,$/m^3,Feed and Product Warehouse Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+213.29,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Feed and Product Warehouse Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+213.6,3,Manufacturing Facility Integrated Control Building,                  Manufacturing Facility Integrated Control Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+213.61,4,Manufacturing Facility Integrated Control Building Roof,                        Manufacturing Facility Integrated Control Building Roof,standard,Constant,1,,,,1200,$/m^3,Manufacturing Facility Integrated Control Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+213.62,4,Manufacturing Facility Integrated Control Building Basement,                        Manufacturing Facility Integrated Control Building Basement,standard,Constant,1,,,,943.9,$/m^3,Manufacturing Facility Integrated Control Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+213.63,4,Manufacturing Facility Integrated Control Building Walls,                        Manufacturing Facility Integrated Control Building Walls,standard,Constant,1,,,,721.21,$/m^3,Manufacturing Facility Integrated Control Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+213.69,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Manufacturing Facility Integrated Control Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+213.7,3,Manufacturing Facility Admin Building,                  Manufacturing Facility Admin Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+213.71,4,Manufacturing Facility Admin Building Roof,                        Manufacturing Facility Admin Building Roof,standard,Constant,1,,,,1200,$/m^3,Manufacturing Facility Admin Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+213.72,4,Manufacturing Facility Admin Building Basement,                        Manufacturing Facility Admin Building Basement,standard,Constant,1,,,,943.9,$/m^3,Manufacturing Facility Admin Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+213.73,4,Manufacturing Facility Admin Building Walls,                        Manufacturing Facility Admin Building Walls,standard,Constant,1,,,,721.21,$/m^3,Manufacturing Facility Admin Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+213.79,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Manufacturing Facility Admin Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+213.8,3,Manufacturing Facility Security Building,                  Manufacturing Facility Security Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+213.81,4,Manufacturing Facility Security Building Roof,                        Manufacturing Facility Security Building Roof,standard,Constant,1,,,,1200,$/m^3,Manufacturing Facility Security Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+213.82,4,Manufacturing Facility Security Building Basement,                        Manufacturing Facility Security Building Basement,standard,Constant,1,,,,943.9,$/m^3,Manufacturing Facility Security Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+213.83,4,Manufacturing Facility Security Building Walls,                        Manufacturing Facility Security Building Walls,standard,Constant,1,,,,721.21,$/m^3,Manufacturing Facility Security Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+213.89,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Manufacturing Facility Security Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+213.9,3,Security Fencing,                  Security Fencing,standard,Constant,1,,,,246.06299212598424,$/m,Factory Perimeter,,,,2009,Lab and Equip,Ref Table 2-8,Kessler. Cost Estimate for an Away-From-Reactor Generic Interim Storage Facility (GISF) for Spent Nuclear Fuel. EPRI. 2009.,https://www.epri.com/research/products/1018722,,No Learning,0,0,Lognormal,221.4566929133858,319.8818897637795,Lognormal,0.1,1,0,Truncated Normal
+214,2,Servicing Facility,            Servicing Facility,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+214.1,3,Servicing Building,                  Servicing Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+213.11,4,Servicing Building Roof,                        Servicing Building Roof,standard,Constant,1,,,,1836,$/m^3,Servicing Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+213.12,4,Servicing Building Basement,                        Servicing Building Basement,standard,Constant,1,,,,1444.167,$/m^3,Servicing Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+213.13,4,Servicing Building Walls,                        Servicing Building Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Servicing Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+214.14,4,Servicing Hot Cell,                        Servicing Hot Cell,standard,Servicing Hot Cell Count,,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+214.141,5,Hot Cell Airlock,                              Hot Cell Airlock,standard,Servicing Hot Cell Count,4,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+214.19,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Servicing Building Volume,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+214.2,3,Helium Purification and Storage Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+214.21,4,Helium Purification and Storage Building Roof,                        Helium Purification and Storage Building Roof,standard,Constant,1,,,,1836,$/m^3,Helium Purification and Storage Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+214.22,4,Helium Purification and Storage Building Basement,                        Helium Purification and Storage Building Basement,standard,Constant,1,,,,1444.167,$/m^3,Helium Purification and Storage Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+214.23,4,Helium Purification and Storage Building Walls,                        Helium Purification and Storage Building Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Helium Purification and Storage Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+214.29,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Helium Purification and Storage Building Volume,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+214.6,3,Servicing Facility Integrated Control Room,                  Servicing Facility Integrated Control Room,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+214.61,4,Servicing Facility Integrated Control Room Roof,                        Servicing Facility Integrated Control Room Roof,standard,Constant,1,,,,1836,$/m^3,Servicing Facility Integrated Control Room Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+214.62,4,Servicing Facility Integrated Control Room Basement,                        Servicing Facility Integrated Control Room Basement,standard,Constant,1,,,,1444.167,$/m^3,Servicing Facility Integrated Control Room Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+214.63,4,Servicing Facility Integrated Control Room Walls,                        Servicing Facility Integrated Control Room Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Servicing Facility Integrated Control Room Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+214.69,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Servicing Facility Integrated Control Room Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+214.7,3,Servicing Facility Admin Building,                  Servicing Facility Admin Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+214.71,4,Servicing Facility Admin Building Roof,                        Servicing Facility Admin Building Roof,standard,Constant,1,,,,1200,$/m^3,Servicing Facility Admin Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+214.72,4,Servicing Facility Admin Building Basement,                        Servicing Facility Admin Building Basement,standard,Constant,1,,,,943.9,$/m^3,Servicing Facility Admin Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+214.73,4,Servicing Facility Admin Building Walls,                        Servicing Facility Admin Building Walls,standard,Constant,1,,,,721.21,$/m^3,Servicing Facility Admin Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+214.79,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Servicing Facility Admin Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+214.8,3,Servicing Facility Security Building,                  Servicing Facility Security Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+214.81,4,Servicing Facility Security Building Roof,                        Servicing Facility Security Building Roof,standard,Constant,1,,,,1200,$/m^3,Servicing Facility Security Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+214.82,4,Servicing Facility Security Building Basement,                        Servicing Facility Security Building Basement,standard,Constant,1,,,,943.9,$/m^3,Servicing Facility Security Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+214.83,4,Servicing Facility Security Building Walls,                        Servicing Facility Security Building Walls,standard,Constant,1,,,,721.21,$/m^3,Servicing Facility Security Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+214.89,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Servicing Facility Security Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+214.9,3,Security Fencing,                  Security Fencing,standard,Constant,1,,,,246.06299212598424,$/m,Servicing Facility Perimeter,,,,2009,Lab and Equip,Ref Table 2-8,Kessler. Cost Estimate for an Away-From-Reactor Generic Interim Storage Facility (GISF) for Spent Nuclear Fuel. EPRI. 2009.,https://www.epri.com/research/products/1018722,,No Learning,0,0,Lognormal,221.4566929133858,319.8818897637795,Lognormal,0.1,1,0,Truncated Normal
+215,2,New Reactor Fuel and Testing Facility,            New Reactor Fuel and Testing Facility,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+215.1,3,Fresh Fuel Storage and Inspection Building,                  Fresh Fuel Storage and Inspection Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+215.11,4,Fresh Fuel Storage and Inspection Building Roof,                        Fresh Fuel Storage and Inspection Building Roof,standard,Constant,1,,,,1836,$/m^3,Fresh Fuel Storage and Inspection Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have been applied to adjust the costs for nuclear-site-related work","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+215.12,4,Fresh Fuel Storage and Inspection Building Basement,                        Fresh Fuel Storage and Inspection Building Basement,standard,Constant,1,,,,1444.167,$/m^3,Fresh Fuel Storage and Inspection Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+215.13,4,Fresh Fuel Storage and Inspection Building Walls,                        Fresh Fuel Storage and Inspection Building Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Fresh Fuel Storage and Inspection Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+215.19,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Fresh Fuel Storage and Inspection Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.2,3,Reactor Fueling Building,                  Reactor Fueling Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+215.21,4,Reactor Fueling Building Roof,                        Reactor Fueling Building Roof,standard,Constant,1,,,,1836,$/m^3,Reactor Fueling Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have been applied to adjust the costs for nuclear-site-related work","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+215.22,4,Reactor Fueling Building Basement,                        Reactor Fueling Building Basement,standard,Constant,1,,,,1444.167,$/m^3,Reactor Fueling Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+215.23,4,Reactor Fueling Building Walls,                        Reactor Fueling Building Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Reactor Fueling Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+215.24,4,Reactor Fueling Hot Cell,                        Reactor Fueling Hot Cell,standard,New Reactor Fueling Line Count,,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.241,5,Hot Cell Airlock,                              Hot Cell Airlock,standard,Servicing Hot Cell Count,4,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.29,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Reactor Fueling Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.3,3,Reactor Testing Building,                  Reactor Testing Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+215.31,4,Reactor Testing Building Roof,                        Reactor Testing Building Roof,standard,Constant,1,,,,1836,$/m^3,Reactor Testing Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have been applied to adjust the costs for nuclear-site-related work","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+215.32,4,Reactor Testing Building Basement,                        Reactor Testing Building Basement,standard,Constant,1,,,,1444.167,$/m^3,Reactor Testing Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+215.33,4,Reactor Testing Building Walls,                        Reactor Testing Building Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Reactor Testing Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+215.34,4,Reactor Testing Hot Cell,                        Reactor Testing Hot Cell,standard,New Reactor Testing Line Count,,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.341,5,Hot Cell Airlock,                              Hot Cell Airlock,standard,New Reactor Fueling Line Count,4,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.39,4,HVAC,                        HVAC,standard,Constant,1,,,,,,Reactor Testing Building Volume,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.7,3,New Reactor Fuel and Testing Facility Admin Building,                  New Reactor Fuel and Testing Facility Admin Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+215.71,4,New Reactor Fuel and Testing Facility Admin Building Roof,                        New Reactor Fuel and Testing Facility Admin Building Roof,standard,Constant,1,,,,1200,$/m^3,New Reactor Fuel and Testing Facility Admin Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+215.72,4,New Reactor Fuel and Testing Facility Admin Building Basement,                        New Reactor Fuel and Testing Facility Admin Building Basement,standard,Constant,1,,,,943.9,$/m^3,New Reactor Fuel and Testing Facility Admin Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+215.73,4,New Reactor Fuel and Testing Facility Admin Building Walls,                        New Reactor Fuel and Testing Facility Admin Building Walls,standard,Constant,1,,,,721.21,$/m^3,New Reactor Fuel and Testing Facility Admin Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+215.79,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,New Reactor Fuel and Testing Facility Admin Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.8,3,New Reactor Fuel and Testing Facility Security Building,                  New Reactor Fuel and Testing Facility Security Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+215.81,4,New Reactor Fuel and Testing Facility Security Building Roof,                        New Reactor Fuel and Testing Facility Security Building Roof,standard,Constant,1,,,,1200,$/m^3,New Reactor Fuel and Testing Facility Security Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+215.82,4,New Reactor Fuel and Testing Facility Security Building Basement,                        New Reactor Fuel and Testing Facility Security Building Basement,standard,Constant,1,,,,943.9,$/m^3,New Reactor Fuel and Testing Facility Security Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+215.83,4,New Reactor Fuel and Testing Facility Security Building Walls,                        New Reactor Fuel and Testing Facility Security Building Walls,standard,Constant,1,,,,721.21,$/m^3,New Reactor Fuel and Testing Facility Security Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+215.89,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,New Reactor Fuel and Testing Facility Security Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+215.9,3,Security Fencing,                  Security Fencing,standard,Constant,1,,,,246.06299212598424,$/m,New Reactor Facility Perimeter,,,,2009,Lab and Equip,Ref Table 2-8,Kessler. Cost Estimate for an Away-From-Reactor Generic Interim Storage Facility (GISF) for Spent Nuclear Fuel. EPRI. 2009.,https://www.epri.com/research/products/1018722,,No Learning,0,0,Lognormal,221.4566929133858,319.8818897637795,Lognormal,0.1,1,0,Truncated Normal
+216,2,Radioactive Waste Management Facility,            Radioactive Waste Management Facility,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+216.1,3,Radioactive Waste Processing Building,                  Radioactive Waste Processing Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+216.11,4,Radioactive Waste Processing Building Roof,                        Radioactive Waste Processing Building Roof,standard,Constant,1,,,,1836,$/m^3,Radioactive Waste Processing Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+216.12,4,Radioactive Waste Processing Building Basement,                        Radioactive Waste Processing Building Basement,standard,Constant,1,,,,1444.167,$/m^3,Radioactive Waste Processing Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+216.13,4,Radioactive Waste Processing Building Walls,                        Radioactive Waste Processing Building Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Radioactive Waste Processing Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+216.14,4,Radioactive Waste Processing Hot Cell,                        Radioactive Waste Processing Hot Cell,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+216.141,5,Hot Cell Airlock,                              Hot Cell Airlock,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+216.29,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Radioactive Waste Processing Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+216.2,3,Radioactive Waste Storage Building,                  Radioactive Waste Storage Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+216.21,4,Radioactive Waste Storage Building Roof,                        Radioactive Waste Storage Building Roof,standard,Constant,1,,,,1836,$/m^3,Radioactive Waste Storage Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have been applied to adjust the costs for nuclear-site-related work","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+216.22,4,Radioactive Waste Storage Building Basement,                        Radioactive Waste Storage Building Basement,standard,Constant,1,,,,1444.167,$/m^3,Radioactive Waste Storage Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+216.23,4,Radioactive Waste Storage Building Walls,                        Radioactive Waste Storage Building Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Radioactive Waste Storage Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+216.29,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Radioactive Waste Storage Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+216.3,3,Radioactive Waste Management Facility Integrated Control Room,                  Radioactive Waste Management Facility Integrated Control Room,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+216.31,4,Radioactive Waste Management Facility Integrated Control Room Roof,                        Radioactive Waste Management Facility Integrated Control Room Roof,standard,Constant,1,,,,1836,$/m^3,Radioactive Waste Management Facility Integrated Control Room Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1652.4,2386.8,Lognormal,0.1,1,0,Truncated Normal
+216.32,4,Radioactive Waste Management Facility Integrated Control Room Basement,                        Radioactive Waste Management Facility Integrated Control Room Basement,standard,Constant,1,,,,1444.167,$/m^3,Radioactive Waste Management Facility Integrated Control Room Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,1299.7503,1877.4171,Lognormal,0.1,1,0,Truncated Normal
+216.33,4,Radioactive Waste Management Facility Integrated Control Room Walls,                        Radioactive Waste Management Facility Integrated Control Room Walls,standard,Constant,1,,,,1103.4513000000002,$/m^3,Radioactive Waste Management Facility Integrated Control Room Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,993.1061700000001,1434.4866900000002,Lognormal,0.1,1,0,Truncated Normal
+216.39,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Radioactive Waste Management Facility Integrated Control Room Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+216.7,3,Radioactive Waste Management Facility Admin Building,                  Radioactive Waste Management Facility Admin Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+216.71,4,Radioactive Waste Management Facility Admin Building Roof,                        Radioactive Waste Management Facility Admin Building Roof,standard,Constant,1,,,,1200,$/m^3,Radioactive Waste Management Facility Admin Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+216.72,4,Radioactive Waste Management Facility Admin Building Basement,                        Radioactive Waste Management Facility Admin Building Basement,standard,Constant,1,,,,943.9,$/m^3,Radioactive Waste Management Facility Admin Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+216.73,4,Radioactive Waste Management Facility Admin Building Walls,                        Radioactive Waste Management Facility Admin Building Walls,standard,Constant,1,,,,721.21,$/m^3,Radioactive Waste Management Facility Admin Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+216.79,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Radioactive Waste Management Facility Admin Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+216.8,3,Radioactive Waste Management Facility Security Building,                  Radioactive Waste Management Facility Security Building,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+216.81,4,Radioactive Waste Management Facility Security Building Roof,                        Radioactive Waste Management Facility Security Building Roof,standard,Constant,1,,,,1200,$/m^3,Radioactive Waste Management Facility Security Building Roof Volume,,m^3,,2024,Lab and Mat and Equip,"RSMeans software: a tool that primarily provides costs for non-nuclear work
+Nuclear Multiplier have not been applied ","GORDIAN. (2024). ""RSMeans data. 
+&
+Delene, J. G. and I. Hudson, C. R. (1993). Cost estimate guidelines for advanced nuclear power technologies. United States, Oak Ridge National Lab. (ORNL), Oak Ridge, TN (United States): Medium: ED; Size: 159 p.","https://www.rsmeans.com/
+&
+https://www.osti.gov/biblio/10176857",,No Learning,0,0,Lognormal,1080,1560,Lognormal,0.1,1,0,Truncated Normal
+216.82,4,Radioactive Waste Management Facility Security Building Basement,                        Radioactive Waste Management Facility Security Building Basement,standard,Constant,1,,,,943.9,$/m^3,Radioactive Waste Management Facility Security Building Basement Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,849.51,1227.07,Lognormal,0.1,1,0,Truncated Normal
+216.83,4,Radioactive Waste Management Facility Security Building Walls,                        Radioactive Waste Management Facility Security Building Walls,standard,Constant,1,,,,721.21,$/m^3,Radioactive Waste Management Facility Security Building Walls Volume,,m^3,,2024,Lab and Mat and Equip,,,,,No Learning,0,0,Lognormal,649.089,937.5730000000001,Lognormal,0.1,1,0,Truncated Normal
+216.89,4,HVAC,                        HVAC,standard,Constant,1,,,,,$/m^3,Radioactive Waste Management Facility Security Building Volume,,m^3,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+216.9,3,Security Fencing,                  Security Fencing,standard,Constant,1,,,,246.06299212598424,$/m,Radioactive Waste Management Facility Perimeter,,,,2009,Lab and Equip,Ref Table 2-8,Kessler. Cost Estimate for an Away-From-Reactor Generic Interim Storage Facility (GISF) for Spent Nuclear Fuel. EPRI. 2009.,https://www.epri.com/research/products/1018722,,No Learning,0,0,Lognormal,221.4566929133858,319.8818897637795,Lognormal,0.1,1,0,Truncated Normal
+22,1,Manufacturing Facility Equipment,      Manufacturing Facility Equipment,standard,New Reactor Production Rate,1,,,,74748072.8175665,Rx/yr,New Reactor Production Rate,1,Rx/yr,-0.9787,2024,Lab and Mat and Equip,Sai's Deliverable Spreadsheet,,,,,0,0,Lognormal,59798458.254053205,149496145.635133,Lognormal,0.1,0,-1,Truncated Normal
+23,1,Servicing Facility Equipment,      Servicing Facility Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+231,2,Used Reactor Servicing Equipment,            Used Reactor Servicing Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+231.1,3,Fuel/Internal Handling Robot,                  Fuel/Internal Handling Robot,standard,Defueling/Refueling Line Count,12,,,232000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,ABB Robotics Estimate,No Learning,116000,348000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+231.1,3,Fuel Crane,                  Fuel Crane,standard,Defueling/Refueling Line Count,2,,,1971000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,Konecrane Estimate,No Learning,1752000,2190000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+231.1,3,Reactor Crane,                  Reactor Crane,standard,Defueling/Refueling Line Count,1,,,2738000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,Konecrane Estimate,No Learning,2190000,3285000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+231.1,3,Operating Platform,                  Operating Platform,standard,Defueling/Refueling Line Count,2,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+231.1,3,Vessel Inspection System,                  Vessel Inspection System,standard,Defueling/Refueling Line Count,1,,,3000000,,,,,,,1999,Lab and Mat and Equip,IAEA-TCS-9,"NON-DESTRUCTIVE TESTING: A GUIDEBOOK FOR INDUSTRIAL MANAGEMENT AND QUALITY CONTROL PERSONNEL IAEA, VIENNA, 1999",https://inis.iaea.org/records/hb38s-b7r14/files/31005449.pdf,"Reference p127 gives ROM cost of automated RPV inspection: ""millions of dollars""",No Learning,1000000,7000000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+231.1,3,Decontamination System,                  Decontamination System,standard,Defueling/Refueling Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+231.1,3,Servicing Hot Cell Shielding,                  Servicing Hot Cell Shielding,standard,Defueling/Refueling Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+232,2,Used Reactor Testing Equipment,            Used Reactor Testing Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+232.1,3,Handling Robot,                  Handling Robot,standard,Servicing Hot Cell Count,6,,,232000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,ABB Robotics Estimate,No Learning,116000,348000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+232.1,3,Operating Platform,                  Operating Platform,standard,Servicing Hot Cell Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+232.1,3,Primary Heat Transport System,                  Primary Heat Transport System,standard,Servicing Hot Cell Count,1,,,,,,,,,,,,,,,TODO: should simply use the same cost as the Reactor Side,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+232.1,3,Decontamination System,                  Decontamination System,standard,Servicing Hot Cell Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+232.1,3,Testing Hot Cell Shielding,                  Testing Hot Cell Shielding,standard,Servicing Hot Cell Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+234,2,Auxiliary System,            Auxiliary System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+234.1,3,Fire Protection Equipment,                  Fire Protection Equipment,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+234.2,3,Service Water/Air/Steam System,                  Service Water/Air/Steam System,standard,Constant,1,,,,32567.925373134327,,Power Mwt Processed by Servicing,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,Power Law scaling of PWR12-ME Service Water/Air/Steam System. Needs better cost correlation.,No Learning,0,0,Lognormal,29311.132835820896,42338.302985074624,Lognormal,0.1,1,0,Truncated Normal
+234.3,3,Radwaste Processing System,                  Radwaste Processing System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+234.31,4,Gas Waste System,                        Gas Waste System,standard,Constant,1,,,,974.7116769095697,$/MWt,Power Mwt Processed by Servicing,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,779.7693415276558,1949.4233538191395,Lognormal,0.1,1,0,Truncated Normal
+234.32,4,Liquid Waste System,                        Liquid Waste System,standard,Constant,1,,,,9674.812455370207,$/MWt,Power Mwt Processed by Servicing,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,7739.849964296166,19349.624910740415,Lognormal,0.1,1,0,Truncated Normal
+234.33,4,Solid Waste System,                        Solid Waste System,standard,Constant,1,,,,4625.438068481124,$/MWt,Power Mwt Processed by Servicing,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,3700.3504547848993,9250.876136962248,Lognormal,0.1,1,0,Truncated Normal
+234.4,3,Inert Gas System,                  Inert Gas System,standard,Constant,1,,,,41.15906309139729,$/m^3,Total Servicing Hot Cell Volume,201049.28,m^3,0.6,1978,Lab and Mat and Equip,,"Park et al., Bottom-up levelized cost estimation of low-enriched and low-pressure nuclear batteries. NED. 2025",https://doi.org/10.1016/j.nucengdes.2025.113936,Uses LMFBR Inert Gas System as reference for Power Law Scaling using Containment/HotCell Volume,No Learning,0,0,Lognormal,32.92725047311784,82.31812618279459,Lognormal,0.1,1,0,Truncated Normal
+235,2,Helium Management Equipment,            Helium Management Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+235.1,3,Helium Treatment and Recycle,                  Helium Treatment and Recycle,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+235.2,3,Helium Storage Equipment,                  Helium Storage Equipment,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+235.3,3,Helium Transfer Equipment,                  Helium Transfer Equipment,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+236,2,Reactor Cask Management Equipment,            Reactor Cask Management Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+236.1,3,Cask Inspection Equipment,                  Cask Inspection Equipment,standard,Defueling/Refueling Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+236.1,3,Cask Transfer Crane,                  Cask Transfer Crane,standard,Defueling/Refueling Line Count,0.1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+236.1,3,Cask Storage Rack,                  Cask Storage Rack,standard,Defueling/Refueling Line Count,0.1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+239,2,Integrated Control System,            Integrated Control System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+239.1,3,Plant Control Systems,                  Plant Control Systems,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+239.2,3,Instrumentation and Controls,                  Instrumentation and Controls,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+239.3,3,Process Computer,                  Process Computer,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+239.4,3,Alarm System,                  Alarm System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+239.5,3,Monitoring System,                  Monitoring System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+239.6,3,Communication System,                  Communication System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+24,1,New Reactor Fueling and Testing Facility Equipment,      New Reactor Fueling and Testing Facility Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+241,2,New Reactor Fueling Equipment,            New Reactor Fueling Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+241.1,3,Operating Platform,                  Operating Platform,standard,New Reactor Fueling Line Count,,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+241.1,3,Fuel Handling Robot,                  Fuel Handling Robot,standard,New Reactor Fueling Line Count,6,,,232000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,ABB Robotics Estimate,No Learning,116000,348000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+241.1,3,Fuel Crane,                  Fuel Crane,standard,New Reactor Fueling Line Count,2,,,1971000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,Konecrane Estimate,No Learning,1752000,2190000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+241.1,3,Reactor Crane,                  Reactor Crane,standard,New Reactor Fueling Line Count,1,,,2738000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,Konecrane Estimate,No Learning,2190000,3285000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+241.1,3,Decontamination System,                  Decontamination System,standard,New Reactor Fueling Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+241.1,3,Fueling Hot Cell Shielding,                  Fueling Hot Cell Shielding,standard,New Reactor Fueling Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+242,2,New Reactor Testing Equipment,            New Reactor Testing Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+242.1,3,Handling Robot,                  Handling Robot,standard,New Reactor Testing Line Count,6,,,232000,,,,,,,2023,Lab and Mat and Equip,MIT-ANP-TR-198,,,ABB Robotics Estimate,No Learning,116000,348000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+242.1,3,Operating Platform,                  Operating Platform,standard,New Reactor Testing Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+242.1,3,Primary Heat Transport System,                  Primary Heat Transport System,standard,New Reactor Testing Line Count,1,,,,,,,,,,,,,,,TODO: should simply use the same cost as the Reactor Side,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+242.1,3,Decontamination System,                  Decontamination System,standard,New Reactor Testing Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+242.1,3,Testing Hot Cell Shielding,                  Testing Hot Cell Shielding,standard,New Reactor Testing Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+243,2,Fresh Fuel Management Equipment,            Fresh Fuel Management Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+243.1,3,Fuel Crane,                  Fuel Crane,standard,New Reactor Fueling Line Count,0.25,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+243.1,3,Fresh Fuel Inspection Equipment,                  Fresh Fuel Inspection Equipment,standard,New Reactor Fueling Line Count,0.1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+243.1,3,Fresh Fuel Cask Storage Racks,                  Fresh Fuel Cask Storage Racks,standard,New Reactor Fueling Line Count,0.25,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+244,2,Auxiliary System,            Auxiliary System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+244.1,3,Fire Protection Equipment,                  Fire Protection Equipment,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+244.2,3,Service Water/Air/Steam System,                  Service Water/Air/Steam System,standard,Constant,1,,,,32567.925373134327,,Power Mwt of Operating Fleet,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,Power Law scaling of PWR12-ME Service Water/Air/Steam System. Needs better cost correlation.,No Learning,0,0,Lognormal,26054.340298507464,65135.850746268654,Lognormal,0.1,1,0,Truncated Normal
+244.3,3,Radwaste Processing System,                  Radwaste Processing System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+244.31,4,Gas Waste System,                        Gas Waste System,standard,Constant,1,,,,974.7116769095697,$/MWt,Power Mwt of Operating Fleet,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,779.7693415276558,1949.4233538191395,Lognormal,0.1,1,0,Truncated Normal
+244.32,4,Liquid Waste System,                        Liquid Waste System,standard,Constant,1,,,,9674.812455370207,$/MWt,Power Mwt of Operating Fleet,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,7739.849964296166,19349.624910740415,Lognormal,0.1,1,0,Truncated Normal
+244.33,4,Solid Waste System,                        Solid Waste System,standard,Constant,1,,,,4625.438068481124,$/MWt,Power Mwt of Operating Fleet,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,3700.3504547848993,9250.876136962248,Lognormal,0.1,1,0,Truncated Normal
+244.4,3,Inert Gas System,                  Inert Gas System,standard,Constant,1,,,,41.15906309139729,$/m^3,New Reactor Testing Hot Cell Volume,201049.28,m^3,0.6,1978,Lab and Mat and Equip,,"Park et al., Bottom-up levelized cost estimation of low-enriched and low-pressure nuclear batteries. NED. 2025",https://doi.org/10.1016/j.nucengdes.2025.113936,Uses LMFBR Inert Gas System as reference for Power Law Scaling using Containment/HotCell Volume,No Learning,0,0,Lognormal,32.92725047311784,82.31812618279459,Lognormal,0.1,1,0,Truncated Normal
+249,2,Integrated Control System,            Integrated Control System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+249.1,3,Plant Control Systems,                  Plant Control Systems,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+249.2,3,Instrumentation and Controls,                  Instrumentation and Controls,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+249.3,3,Process Computer,                  Process Computer,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+249.4,3,Alarm System,                  Alarm System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+249.5,3,Monitoring System,                  Monitoring System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+249.6,3,Communication System,                  Communication System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+25,1,Radioactive Waste Management Facility Equipment,      Radioactive Waste Management Facility Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+251,2,Gas Waste System,            Gas Waste System,standard,Constant,1,,,,974.7116769095697,$/MWt,Power Mwe Processed by New Reactor Facility,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,779.7693415276558,1949.4233538191395,Lognormal,0.1,1,0,Truncated Normal
+252,2,Liquid Waste System,            Liquid Waste System,standard,Constant,1,,,,9674.812455370207,$/MWt,Power Mwe Processed by New Reactor Facility,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,7739.849964296166,19349.624910740415,Lognormal,0.1,1,0,Truncated Normal
+253,2,Solid Waste System,            Solid Waste System,standard,Constant,1,,,,4625.438068481124,$/MWt,Power Mwe Processed by New Reactor Facility,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,,No Learning,0,0,Lognormal,3700.3504547848993,9250.876136962248,Lognormal,0.1,1,0,Truncated Normal
+254,2,Auxiliary System,            Auxiliary System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+254.1,3,Fire Protection Equipment,                  Fire Protection Equipment,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+254.2,3,Service Water/Air/Steam System,                  Service Water/Air/Steam System,standard,Constant,1,,,,32567.925373134327,,Power Mwt Processed by Servicing,3417,MWt,0.8,2018,Lab and Mat and Equip,PWR12-ME,,,Power Law scaling of PWR12-ME Service Water/Air/Steam System. Needs better cost correlation.,No Learning,0,0,Lognormal,26054.340298507464,65135.850746268654,Lognormal,0.1,1,0,Truncated Normal
+254.3,3,Inert Gas System,                  Inert Gas System,standard,Constant,1,,,,41.15906309139729,$/m^3,Radioactive Waste Processing Building Volume,201049.28,m^3,0.6,1978,Lab and Mat and Equip,,"Park et al., Bottom-up levelized cost estimation of low-enriched and low-pressure nuclear batteries. NED. 2025",https://doi.org/10.1016/j.nucengdes.2025.113936,Uses LMFBR Inert Gas System as reference for Power Law Scaling using Containment/HotCell Volume,No Learning,0,0,Lognormal,32.92725047311784,82.31812618279459,Lognormal,0.1,1,0,Truncated Normal
+254.4,3,Decontamination System,                  Decontamination System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+255,2,Radioactive Waste Cask Management Equipment,            Radioactive Waste Cask Management Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+255.1,3,Cask Inspection Equipment,                  Cask Inspection Equipment,standard,Defueling/Refueling Line Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+255.2,3,Cask Transfer Crane,                  Cask Transfer Crane,standard,Defueling/Refueling Line Count,0.1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+255.3,3,Cask Storage Rack,                  Cask Storage Rack,standard,Defueling/Refueling Line Count,0.1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+259,2,Integrated Control System,            Integrated Control System,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+259.1,3,Plant Control Systems,                  Plant Control Systems,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+259.2,3,Instrumentation and Controls,                  Instrumentation and Controls,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+259.3,3,Process Computer,                  Process Computer,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+259.4,3,Alarm System,                  Alarm System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+259.5,3,Monitoring System,                  Monitoring System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+259.6,3,Communication System,                  Communication System,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+26,1,Electrical Equipment,      Electrical Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+261,2,Switchgear,            Switchgear,standard,Constant,1,,,,12609.009795601574,$/MWe,Central Facility Power MWe,1144,MWe,0.6,2018,Lab and Mat and Equip,"EEDB PWR12-ME + Stewart and Shirvan (2022)
+
+Scales PWR12-ME costs with simplifications based on Stewart and Srhivan (2022)","Stewart, W. R., & Shirvan, K. (2022). Capital cost estimation for advanced nuclear power plants. Renewable and Sustainable Energy Reviews, 155, 111880.",,,No Learning,0,0,,11348.108816041417,16391.712734282046,,,,,
+262,2,Station Service Equipment,            Station Service Equipment,standard,Constant,1,,,,10483.078127225175,$/MWe,Central Facility Power MWe,1144,MWe,0.6,2018,Lab and Mat and Equip,,,,,No Learning,0,0,,9434.770314502657,13628.001565392728,,,,,
+263,2,Switchboards,            Switchboards,standard,Constant,1,,,,12609.009795601574,$/MWe,Central Facility Power MWe,1144,MWe,0.6,2018,Lab and Mat and Equip,,,,,No Learning,0,0,,11348.108816041417,16391.712734282046,,,,,
+264,2,Protective Equipment,            Protective Equipment,standard,Constant,1,,,,10483.078127225175,$/MWe,Central Facility Power MWe,1144,MWe,0.6,2018,Lab and Mat and Equip,,,,,No Learning,0,0,,9434.770314502657,13628.001565392728,,,,,
+265,2,Electrical Structure & Wiring Container,            Electrical Structure & Wiring Container,standard,Constant,1,,,,3404.0615157416346,$/MWe,Central Facility Power MWe,1144,MWe,0.6,2018,Lab and Mat and Equip,,,,,No Learning,0,0,,3063.6553641674714,4425.279970464125,,,,,
+266,2,Power & Control Wiring,            Power & Control Wiring,standard,Constant,1,,,,9776.146788199037,$/MWe,Central Facility Power MWe,1144,MWe,0.6,2018,Lab and Mat and Equip,,,,,No Learning,0,0,,8798.532109379134,12708.99082465875,,,,,
+27,1,Equipment to support Site Function,      Equipment to support Site Function,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+271,2,Physical Security Systems,            Physical Security Systems,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+28,1,Transport Equipment,      Transport Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+281,2,Onsite Transport Equipment,            Onsite Transport Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+281.1,3,Local Transport Vehicle,                  Local Transport Vehicle,standard,Local Transport Vehecle Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+282,2,Off-site Transport Equipment,            Off-site Transport Equipment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+282.1,3,Large Cargo Transport Vehicle,                  Large Cargo Transport Vehicle,standard,General Transport Vehicle Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+282.2,3,Used Reactor Transport Vehicle,                  Used Reactor Transport Vehicle,standard,Reactor Transport Vehicle Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+283.4,3,Operational Spares/Waste Transport Vehicle,                  Operational Spares/Waste Transport Vehicle,standard,Spares/Waste Transport Vehicle Count,1,,,,,,,,,,,,,,,,No Learning,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+283,2,Vehicle Inspection and Maintenance Equipment,            Vehicle Inspection and Maintenance Equipment,standard,Constant,1,,,,,,,,,,,,,,,,,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+30,0,Capitalized Indirect Services Cost,Capitalized Indirect Services Cost,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+31,1,Factory & field indirect costs,      Factory & field indirect costs,standard,Constant,1,,,,,,,,,,2024,Lab and Equip,MARVEL,,,,No Learning,,,,,,,,,,
+32,1,Factory and construction supervision,      Factory and construction supervision,standard,Constant,1,,,,,,,,,,2024,Lab and Equip,,,,,No Learning,,,,,,,,,,
+33,1,Startup Costs,      Startup Costs,standard,Constant,1,,,,,,,,,,2024,Labor,,,,,No Learning,,,,,,,,,,
+34,1,Shipping and Transportation Costs,      Shipping and Transportation Costs,standard,Constant,1,,,,,,,,,,2024,Labor,,,,,No Learning,,,,,,,,,,
+35,1,Engineering Services,      Engineering Services,standard,Constant,1,,,,,,,,,,,,,,,,No Learning,,,,,,,,,,
+36,1,PM/CM Services,      PM/CM Services,standard,Constant,1,,,,,,,,,,2024,Labor,,"Al-Dawood, Khaldoon and Hanna, Botros and Balla, Sai and de Oliveira, Rodrigo and Garcia, Samuel and McCarthy, Dan and Bolisetti, Chandrakanth and Lindley, Ben and Abou-Jaoude, Abdalla, Open-Source Microreactor Design Models for Technoeconomic Assessment. ",https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5163464,,No Learning,,,,,,,,,,
+40,0,Capitalized training costs,Capitalized training costs,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+41,1,staff recruitment and training,      staff recruitment and training,standard,Constant,1,,,,,,,,,,,,,,,,,,,,,,,,,,
+60,0,Capitalized Financial Costs ,Capitalized Financial Costs ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+62,1,Interest,      Interest,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+70,0,Annualized O&M Cost ,Annualized O&M Cost ,,,,,,,178500,$/FTE,Number of Operators,,,1,2024,Labor,,"de Candido, I., A. Al Rashdan, A. Abou-Jaoude, and J. Buongiorno. 2024. “Assessment of Technoeconomic Opportunities in Automation for Nuclear Microreactors.” Nuclear Science and Engineering, 1–20. https://doi.org/10.1080/00295639.2024.2372511.",,,No Learning,0,0,Lognormal,160650,232050,Lognormal,0.1,1,0,Truncated Normal
+71,1,O&M Staff,      O&M Staff,,,,,,,178500,$/FTE,Reactors Monitored Per Operator,,,1,2024,Labor,,"de Candido, I., A. Al Rashdan, A. Abou-Jaoude, and J. Buongiorno. 2024. “Assessment of Technoeconomic Opportunities in Automation for Nuclear Microreactors.” Nuclear Science and Engineering, 1–20. https://doi.org/10.1080/00295639.2024.2372511.",,,No Learning,0,0,Lognormal,160650,232050,Lognormal,0.1,1,0,Truncated Normal
+711,2,Operators ,            Operators ,nonstandard,,,,,,178500,$/FTE,Security Staff Per Shift,,,1,2024,Labor,,"de Candido, I., A. Al Rashdan, A. Abou-Jaoude, and J. Buongiorno. 2024. “Assessment of Technoeconomic Opportunities in Automation for Nuclear Microreactors.” Nuclear Science and Engineering, 1–20. https://doi.org/10.1080/00295639.2024.2372511.",,,No Learning,0,0,Lognormal,160650,232050,Lognormal,0.1,1,0,Truncated Normal
+712,2,Remote Monitoring Technicians ,            Remote Monitoring Technicians ,nonstandard,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+713,2,Security Staff ,            Security Staff ,nonstandard,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+714,2,Maintenance Staff,            Maintenance Staff,nonstandard,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+74,1,Fixed O&M Utilities and Materials ,      Fixed O&M Utilities and Materials ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+742,2,Spare Parts,            Spare Parts,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+743,2,"Utilities, Supplies, and Consumables","            Utilities, Supplies, and Consumables",,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+743.1,3,Annualized Transportation Costs,                  Annualized Transportation Costs,standard,Constant,1,,,,,,,,,,,,,,,,,0,0,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+743.2,3,Annualized Cask Replacements,                  Annualized Cask Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+743.21,4,Spent Fuel Cask,                        Spent Fuel Cask,standard,Annual Spent Fuel Cask Replacement,1,,,1159000,,,,,,,2023,Equipment,MIT-ANP-TR-198,,,NUHOMS EOS 37 PTH ESC Cask,,1008000,1310000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+743.22,4,Reactor Transport Cask,                        Reactor Transport Cask,standard,Annual Reactor Cask Replacement,1,,,6750000,,,,,,,2022,Equipment,Private Conversation,,,,,5000000,8500000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+743.23,4,Radioactive Waste Storage Cask,                        Radioactive Waste Storage Cask,standard,Annual Rad Waste Cask Replacement,1,,,1159000,,,,,,,2023,Equipment,MIT-ANP-TR-198,,,NUHOMS EOS 37 PTH ESC Cask,,1008000,1310000,Lognormal,0,0,Lognormal,0.1,1,0,Truncated Normal
+743.3,3,Annualized Helium Replenishment,                  Annualized Helium Replenishment,standard,Constant,1,,,,170,$/Kg,Onsite Coolant Inventory,,Kg,,2024,Equipment,Fernandez de Losada. (2024). Assessment of the Lifecycle Cost of Nuclear-Grade Coolants for Advanced Reactors. ETHzurich. Swiss.,Fernandez de Losada. (2024). Assessment of the Lifecycle Cost of Nuclear-Grade Coolants for Advanced Reactors. ETHzurich. Swiss.,https://doi.org/10.3929/ethz-b-000709311,Vendor Quoate (Linde) for 3000 cylinders of 99.999% purity Helium. 3000 cylinders correspond to ~4 MT of He.,No Learning,0,0,Lognormal,153,221,Lognormal,0.1,1,0,Truncated Normal
+75,1,Capital Plant Expenditures,      Capital Plant Expenditures,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+78,1,Annualized Decommissioning Cost,      Annualized Decommissioning Cost,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
