@@ -1309,14 +1309,14 @@ PARAMS_REGISTRY = {
         'description': 'Total annual electricity production at the calculated capacity factor',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
-    'A75: Vessel Replacement Period (cycles)': {
-        'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of fuel cycles between scheduled reactor pressure vessel replacements',
+    'A75: Outer Vessel Structure Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Service period in years between scheduled outer vessel structure replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
-    'A75: Core Barrel Replacement Period (cycles)': {
+    'A75: Inner Vessel Structure Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of fuel cycles between scheduled core barrel replacements',
+        'description': 'Number of fuel cycles between scheduled inner vessel structure replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'A75: Reflector Replacement Period (cycles)': {
@@ -1324,14 +1324,14 @@ PARAMS_REGISTRY = {
         'description': 'Number of fuel cycles between scheduled reflector replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
-    'A75: Drum Replacement Period (cycles)': {
+    'A75: Reactor Control Devices Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of fuel cycles between scheduled control drum replacements',
+        'description': 'Number of fuel cycles between scheduled reactor control device replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
-    'A75: Integrated HX Replacement Period (cycles)': {
+    'A75: Moderator Booster Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of fuel cycles between scheduled integrated heat exchanger replacements',
+        'description': 'Number of complete fuel cycles between moderator booster replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Maintenance to Direct Cost Ratio': {
