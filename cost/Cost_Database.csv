@@ -266,13 +266,13 @@ Another assumption (anecdotal evidence) is that licensing fee cost is 1-to-1 wit
  ",https://www.federalregister.gov/documents/2025/02/19/2025-02779/fee-schedules-fee-recovery-for-fiscal-year-2025,https://www.federalregister.gov/documents/2025/02/19/2025-02779/fee-schedules-fee-recovery-for-fiscal-year-2025,,Licensing Learning,96462,160770,Lognormal,,,,,,,
 75,1,Capital Plant Expenditures,      Capital Plant Expenditures,,,,,,,,,,,,,,,"Venneri, (2023) and INL/EXT-21-63067","Venneri, (2023) and INL/EXT-21-63067",,"Implemented on non_direct_cost.py
 Cost is scaled as a fraction of CAPEX unless specific parameters are added to indicate more/less frequent replacements (e.g. GCMR)",,,,,,,,,,,
-751,2,Annualized RPV Replacements,            Annualized RPV Replacements,,,,,,,,,,,,,,,"Venneri, (2023) and INL/EXT-21-63067","Venneri, (2023) and INL/EXT-21-63067",,"Implemented on non_direct_cost.py
+751,2,Annualized Outer Vessel Structure Replacements,            Annualized Outer Vessel Structure Replacements,,,,,,,,,,,,,,,"Venneri, (2023) and INL/EXT-21-63067","Venneri, (2023) and INL/EXT-21-63067",,"Implemented on non_direct_cost.py
 Cost is scaled as a fraction of CAPEX unless specific parameters are added to indicate more/less frequent replacements (e.g. GCMR)",,,,,,,,,,,
-752,2,Annualized Core Barrel Replacements,            Annualized Core Barrel Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+752,2,Annualized Inner Vessel Structure Replacements,            Annualized Inner Vessel Structure Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 753,2,Annualized Moderator Replacements,            Annualized Moderator Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 754,2,Annualized Reflector Replacements,            Annualized Reflector Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-755,2,Annualized Reactivity Control Replacements,            Annualized Reactivity Control Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-756,2,Annualized Integrated Heat Transfer System Replacements,            Annualized Integrated Heat Transfer System Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+755,2,Annualized Reactor Control Devices Replacements,            Annualized Reactor Control Devices Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+757,2,Annualized Moderator Booster Replacements,            Annualized Moderator Booster Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 759,2,Annualized Misc. Replacements,            Annualized Misc. Replacements,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 78,1,Annualized Decommissioning Cost,      Annualized Decommissioning Cost,,,,,,,,,,,,,,,,,,"Implemented on non_direct_cost.py
 The cost is scaled as a fraction of CAPEX (15%)",,,,,,,,,,,

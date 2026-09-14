@@ -262,10 +262,11 @@ def gen_hpmr_mouse(vtb_params):
     ## If the period is 0, it is assumed to never be replaced throughout Levelization period
     total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
     total_refueling_period_yr = total_refueling_period/365
-    params['A75: Vessel Replacement Period (cycles)']        = np.floor(10/total_refueling_period_yr) # change each 10 years similar to the ATR
-    params['A75: Core Barrel Replacement Period (cycles)']   = np.floor(10/total_refueling_period_yr)
+    params['A75: Outer Vessel Structure Replacement Period (years)'] = 20
+    params['A75: Inner Vessel Structure Replacement Period (cycles)'] = np.floor(10/total_refueling_period_yr)
     params['A75: Reflector Replacement Period (cycles)']     = np.floor(10/total_refueling_period_yr)
-    params['A75: Drum Replacement Period (cycles)']          = np.floor(10/total_refueling_period_yr)
+    params['A75: Reactor Control Devices Replacement Period (cycles)'] = np.floor(10/total_refueling_period_yr)
+    params['A75: Moderator Booster Replacement Period (cycles)'] = 1
     params['Mainenance to Direct Cost Ratio']                = 0.015
 
     # A78: Annualized Decommisioning Cost
