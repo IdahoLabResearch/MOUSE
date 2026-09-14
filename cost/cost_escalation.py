@@ -2,6 +2,8 @@
 import pandas as pd
 import numpy as np
 
+from cost.cost_database_csv import read_cost_database_sheet
+
 # **************************************************************************************************************************
 #                                                Sec. 0 :Inflation
 # **************************************************************************************************************************
@@ -12,7 +14,7 @@ def calculate_inflation_multiplier(file_path, base_dollar_year, cost_type, escal
     base_dollar_year = int(base_dollar_year)
     escalation_year  = int(escalation_year)
     
-    df = pd.read_excel(file_path, sheet_name="Inflation Adjustment")
+    df = read_cost_database_sheet(file_path, "Inflation Adjustment")
     # print("Shape:", df.shape)
     # print("First 5 rows raw:")
     # print(df.head(5))
@@ -71,8 +73,9 @@ def escalate_cost_database(file_name, escalation_year, params, sheet_name="Cost 
     Escalates fixed and unit costs, allowing cost fields to reference params.
     """
 
-    # Read the Excel file into a Pandas DataFrame
-    df = pd.read_excel(file_name, sheet_name=sheet_name)
+    # Regenerate the Git-reviewable CSV mirror, then read the selected sheet
+    # from that mirror so the runtime input exactly matches the tracked data.
+    df = read_cost_database_sheet(file_name, sheet_name)
 
     # Helper function to resolve numeric or parameter-referenced values
     def resolve_value(val, params):
@@ -130,11 +133,10 @@ def escalate_cost_database(file_name, escalation_year, params, sheet_name="Cost 
     df['Adjusted Unit Cost High End ($)'] = df['Unit Cost High End'] * df['inflation_multiplier']
 
     # Read extra economic parameters (no escalation)
-    df_extra_params = pd.read_excel(file_name, sheet_name="Economics Parameters")
+    df_extra_params = read_cost_database_sheet(file_name, "Economics Parameters")
     extra_economic_parameters = dict(zip(df_extra_params["Parameter"], df_extra_params["Value"]))
 
     for parameter, value in extra_economic_parameters.items():
         params[parameter] = value
 
     return df
-

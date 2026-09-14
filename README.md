@@ -130,6 +130,28 @@ python -m examples.watts_exec_HPMR
 ```
 Examples of the results are [here](./assets/Ref_Results)
 
+### Cost database change tracking
+
+`cost/Cost_Database.xlsx` is the human-edited source of truth. Before MOUSE
+reads cost data, it automatically regenerates deterministic CSV mirrors in the
+same directory. `cost/Cost_Database.csv` represents the primary **Cost
+Database** sheet; the other workbook sheets use names such as
+`cost/Cost_Database__Inflation_Adjustment.csv`.
+
+Commit the workbook and its generated CSV mirrors together. The CSV files use
+stable names and formatting so pull requests show readable row-and-value diffs.
+Do not edit the generated CSV files directly; the next MOUSE run will replace
+them from the workbook. If formulas were changed, save and recalculate the
+workbook in Excel before running MOUSE so the exported cached values are current.
+The mirrors can also be regenerated without running a model:
+
+```bash
+python -m cost.cost_database_csv
+```
+
+Pull requests that touch the cost database run an automated consistency check
+and fail when the workbook and committed CSV mirrors do not match.
+
 ## Citation
 
 If you use MOUSE in technical work, please cite the relevant reports and publications below.

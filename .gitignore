@@ -2,6 +2,8 @@
 *.log
 *.xml
 *.csv
+!cost/Cost_Database.csv
+!cost/Cost_Database__*.csv
 output*.xlsx
 *.out
 *.txt
