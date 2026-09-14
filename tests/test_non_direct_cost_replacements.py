@@ -10,11 +10,11 @@ class ReplacementAccountTests(unittest.TestCase):
         foak = 'FOAK Estimated Cost ($/unit)'
         noak = 'NOAK Estimated Cost ($/unit)'
         account_costs = {
-            20: 1000.0,
+            20: 1100.0,
             21: 10.0,
             22: 20.0,
             23: 30.0,
-            25: 0.0,
+            25: 100.0,
             31: 0.0,
             32: 0.0,
             82: 0.0,
@@ -61,7 +61,8 @@ class ReplacementAccountTests(unittest.TestCase):
                 result['Account'] == 759, estimated_cost_column
             ].iat[0]
             self.assertEqual(booster, 150.0)
-            # 221.34 is removed from the residual: (1000 - 600) * 1%.
+            # Explicit replacement equipment and initial fuel are excluded:
+            # (1100 - 600 - 100) * 1%.
             self.assertEqual(miscellaneous, 4.0)
 
 
