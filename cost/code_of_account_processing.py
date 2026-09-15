@@ -1,16 +1,30 @@
 # Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 import pandas as pd
 
+from reactor_engineering_evaluation.operation import (
+    operation_mode_includes_remote_monitoring,
+)
+
 def remove_irrelevant_account(df, params):
     indices_to_drop = []
     
     has_sec_optional = 'Sec Optional Variable' in df.columns  # ← add this check
 
     for index, row in df.iterrows():
-        def _optional_matches(param_val, expected_val):
+        def _optional_matches(variable_name, param_val, expected_val):
             """Return True if param_val equals expected_val, or if param_val is a list that contains expected_val."""
             def _normalized(value):
                 return value.strip() if isinstance(value, str) else value
+
+            # The hybrid operation mode includes the same remote-monitoring
+            # component as the existing Remotely Monitored mode. This keeps
+            # Account 712 active without duplicating it in the cost database.
+            if (variable_name == 'Operation Mode'
+                    and _normalized(expected_val) == 'Remotely Monitored'
+                    and operation_mode_includes_remote_monitoring(
+                        _normalized(param_val)
+                    )):
+                return True
 
             if isinstance(param_val, list):
                 return _normalized(expected_val) in [_normalized(value) for value in param_val]
@@ -18,22 +32,44 @@ def remove_irrelevant_account(df, params):
 
         # Check for 'Optional Variable'
         if not pd.isna(row['Optional Variable']):
-            if row['Optional Variable'] in params and _optional_matches(params[row['Optional Variable']], row['Optional Value']):
+            if (row['Optional Variable'] in params
+                    and _optional_matches(
+                        row['Optional Variable'],
+                        params[row['Optional Variable']],
+                        row['Optional Value'],
+                    )):
                 print("\n")
-                print(f"For the cost of the Account {row['Account']}: {row['Account Name']}, the {row['Optional Variable']} is selected to be {row['Optional Value']}")
+                selected_value = params[row['Optional Variable']]
+                display_value = (
+                    selected_value
+                    if row['Optional Variable'] == 'Operation Mode'
+                    else row['Optional Value']
+                )
+                print(f"For the cost of the Account {row['Account']}: {row['Account Name']}, the {row['Optional Variable']} is selected to be {display_value}")
                 # Append the selected optional value to Account Title for clarity in the output
-                df.at[index, 'Account Title'] = str(row['Account Title']) + ' - ' + str(row['Optional Value'])
+                df.at[index, 'Account Title'] = str(row['Account Title']) + ' - ' + str(display_value)
             else:
                 indices_to_drop.append(index)
                 continue
 
         # Check for 'Sec Optional Variable' only if column exists
         if has_sec_optional and not pd.isna(row['Sec Optional Variable']):
-            if row['Sec Optional Variable'] in params and _optional_matches(params[row['Sec Optional Variable']], row['Sec Optional Value']):
+            if (row['Sec Optional Variable'] in params
+                    and _optional_matches(
+                        row['Sec Optional Variable'],
+                        params[row['Sec Optional Variable']],
+                        row['Sec Optional Value'],
+                    )):
                 print("\n")
-                print(f"For the cost of the Account {row['Account']}: {row['Account Name']}, the {row['Sec Optional Variable']} is selected to be {row['Sec Optional Value']}")
+                selected_value = params[row['Sec Optional Variable']]
+                display_value = (
+                    selected_value
+                    if row['Sec Optional Variable'] == 'Operation Mode'
+                    else row['Sec Optional Value']
+                )
+                print(f"For the cost of the Account {row['Account']}: {row['Account Name']}, the {row['Sec Optional Variable']} is selected to be {display_value}")
                 # Also append the sec optional value
-                df.at[index, 'Account Title'] = str(df.at[index, 'Account Title']) + ' - ' + str(row['Sec Optional Value'])
+                df.at[index, 'Account Title'] = str(df.at[index, 'Account Title']) + ' - ' + str(display_value)
             else:
                 indices_to_drop.append(index)
                 continue

@@ -1241,7 +1241,8 @@ PARAMS_REGISTRY = {
     # =========================================================
     'Operation Mode': {
         'group': 'Operation', 'units': '',
-        'description': 'Reactor operation mode: Remotely Monitored or On-Site Staffed',
+        'description': ('Reactor operation mode: Remotely Monitored, On-Site Staffed, '
+                        'or On-Site Staffed and Remotely Monitored'),
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Number of On-Site Operators per Shift': {
