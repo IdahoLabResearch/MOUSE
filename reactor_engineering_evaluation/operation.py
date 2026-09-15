@@ -2,6 +2,26 @@
 
 import numpy as np 
 
+
+REMOTE_MONITORED_OPERATION_MODES = frozenset({
+    "Remotely Monitored",
+    "On-Site Staffed and Remotely Monitored",
+})
+
+ONSITE_STAFFED_OPERATION_MODES = frozenset({
+    "On-Site Staffed",
+    "On-Site Staffed and Remotely Monitored",
+})
+
+VALID_OPERATION_MODES = (
+    REMOTE_MONITORED_OPERATION_MODES | ONSITE_STAFFED_OPERATION_MODES
+)
+
+
+def operation_mode_includes_remote_monitoring(operation_mode):
+    """Return whether *operation_mode* requires 24/7 remote monitoring."""
+    return operation_mode in REMOTE_MONITORED_OPERATION_MODES
+
 def reactor_operation(params):
     # Backward compatibility for external inputs created before the parameter
     # was renamed. Maintained MOUSE inputs use the clearer canonical name.
@@ -38,7 +58,14 @@ def reactor_operation(params):
     Capacity_factor  = 1 - ((num_of_refuel_days_per_year +num_startup_days_after_refuel_per_year + num_startup_days_after_shutdown_per_year )/365)
     params['Capacity Factor'] = Capacity_factor 
     params['Annual Electricity Production'] = Capacity_factor * params['Power MWe'] * 365 * 24 # MWe.hour
-    if params['Operation Mode'] == "Remotely Monitored":
+    operation_mode = params['Operation Mode']
+    if operation_mode == "Remotely Monitored":
         params['FTEs Per Onsite Operator Per Year'] =   FTEs_per_operator_per_year_for_startup_after_refueling + FTEs_per_operator_per_year_for_startup_after_emergency_shutdown
-    elif params['Operation Mode'] == "On-Site Staffed":
+    elif operation_mode in ONSITE_STAFFED_OPERATION_MODES:
         params['FTEs Per Onsite Operator Per Year'] =  params['FTEs Per Onsite Operator (24/7)']
+    else:
+        valid_modes = ", ".join(sorted(VALID_OPERATION_MODES))
+        raise ValueError(
+            f"Unsupported Operation Mode {operation_mode!r}. "
+            f"Choose one of: {valid_modes}."
+        )

@@ -2499,11 +2499,18 @@ with streamlit_analytics.track():
 
         operation_mode = st.selectbox(
             'Operation Mode',
-            options=['Remotely Monitored', 'On-Site Staffed'],
+            options=[
+                'Remotely Monitored',
+                'On-Site Staffed',
+                'On-Site Staffed and Remotely Monitored',
+            ],
             help=(
                 '**Remotely Monitored:** Operators monitor the reactor remotely and are '
                 'required on-site only for emergencies or shutdown.\n\n'
-                '**On-Site Staffed:** Operators must be physically present in the control room 24/7.'
+                '**On-Site Staffed:** Operators must be physically present in the control room 24/7.\n\n'
+                '**On-Site Staffed and Remotely Monitored:** Operators are physically '
+                'present on-site 24/7, and remote monitoring is also provided. The '
+                'on-site staffing level is set by Number of On-Site Operators per Shift.'
             ),
         )
         emergency_shutdowns = st.slider(
