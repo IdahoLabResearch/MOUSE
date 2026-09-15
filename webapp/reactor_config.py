@@ -380,7 +380,7 @@ def _build_ltmr(params):
     # total_refueling_period calculation below runs before user_overrides
     # are applied; the UI value still wins for downstream consumers.
     params.update({
-        'Number of Operators': 2,
+        'Number of On-Site Operators per Shift': 2,
         'Levelization Period': 60,
         'Refueling Period': 7,
         'Startup Duration after Refueling': 2,
@@ -664,7 +664,7 @@ def _build_gcmr(params):
     # total_refueling_period calculation below runs before user_overrides
     # are applied; the UI value still wins for downstream consumers.
     params.update({
-        'Number of Operators': 2,
+        'Number of On-Site Operators per Shift': 2,
         'Levelization Period': 60,
         'Refueling Period': 7,
         'Startup Duration after Refueling': 2,
@@ -962,7 +962,7 @@ def _build_hpmr(params):
     # total_refueling_period calculation below runs before user_overrides
     # are applied; the UI value still wins for downstream consumers.
     params.update({
-        'Number of Operators': 2,
+        'Number of On-Site Operators per Shift': 2,
         'Levelization Period': 60,
         'Refueling Period': 7,
         'Startup Duration after Refueling': 2,

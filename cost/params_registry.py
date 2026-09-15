@@ -1244,9 +1244,9 @@ PARAMS_REGISTRY = {
         'description': 'Reactor operation mode: Remotely Monitored or On-Site Staffed',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
-    'Number of Operators': {
+    'Number of On-Site Operators per Shift': {
         'group': 'Operation', 'units': '',
-        'description': 'Number of operators assigned per shift',
+        'description': 'Number of concurrent on-site operators assigned per shift',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Levelization Period': {

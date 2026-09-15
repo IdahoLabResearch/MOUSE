@@ -3,6 +3,11 @@
 import numpy as np 
 
 def reactor_operation(params):
+    # Backward compatibility for external inputs created before the parameter
+    # was renamed. Maintained MOUSE inputs use the clearer canonical name.
+    if ('Number of On-Site Operators per Shift' not in params
+            and 'Number of Operators' in params):
+        params['Number of On-Site Operators per Shift'] = params['Number of Operators']
     
     # Refueling
     # how many times you add the fuel over the entire reactor lifetime
@@ -37,4 +42,3 @@ def reactor_operation(params):
         params['FTEs Per Onsite Operator Per Year'] =   FTEs_per_operator_per_year_for_startup_after_refueling + FTEs_per_operator_per_year_for_startup_after_emergency_shutdown
     elif params['Operation Mode'] == "On-Site Staffed":
         params['FTEs Per Onsite Operator Per Year'] =  params['FTEs Per Onsite Operator (24/7)']
-

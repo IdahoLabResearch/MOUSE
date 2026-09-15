@@ -77,7 +77,7 @@ Users can modify design inputs or economic inputs such as:
 - Shielding: In/Out Vessel Shield Thickness, Material, Dimensions
 - Vessels: Vessel Radius, Thickness, Materials, Gaps Between Vessels
 - Balance of Plant: Coolant Inlet/Outlet Temperatures, Compressor Pressure Ratio, Pump Efficiency
-- Operation: Operation Mode, Number of Operators, Plant Lifetime, Refueling Period, Number of Emergency Shutdowns per Year, Startup Durations
+- Operation: Operation Mode, Number of On-Site Operators per Shift, Plant Lifetime, Refueling Period, Number of Emergency Shutdowns per Year, Startup Durations
 - Buildings: Dimensions of Reactor, Turbine, Control, Refueling, Spent Fuel, Emergency, Storage, Radioactive Waste Buildings
 - Economic Parameters: Interest Rate, Dollar Escalation Year, Construction Duration, Debt to Equity Ratio
 
