@@ -801,6 +801,38 @@ def build_openmc_model_GCMR(params):
                 f"Core_{core_state}_zoomed.png"
             )
         )
+
+        # Plot the central shutdown assembly separately so the clearances
+        # around its shutdown positions remain visible when the figure is
+        # resized. The view scales with the user-selected rod ring, lattice
+        # pitch, and clad radius; it does not alter the modeled geometry.
+        central_shutdown_plot_width = 2.0 * (
+            params['Central Shutdown Rod Ring']
+            * params['Lattice Pitch']
+            + params['Central Shutdown Rod Clad Radius']
+            + 0.5 * params['Lattice Pitch']
+        )
+
+        print(
+            "Saving GCMR plot:",
+            f"Central_Shutdown_Assembly_{core_state}.png"
+        )
+
+        create_universe_plot(
+            materials_database,
+            central_shutdown_assembly_universe,
+            plot_width=central_shutdown_plot_width,
+            num_pixels=2000,
+            font_size=32,
+            title=(
+                f"Central Shutdown Assembly - {core_state} - "
+                "Geometry Detail"
+            ),
+            fig_size=8,
+            output_file_name=(
+                f"Central_Shutdown_Assembly_{core_state}.png"
+            )
+        )
     # if params['plotting'] == "Y":
     #         create_universe_plot(materials_database, active_core_universe,
     #         plot_width = 2.2 * params['Core Radius'],
