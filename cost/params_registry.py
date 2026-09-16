@@ -1672,6 +1672,12 @@ PARAMS_REGISTRY = {
         'description': 'Fleet servicing rate distributed evenly across facilities.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
+    'SER Operator FTEs Per Facility': {
+        'group': 'Central Facility', 'units': 'FTE/facility',
+        'description': 'Total annual operator FTE headcount for one servicing facility; '
+                       'used directly to calculate servicing-campus Account 711.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
     'Servicing Facility OCC Learning Multipliers': {
         'group': 'Learning Rates', 'units': 'fraction',
         'description': 'Sequential OCC multiplier for each servicing facility.',

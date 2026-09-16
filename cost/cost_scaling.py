@@ -50,7 +50,10 @@ def non_standard_cost_scale(
             raise ValueError("Enrichment is too high")
         cost = cost_premium * unit_cost *pow(scaling_variable_value,exponent) 
     elif account == 711:
-        if campus_type == 'manufacturing':
+        if campus_type in {'manufacturing', 'servicing'}:
+            # Manufacturing and servicing databases provide total annual FTE
+            # headcount directly. Reactor-site Account 711 retains the
+            # operation-mode coverage multiplier below.
             cost = unit_cost * pow(scaling_variable_value, exponent)
         else:
             cost_multiplier = params['FTEs Per Onsite Operator Per Year']

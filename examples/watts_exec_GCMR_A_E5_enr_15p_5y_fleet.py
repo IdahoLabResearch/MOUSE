@@ -261,7 +261,7 @@ calculate_shielding_masses(params)
 #                                           Sec. 9 : Operation
 # **************************************************************************************************************************
 update_params({
-    'Operation Mode': "Remotely Monitored",
+    'Operation Mode': "On-Site Staffed and Remotely Monitored",
     # Number of concurrent on-site operators per shift. On-Site Staffed means these positions are staffed 24/7;
     # Remotely Monitored means they are present only for refueling and startup after refueling or emergency shutdowns.
     'Number of On-Site Operators per Shift': 2,
@@ -523,7 +523,7 @@ params['Radioactive Waste Processing Hot Cell Count'] = 1
 params['He Gas Replenishment Per Hot Cell'] = ((3*3*5) * 2 * params['Servicing Hot Cell Annual Rate'] * 2 + 0.1 * (10*30*7)*12) * params['m3_to_kg_He_RT_atmospheric']
 params['He Gas Replenishment'] = (params['Servicing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['Radioactive Waste Processing Hot Cell Count'] * params['He Gas Replenishment Per Hot Cell'] + params['CoolantInventoryRPV_Mass'] * params['Servicing Rate Per Facility'])
 
-params['SER Number of Operators Per Shift'] = np.ceil(0.0 + 33.33333333333329 * (scale_var_SER ** 0.4771212547196621))
+params['SER Operator FTEs Per Facility'] = np.ceil(0.0 + 33.33333333333329 * (scale_var_SER ** 0.4771212547196621))
 params['SER Engineering Headcount'] = np.ceil(0.0 + 124.99999999999939 * (scale_var_SER ** 0.3010299956639814))
 params['SER Maintenance Staff Per Shift'] = np.ceil(0.0 + 266.6666666666656 * (scale_var_SER ** 0.47712125471966266))
 params['SER Security Staff Per Shift'] = np.ceil(0.0 + 3.1304347826086882 * (scale_var_SER ** 0.5835765856339492))

@@ -680,6 +680,7 @@ def _calculate_servicing_campus_sample(
     scaled_result = scale_campus_cost(
         cleaned_cost,
         facility_params,
+        campus_type='servicing',
         sampled_cost_inputs=sampled_cost_inputs,
         return_sampled_inputs=return_sampled_inputs,
     )
@@ -1012,7 +1013,7 @@ def _servicing_operating_state_params(params, operating_reactors, service_events
         * state['He Gas Replenishment Per Hot Cell']
         + state['CoolantInventoryRPV_Mass'] * service_events_per_facility
     )
-    state['SER Number of Operators Per Shift'] = np.ceil(
+    state['SER Operator FTEs Per Facility'] = np.ceil(
         5.625 * service_scale ** 0.426
     )
     state['SER Engineering Headcount'] = np.ceil(
@@ -1307,6 +1308,7 @@ def build_servicing_annual_cost_samples(
                 state_scaled = scale_campus_cost(
                     cleaned_cost,
                     state_params,
+                    campus_type='servicing',
                     sampled_cost_inputs=sampled_values,
                 )
                 state_column = get_estimated_cost_column(state_scaled, 'F')

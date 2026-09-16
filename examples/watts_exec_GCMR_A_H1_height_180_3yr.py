@@ -257,7 +257,7 @@ calculate_shielding_masses(params)
 #                                           Sec. 9 : Operation
 # **************************************************************************************************************************
 update_params({
-    'Operation Mode': "Remotely Monitored",
+    'Operation Mode': "On-Site Staffed and Remotely Monitored",
     # Number of concurrent on-site operators per shift. On-Site Staffed means these positions are staffed 24/7;
     # Remotely Monitored means they are present only for refueling and startup after refueling or emergency shutdowns.
     'Number of On-Site Operators per Shift': 2,
