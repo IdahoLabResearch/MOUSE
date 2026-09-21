@@ -400,6 +400,7 @@ def _build_ltmr(params):
     params['A75: Inner Vessel Structure Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
     params['A75: Reflector Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
     params['A75: Reactor Control Devices Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
+    params['A75: Moderator Replacement Period (cycles)'] = 1
     params['A75: Moderator Booster Replacement Period (cycles)'] = 1
     params['Maintenance to Direct Cost Ratio'] = 0.015
     params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
@@ -685,6 +686,7 @@ def _build_gcmr(params):
     params['A75: Inner Vessel Structure Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
     params['A75: Reflector Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
     params['A75: Reactor Control Devices Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
+    params['A75: Moderator Replacement Period (cycles)'] = 1
     params['A75: Moderator Booster Replacement Period (cycles)'] = 1
     params['Maintenance to Direct Cost Ratio'] = 0.015
     params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
@@ -982,6 +984,7 @@ def _build_hpmr(params):
     params['A75: Inner Vessel Structure Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
     params['A75: Reflector Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
     params['A75: Reactor Control Devices Replacement Period (cycles)'] = np.floor(10 / total_refueling_period_yr)
+    params['A75: Moderator Replacement Period (cycles)'] = 1
     params['A75: Moderator Booster Replacement Period (cycles)'] = 1
     params['Maintenance to Direct Cost Ratio'] = 0.015
     params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
