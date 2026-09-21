@@ -52,7 +52,7 @@ def _load_depleted_fuel_override(params):
     return depleted_fuel
 
 def build_openmc_model_GCMR(params):
-
+    
     params.setdefault('Shutdown Margin Calc', False)
     params.setdefault('Isothermal Temperature Coefficients', False)
     params.setdefault('Cold Shutdown Temperature', 300)
@@ -74,14 +74,14 @@ def build_openmc_model_GCMR(params):
         # Creating surfaces
         shells = [openmc.Sphere(r=r) for r in fuel_radii.values()]
 
-
+        
         region = {'kernel': -shells[0],
                 'buffer': +shells[0] & -shells[1],
                 'layer_1': +shells[1] & -shells[2],
                 'layer_2': +shells[2] & -shells[3],
                 'layer_3': +shells[3] & -shells[4]
                 }
-
+    
         return region
 
 
@@ -122,7 +122,7 @@ def build_openmc_model_GCMR(params):
         outer_fuel_cell = openmc.Cell(fill= materials_database[params['Moderator']], region=outer_fuel_region)
 
         fuel_universe = openmc.Universe(cells=[compact_cell, outer_fuel_cell])
-        return active_core_maxz, active_core_minz, fuel_universe, compact_triso_particles_number, compact_cell
+        return active_core_maxz, active_core_minz, fuel_universe, compact_triso_particles_number, compact_cell 
 
     def create_universe_from_core_top_and_bottom_planes(radius, active_core_maxz, active_core_minz, material_inside, material_outside):
         surf = openmc.ZCylinder(r=radius)
@@ -259,7 +259,7 @@ def build_openmc_model_GCMR(params):
             name=f'{rod_name}_universe',
             cells=rod_cells + [outer_cell]
         )
-
+   
 
     def create_assembly(
         num_rings,
@@ -347,7 +347,7 @@ def build_openmc_model_GCMR(params):
         else:
             return assembly_universe, fuel_cells
 
-
+      
 
     def create_drums_universe_CGMR(params, absorber_thickness, drum_radius,
                             control_drum_absorber_material,
@@ -364,7 +364,7 @@ def build_openmc_model_GCMR(params):
 
         cd_inner_shell = openmc.ZCylinder(r= drum_radius - absorber_thickness)
         cd_outer_shell = openmc.ZCylinder(r= drum_radius)
-
+        
         # Drum Tube Radius is an explicit GCMR input validated in drums.py.
         if 'Drum Tube Radius' not in params:
             raise KeyError(
@@ -384,7 +384,7 @@ def build_openmc_model_GCMR(params):
         drum_reflector = -cd_outer_shell & ~drum_absorber
         drum_gap_hs = +cd_outer_shell & - cd_gap_shell
         drum_outside = +cd_gap_shell
-
+        
         drum_absorber = openmc.Cell(name='drum_absorber', fill= control_drum_absorber_material, region=drum_absorber)
         drum_reflector = openmc.Cell(name='drum_reflector', fill= control_drum_reflector_material, region=drum_reflector)
         drum_gap = openmc.Cell(name='drum_gap', region=drum_gap_hs)
@@ -392,15 +392,15 @@ def build_openmc_model_GCMR(params):
 
         drum_reference = openmc.Universe(cells=(drum_reflector, drum_absorber, drum_gap, drum_exterior))
 
-
+        
         drum_cells = []
         for r in range(0, 360, 60):
             dc = openmc.Cell(name=f'drum{r}', fill=drum_reference)
             dc.rotation = [0, 0, REFERENCE_ANGLE + -r + rotation_angle]
             drum_cells.append(dc)
 
-        drums = [openmc.Universe(cells=(dc,)) for dc in drum_cells]
-        return drums
+        drums = [openmc.Universe(cells=(dc,)) for dc in drum_cells]  
+        return drums       
 
     # **************************************************************************************************************************
     #                                                Sec. 1 : MATERIALS
@@ -423,7 +423,7 @@ def build_openmc_model_GCMR(params):
     shutdown_rod_absorber = materials_database[params['Shutdown Rod Absorber']]
     shutdown_rod_cladding = materials_database[params['Shutdown Rod Cladding']]
     coolant =  materials_database[params['Coolant']]
-
+    
     # **************************************************************************************************************************
     #                                                Sec. 2 : GEOMETRY: TRISO particles
     # **************************************************************************************************************************
@@ -434,35 +434,35 @@ def build_openmc_model_GCMR(params):
     for mat in params['Fuel Pin Materials']:
         if mat == None:
             fuel_materials.append(None)
-        else:
+        else: 
             material_1 = materials_database[mat]
             fuel_materials.append(material_1)
     # Give the user an error message if the number of materials does not match the number of regions
     assert len(fuel_pin_region) == len(fuel_materials), "The number of regions, {len(fuel_pin_region)} should be\
         the same as the number of introduced materials, {len(fuel_materials)}"
-
+    
     triso_cells = create_cells(fuel_pin_region, fuel_materials)
-    triso_universe = openmc.Universe(cells=triso_cells.values())
+    triso_universe = openmc.Universe(cells=triso_cells.values())  
 
     if params['plotting'] == "Y":
         # plotting
-        create_universe_plot(materials_database, triso_universe,
+        create_universe_plot(materials_database, triso_universe, 
                         plot_width = 2.2 * params['Fuel Pin Radii'][-1],
-                        num_pixels = 500,
+                        num_pixels = 500, 
                         font_size = 32,
-                        title = "TRISO Particle",
-                        fig_size = 8,
+                        title = "TRISO Particle", 
+                        fig_size = 8, 
                         output_file_name = "TRISO_Particle.png")
 
     # The fuel universe (TRISO particles with background material in between and moderator material around the TRISO)
     # compact_cell is the fuel compact cell (used in distribcell tally for peaking factor)
     active_core_maxz, active_core_minz, fuel_universe, compact_triso_particles_number, compact_cell = create_TRISO_particles_lattice_universe(params, triso_universe, materials_database)
-
+   
     # Coolant channels, booster pins, and burnable poison
     # Small coolant channels
     small_coolant_universe = create_universe_from_core_top_and_bottom_planes(params['Coolant Channel Radius'],\
     active_core_maxz, active_core_minz, coolant , materials_database[params['Matrix Material']])
-
+    
     booster_universe = create_multiregion_pin_universe(
         params['Moderator Booster Radii'],
         booster_materials_list,
@@ -531,7 +531,7 @@ def build_openmc_model_GCMR(params):
     fuel_lattice.center = (0., 0.)
     # Set the pitch (distance between the centers of adjacent hexagons) of the hexagonal lattice
     fuel_lattice.pitch = (params['Hex Lattice Radius'],)###
-
+    
     fuel_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]) # inner_fill or moderator_universe
     fuel_lattice.universes =  [[small_coolant_universe]*6, [fuel_universe]]
     fuel_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=fuel_lattice, region=hex_boundary)])
@@ -540,7 +540,7 @@ def build_openmc_model_GCMR(params):
     booster_lattice = openmc.HexLattice()
     booster_lattice.center = (0., 0.)
     booster_lattice.pitch = (params['Hex Lattice Radius'],)###
-    booster_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])])
+    booster_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]) 
     booster_lattice.universes = [[small_coolant_universe]*6, [booster_universe]]
     booster_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=booster_lattice, region=hex_boundary)])
 
@@ -548,12 +548,12 @@ def build_openmc_model_GCMR(params):
     coolant_lattice = openmc.HexLattice()
     coolant_lattice.center = (0., 0.)
     coolant_lattice.pitch = (params['Hex Lattice Radius'],)
-    coolant_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])])
+    coolant_lattice.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])]) 
     coolant_lattice.universes = [[small_coolant_universe]*6, [openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Moderator']])])]]
     coolant_lattice_hex = openmc.Universe(cells=[openmc.Cell(fill=coolant_lattice, region=hex_boundary)])
-
+                            
     # **************************************************************************************************************************
-    #                                                Sec. 3 : Fuel ASSEMBLY
+    #                                                Sec. 3 : Fuel ASSEMBLY 
     # **************************************************************************************************************************
 
     # assembly_universe, assembly_fuel_cells = create_assembly(params['Assembly Rings'] , params['Lattice Pitch'],\
@@ -567,7 +567,7 @@ def build_openmc_model_GCMR(params):
             )
         ]
     )
-
+    
     assembly_universe, assembly_fuel_cells = create_assembly(
         num_rings=params['Assembly Rings'],
         lattice_pitch=params['Lattice Pitch'],
@@ -625,25 +625,25 @@ def build_openmc_model_GCMR(params):
         surrounding_shutdown_fuel_cells
     )
 
-
+    
     if params['plotting'] == "Y":
-    # plotting
+    # plotting 
 
-        create_universe_plot(materials_database, assembly_universe,
+        create_universe_plot(materials_database, assembly_universe, 
                 plot_width =      2 *params['Lattice Pitch'] * params['Assembly Rings']  ,
-                num_pixels = 5000,
+                num_pixels = 5000, 
                 font_size = 32,
-                title = "Fuel Assembly",
-                fig_size = 8,
+                title = "Fuel Assembly", 
+                fig_size = 8, 
                 output_file_name = "Fuel Assembly.png")
 
-        create_universe_plot(materials_database, assembly_universe,
+        create_universe_plot(materials_database, assembly_universe, 
                 plot_width =      0.3 * params['Lattice Pitch'] * params['Assembly Rings']  ,
-                num_pixels = 5000,
+                num_pixels = 5000, 
                 font_size = 32,
-                title = "Fuel Assembly",
-                fig_size = 8,
-                output_file_name = "Fuel Assembly (zoomed in).png")
+                title = "Fuel Assembly", 
+                fig_size = 8, 
+                output_file_name = "Fuel Assembly (zoomed in).png")        
 
 
 
@@ -688,7 +688,7 @@ def build_openmc_model_GCMR(params):
 
     # **************************************************************************************************************************
     #                                           Sec. 4 : User-Defined Parameters (Control Drums)
-    # **************************************************************************************************************************
+    # ************************************************************************************************************************** 
 
     # Drum Assembly
 
@@ -696,17 +696,17 @@ def build_openmc_model_GCMR(params):
                                   drum_radius = params['Drum Radius'],
                           control_drum_absorber_material = control_drum_absorber,
                           control_drum_reflector_material = control_drum_reflector)
-
+    
 
 
     # **************************************************************************************************************************
     #                                           Sec. 5 : User-Defined Parameters (Core)
-    # **************************************************************************************************************************
+    # **************************************************************************************************************************                     
 
 
-
+    
     active_core = openmc.HexLattice()
-    active_core.center = (0., 0.)
+    active_core.center = (0., 0.)  
     # the height of the hexagonal of one fuel assembly
     active_core.pitch = (params['Assembly FTF'],)
     active_core.outer = openmc.Universe(cells=[openmc.Cell(fill= materials_database[params['Radial Reflector']])])  # reflector Area
@@ -757,7 +757,11 @@ def build_openmc_model_GCMR(params):
             f"lattice contains {modeled_drum_count} drum positions."
         )
     active_core.universes = rings
-    outer_surface = openmc.ZCylinder(r=params['Core Radius'], boundary_type='vacuum')
+    outer_surface = openmc.ZCylinder(
+        r=params['Core Radius'],
+        boundary_type='vacuum',
+        name='shielding_source_boundary',
+    )
     active_core_cell = openmc.Cell(fill=active_core, region=-outer_surface & -active_core_maxz & +active_core_minz)
     active_core_universe = openmc.Universe(cells=[active_core_cell])
 
@@ -801,55 +805,23 @@ def build_openmc_model_GCMR(params):
                 f"Core_{core_state}_zoomed.png"
             )
         )
-
-        # Plot the central shutdown assembly separately so the clearances
-        # around its shutdown positions remain visible when the figure is
-        # resized. The view scales with the user-selected rod ring, lattice
-        # pitch, and clad radius; it does not alter the modeled geometry.
-        central_shutdown_plot_width = 2.0 * (
-            params['Central Shutdown Rod Ring']
-            * params['Lattice Pitch']
-            + params['Central Shutdown Rod Clad Radius']
-            + 0.5 * params['Lattice Pitch']
-        )
-
-        print(
-            "Saving GCMR plot:",
-            f"Central_Shutdown_Assembly_{core_state}.png"
-        )
-
-        create_universe_plot(
-            materials_database,
-            central_shutdown_assembly_universe,
-            plot_width=central_shutdown_plot_width,
-            num_pixels=2000,
-            font_size=32,
-            title=(
-                f"Central Shutdown Assembly - {core_state} - "
-                "Geometry Detail"
-            ),
-            fig_size=8,
-            output_file_name=(
-                f"Central_Shutdown_Assembly_{core_state}.png"
-            )
-        )
     # if params['plotting'] == "Y":
-    #         create_universe_plot(materials_database, active_core_universe,
+    #         create_universe_plot(materials_database, active_core_universe, 
     #         plot_width = 2.2 * params['Core Radius'],
-    #         num_pixels = 500,
+    #         num_pixels = 500, 
     #         font_size = 32,
-    #         title = "Core",
-    #         fig_size = 8,
+    #         title = "Core", 
+    #         fig_size = 8, 
     #         output_file_name = "Core.png")
 
     # if params['plotting'] == "Y":
-    #         create_universe_plot(materials_database, active_core_universe,
+    #         create_universe_plot(materials_database, active_core_universe, 
     #         plot_width = 0.5 * params['Assembly FTF'] *  params['Core Rings'] ,
-    #         num_pixels = 500,
+    #         num_pixels = 500, 
     #         font_size = 32,
-    #         title = "Core",
-    #         fig_size = 8,
-    #         output_file_name = "Core (zoomed in).png")
+    #         title = "Core", 
+    #         fig_size = 8, 
+    #         output_file_name = "Core (zoomed in).png")        
 
     # **************************************************************************************************************************
     #                                                Sec. 6 : VOLUME INFO for Depletion
@@ -925,19 +897,19 @@ def build_openmc_model_GCMR(params):
             shutdown_rod_cladding,
         ]
     )
-
+    
     # Remove None materials
     all_materials_cleaned_list = [item for item in all_materials if item is not None]
     materials = openmc.Materials(
         list(dict.fromkeys(all_materials_cleaned_list))
     )
-
+   
     openmc.Materials.cross_sections = params['cross_sections_xml_location']
     materials.export_to_xml()
     core = openmc.Universe(cells=[active_core_cell])
     core_geometry = openmc.Geometry(core)
     core_geometry.export_to_xml()
-
+    
     # **************************************************************************************************************************
     #                                                Sec. 1.7 : TALLIES
     # **************************************************************************************************************************
@@ -955,6 +927,19 @@ def build_openmc_model_GCMR(params):
     mgxs_lib.domains = [core]
     mgxs_lib.build_library()
     mgxs_lib.add_to_tallies_file(tallies_file, merge=False)
+
+    # Design-dependent BOL source term for the dynamic shielding calculation.
+    shielding_leakage = openmc.Tally(name='boc_shielding_leakage_current')
+    shielding_leakage.filters = [
+        openmc.SurfaceFilter(outer_surface),
+        openmc.EnergyFilter(group_edges),
+    ]
+    shielding_leakage.scores = ['current']
+    tallies_file.append(shielding_leakage)
+
+    shielding_kappa = openmc.Tally(name='boc_total_kappa_fission')
+    shielding_kappa.scores = ['kappa-fission']
+    tallies_file.append(shielding_kappa)
 
     # Peaking factor tally (mesh-based for GCMR to avoid slow distribcell on stochastic TRISO geometry).
     # Uses a 20×20 mesh with a material filter on the fuel kernel for accurate spatial power distribution.

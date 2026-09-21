@@ -253,7 +253,113 @@ def collect_materials_data(params):
     SS304.add_element("nickel", 9.25, "wo")
 
     materials.append(SS304)
-    materials_database.update({'SS304': SS304})
+    materials_database.update({
+        'SS304': SS304,
+        # Engineering input files historically use this generic name.  Keep
+        # it as an alias so shielding transport uses the same SS304 material.
+        'stainless_steel': SS304,
+    })
+
+    # Low-alloy reactor-vessel steel surrogate.  The composition is intended
+    # for shielding transport, not structural qualification; users can replace
+    # it in this database without changing the shielding solver.
+    low_alloy_steel = openmc.Material(
+        name="low_alloy_steel",
+        temperature=params['Common Temperature'],
+    )
+    low_alloy_steel.set_density("g/cm3", 7.85)
+    low_alloy_steel.add_element("C", 0.25, "wo")
+    low_alloy_steel.add_element("Mn", 1.35, "wo")
+    low_alloy_steel.add_element("Si", 0.25, "wo")
+    low_alloy_steel.add_element("Ni", 0.80, "wo")
+    low_alloy_steel.add_element("Cr", 0.25, "wo")
+    low_alloy_steel.add_element("Mo", 0.55, "wo")
+    low_alloy_steel.add_element("Fe", 96.55, "wo")
+    materials.append(low_alloy_steel)
+    materials_database.update({
+        'low_alloy_steel': low_alloy_steel,
+        'SA508': low_alloy_steel,
+    })
+
+    # Water-extended polyester (WEP) surrogate based on the formulation in
+    # Savannah River report DP-1262: 40 wt% polyester plus a 60 wt% aqueous
+    # solution containing ethylene glycol, water, boric acid, NaOH, and a
+    # peroxide hardener.  The proprietary polyester/hardener chemistry is
+    # represented by PET (C10H8O4).  This database stores the nominal density;
+    # the shielding model applies Out Of Vessel Shield Effective Density Factor
+    # to a clone used for transport.
+    polyester = openmc.Material(name="WEP_polyester_component")
+    polyester.set_density("g/cm3", 1.38)
+    polyester.add_element("C", 10.0)
+    polyester.add_element("H", 8.0)
+    polyester.add_element("O", 4.0)
+
+    ethylene_glycol = openmc.Material(name="WEP_ethylene_glycol_component")
+    ethylene_glycol.set_density("g/cm3", 1.113)
+    ethylene_glycol.add_element("C", 2.0)
+    ethylene_glycol.add_element("H", 6.0)
+    ethylene_glycol.add_element("O", 2.0)
+
+    water_component = openmc.Material(name="WEP_water_component")
+    water_component.set_density("g/cm3", 0.998)
+    water_component.add_element("H", 2.0)
+    water_component.add_element("O", 1.0)
+
+    boric_acid = openmc.Material(name="WEP_boric_acid_component")
+    boric_acid.set_density("g/cm3", 1.435)
+    boric_acid.add_element("H", 3.0)
+    boric_acid.add_element("B", 1.0)
+    boric_acid.add_element("O", 3.0)
+
+    sodium_hydroxide = openmc.Material(name="WEP_NaOH_component")
+    sodium_hydroxide.set_density("g/cm3", 2.13)
+    sodium_hydroxide.add_element("Na", 1.0)
+    sodium_hydroxide.add_element("O", 1.0)
+    sodium_hydroxide.add_element("H", 1.0)
+
+    WEP = openmc.Material.mix_materials(
+        [
+            polyester,
+            ethylene_glycol,
+            water_component,
+            boric_acid,
+            sodium_hydroxide,
+        ],
+        [0.4018, 0.2604, 0.2400, 0.0798, 0.0180],
+        "wo",
+        name="WEP",
+    )
+    WEP.set_density("g/cm3", float(params.get("WEP Nominal Density", 1.10)))
+    WEP.temperature = float(params.get("Shielding Temperature", 300.0))
+    # Roughly 36.6% of the hydrogen atoms in this formulation belong to water.
+    WEP.add_s_alpha_beta("c_H_in_H2O", fraction=0.366)
+
+    # PNNL-15870 ordinary concrete, elemental weight fractions and 2.30 g/cm3.
+    ordinary_concrete = openmc.Material(
+        name="ordinary_concrete",
+        temperature=float(params.get("Shielding Temperature", 300.0)),
+    )
+    ordinary_concrete.set_density("g/cm3", 2.30)
+    for element, weight_fraction in {
+        "H": 0.022100,
+        "C": 0.002484,
+        "O": 0.574930,
+        "Na": 0.015208,
+        "Mg": 0.001266,
+        "Al": 0.019953,
+        "Si": 0.304627,
+        "K": 0.010045,
+        "Ca": 0.042951,
+        "Fe": 0.006435,
+    }.items():
+        ordinary_concrete.add_element(element, weight_fraction, "wo")
+    ordinary_concrete.add_s_alpha_beta("c_H_in_H2O")
+
+    materials.extend([WEP, ordinary_concrete])
+    materials_database.update({
+        'WEP': WEP,
+        'ordinary_concrete': ordinary_concrete,
+    })
   
     # """""""""""""""""""""
     # Sec. 1.7 : Carbides: Boron Carbide and Silicon Carbide
@@ -394,7 +500,12 @@ def collect_materials_data(params):
 
     # Monolith graphite
     monolith_graphite = openmc.Material(name='monolith_graphite')
-    monolith_graphite.set_density('g/cm3', 1.63)
+    # Internal override used only by density-aware HPMR temperature-
+    # coefficient snapshots. Other calculations retain 1.63 g/cm3.
+    monolith_graphite_density = float(
+        params.get('_Monolith Graphite Density Override', 1.63)
+    )
+    monolith_graphite.set_density('g/cm3', monolith_graphite_density)
     monolith_graphite.temperature = params['Common Temperature']
     monolith_graphite.add_nuclide('C12', 0.9893, 'ao')
     monolith_graphite.add_nuclide('C13', 0.0107, 'ao')

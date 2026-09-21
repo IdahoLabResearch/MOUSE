@@ -38,7 +38,11 @@ def vessels_specs(params):
     guard_vessel_mass_kg = guard_vessel_volume * materials_densities(params['Guard Vessel Material'])/1000
 
     # Refers to the RCCS / Cooling Vessel
-    cooling_vessel_radius = guard_vessel_radius + params['Gap Between Guard Vessel And Cooling Vessel'] # cm
+    cooling_vessel_radius = (
+        guard_vessel_radius
+        + params['Guard Vessel Thickness']
+        + params['Gap Between Guard Vessel And Cooling Vessel']
+    )  # inner radius, cm
     cooling_bottom_depth = guard_bottom_depth + params['Guard Vessel Thickness'] +\
         params['Gap Between Guard Vessel And Cooling Vessel']
     cooling_vessel_volume = (ellipsoid_shell(cooling_vessel_radius, cooling_vessel_radius, cooling_bottom_depth)/2)*\
@@ -47,7 +51,11 @@ def vessels_specs(params):
     cooling_vessel_mass = cooling_vessel_volume * materials_densities(params['Cooling Vessel Material'])/1000
     
     # Refers to the RCCS Intake Vessel
-    intake_vessel_radius = cooling_vessel_radius + params['Gap Between Cooling Vessel And Intake Vessel']
+    intake_vessel_radius = (
+        cooling_vessel_radius
+        + params['Cooling Vessel Thickness']
+        + params['Gap Between Cooling Vessel And Intake Vessel']
+    )
     intake_bottom_depth = cooling_bottom_depth + params['Cooling Vessel Thickness'] + params['Gap Between Cooling Vessel And Intake Vessel']
     intake_vessel_volume = (ellipsoid_shell(intake_vessel_radius, intake_vessel_radius, intake_bottom_depth)/2)\
         * params['Intake Vessel Thickness'] + (circle_area(intake_vessel_radius + params['Intake Vessel Thickness']) -\

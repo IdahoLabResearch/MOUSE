@@ -604,7 +604,11 @@ def create_core_geometry(params, drums, drums_positions, assembly_universe):
     drum_tube_radius = params['Drum Tube Radius']
 
     # Outer vacuum boundary
-    outer_surface = openmc.ZCylinder(r=params['Core Radius'], boundary_type='vacuum')
+    outer_surface = openmc.ZCylinder(
+        r=params['Core Radius'],
+        boundary_type='vacuum',
+        name='shielding_source_boundary',
+    )
 
     # Pairwise overlap check
     for i in range(len(drums_positions)):
@@ -640,7 +644,7 @@ def create_core_geometry(params, drums, drums_positions, assembly_universe):
     core = openmc.Universe(cells=[core_cell] + drum_cells)
     core_geometry = openmc.Geometry(core)
 
-    return core_geometry, core
+    return core_geometry, core, outer_surface
 
 
 # **************************************************************************************************************************
@@ -873,7 +877,7 @@ def build_openmc_model_LTMR(params):
         control_drum_positions
     )
 
-    core_geometry, core = create_core_geometry(
+    core_geometry, core, shielding_source_boundary = create_core_geometry(
         params,
         drums,
         drums_positions=control_drum_positions,
@@ -942,6 +946,19 @@ def build_openmc_model_LTMR(params):
     mgxs_lib.domains = [core]
     mgxs_lib.build_library()
     mgxs_lib.add_to_tallies_file(tallies_file, merge=False)
+
+    # Design-dependent BOL source term for the dynamic shielding calculation.
+    shielding_leakage = openmc.Tally(name='boc_shielding_leakage_current')
+    shielding_leakage.filters = [
+        openmc.SurfaceFilter(shielding_source_boundary),
+        openmc.EnergyFilter(group_edges),
+    ]
+    shielding_leakage.scores = ['current']
+    tallies_file.append(shielding_leakage)
+
+    shielding_kappa = openmc.Tally(name='boc_total_kappa_fission')
+    shielding_kappa.scores = ['kappa-fission']
+    tallies_file.append(shielding_kappa)
 
     # Peaking factor tally (pin power)
     pin_filter = openmc.DistribcellFilter(fuel_cell)

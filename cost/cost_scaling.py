@@ -134,6 +134,10 @@ def scale_cost(initial_database, params):
             exponent_std = row['Exponent std']
             exponent_dist = row['Exponent Distribution']
 
+            # A blank database exponent means linear scaling.  Initialize it
+            # explicitly for every row so a blank cell cannot reuse the
+            # exponent from the preceding row.
+            exponent = 1.0
             if pd.notna(row['Exponent']):
                 if params['Number of Samples'] > 1:
                     if exponent_dist == 'Truncated Normal':
@@ -235,6 +239,10 @@ def scale_central_facility_cost(initial_database, params):
             exponent_std = row['Exponent std']
             exponent_dist = row['Exponent Distribution']
 
+            # A blank database exponent means linear scaling.  Initialize it
+            # explicitly for every row so a blank cell cannot reuse the
+            # exponent from the preceding row.
+            exponent = 1.0
             if pd.notna(row['Exponent']):
                 if params['Number of Samples'] > 1:
                     if exponent_dist == 'Truncated Normal':

@@ -1317,22 +1317,32 @@ PARAMS_REGISTRY = {
 
     'A75: Inner Vessel Structure Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of fuel cycles between scheduled inner vessel structure replacements',
+        'description': 'Legacy input: number of fuel cycles between scheduled inner vessel structure replacements',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'A75: Inner Vessel Structure Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar years between scheduled inner vessel structure replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'A75: Reflector Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of fuel cycles between scheduled reflector replacements',
+        'description': 'Legacy input: number of fuel cycles between scheduled reflector replacements',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'A75: Reflector Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar years between scheduled reflector replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'A75: Reactor Control Devices Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of fuel cycles between scheduled reactor control device replacements',
+        'description': 'Legacy input: number of fuel cycles between scheduled reactor control device replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
-    'A75: Moderator Replacement Period (cycles)': {
-        'group': 'Operation', 'units': 'cycles',
-        'description': 'Number of complete fuel cycles between moderator replacements',
+    'A75: Reactor Control Devices Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar years between scheduled reactor control device replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'A75: Moderator Booster Replacement Period (cycles)': {
@@ -2156,6 +2166,16 @@ PARAMS_REGISTRY = {
         'description': 'Learning rate for onsite construction and installation activities',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'UO2 Learning': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'Learning rate for UO2 fuel fabrication per doubling of cumulative units produced',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'TRISO Learning': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'Learning rate for TRISO fuel fabrication per doubling of cumulative units produced',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'No Learning Cost Multiplier': {
         'group': 'Learning Rates', 'units': 'fraction',
         'description': 'NOAK cost multiplier for components with no learning (always 1.0)',
@@ -2199,6 +2219,16 @@ PARAMS_REGISTRY = {
     'Onsite Learning Cost Multiplier': {
         'group': 'Learning Rates', 'units': 'fraction',
         'description': 'NOAK cost multiplier for onsite construction activities based on Wright\'s Law',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'UO2 Learning Cost Multiplier': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'NOAK cost multiplier for UO2 fuel fabrication based on Wright\'s Law',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'TRISO Learning Cost Multiplier': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'NOAK cost multiplier for TRISO fuel fabrication based on Wright\'s Law',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     # =========================================================
@@ -2306,7 +2336,12 @@ PARAMS_REGISTRY = {
 
     'Temperature Coefficient Graphite Densities': {
         'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
-        'description': 'GCMR graphite densities used at the base and elevated temperatures using the configured linear thermal-expansion coefficient.',
+        'description': 'GCMR or HPMR bulk-graphite densities used at the base and elevated temperatures using the configured linear thermal-expansion coefficient.',
+        'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
+
+    'Temperature Coefficient Monolith Graphite Densities': {
+        'group': 'Debug / Intermediate Values', 'units': 'g/cm3',
+        'description': 'HPMR graphite-monolith densities used at the base and elevated temperatures using the configured linear thermal-expansion coefficient.',
         'source': 'Calculated', 'hidden': True, 'array_mode': 'as_is'},
 
     'Temperature Coefficient Base Seeds': {

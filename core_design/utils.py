@@ -6,11 +6,13 @@ import watts
 import traceback  # print full stack traces for OpenMC failures
 import glob
 import os
+from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from core_design.correction_factor import corrected_keff_2d, corrected_keff_static
-#from core_design.correction_factor import corrected_keff_steady_state       #Use this line and comment the previuos line if you run steady state
+#from core_design.correction_factor import corrected_keff_steady_state       #Use this line and comment the previuos line if you run steady state 
 from core_design.peaking_factor import compute_pin_peaking_factors
+from core_design.shielding import estimate_dynamic_shielding
 
 import pandas
 
@@ -20,12 +22,14 @@ import pandas
 BOL_TEMPERATURE_COEFFICIENT_PARTICLES = 30000
 TEMPERATURE_COEFFICIENT_PARTICLES = 4000
 EOL_TEMPERATURE_COEFFICIENT_PARTICLES = 15000
+HPMR_TEMPERATURE_COEFFICIENT_PARTICLES = 4000
 
 # Current MOUSE material densities at the operating reference temperature.
 NAK_REFERENCE_DENSITY_G_CM3 = 0.85
 ZRH_REFERENCE_DENSITY_G_CM3 = 5.6
 HELIUM_REFERENCE_DENSITY_G_CM3 = 0.000166
 GRAPHITE_REFERENCE_DENSITY_G_CM3 = 1.60
+HPMR_MONOLITH_GRAPHITE_REFERENCE_DENSITY_G_CM3 = 1.63
 
 # Mean linear expansion coefficient reported for unalloyed epsilon-ZrH1.83.
 # The model uses H/Zr = 1.85. Geometry is held fixed in this density-only
@@ -77,8 +81,11 @@ def _temperature_density_overrides(
 
     LTMR uses temperature-dependent NaK and ZrH number densities. GCMR
     uses constant-pressure helium scaling plus thermal-expansion density
-    corrections for graphite and ZrH. Solid geometry remains fixed, so the
-    graphite and ZrH terms are density-only approximations.
+    corrections for graphite and ZrH. HPMR applies thermal-expansion density
+    corrections to its graphite monolith and bulk graphite while retaining
+    fixed densities for its sealed helium gaps and homogenized heat pipes.
+    Solid geometry remains fixed, so solid expansion is represented using
+    density-only approximations.
     """
     reactor_type = params.get('reactor type')
 
@@ -147,9 +154,45 @@ def _temperature_density_overrides(
             ),
         }
 
+    if reactor_type == 'HPMR':
+        reference_temperature_k = float(reference_temperature_k)
+        temperature_k = float(temperature_k)
+        if reference_temperature_k <= 0.0 or temperature_k <= 0.0:
+            raise ValueError(
+                "HPMR density temperatures must be greater than zero K."
+            )
+
+        graphite_linear_expansion = float(
+            params.get(
+                'Graphite Linear Expansion Coefficient',
+                GRAPHITE_LINEAR_EXPANSION_PER_K
+            )
+        )
+        if graphite_linear_expansion < 0.0:
+            raise ValueError(
+                "Graphite Linear Expansion Coefficient cannot be negative."
+            )
+        graphite_scale = 1.0 + graphite_linear_expansion * (
+            temperature_k - reference_temperature_k
+        )
+        if graphite_scale <= 0.0:
+            raise ValueError(
+                "The HPMR graphite thermal-expansion scale must be positive."
+            )
+
+        return {
+            '_Graphite Density Override': float(
+                GRAPHITE_REFERENCE_DENSITY_G_CM3 / graphite_scale ** 3
+            ),
+            '_Monolith Graphite Density Override': float(
+                HPMR_MONOLITH_GRAPHITE_REFERENCE_DENSITY_G_CM3
+                / graphite_scale ** 3
+            ),
+        }
+
     raise ValueError(
         "Density-aware temperature coefficients are implemented only for "
-        f"LTMR and GCMR, not {reactor_type!r}."
+        f"LTMR, GCMR, and HPMR, not {reactor_type!r}."
     )
 
 
@@ -169,6 +212,11 @@ MATERIAL_COLORS = {
     'BeO': 'pink',
     'Zr': 'lime',
     'SS304': 'black',
+    'stainless_steel': 'midnightblue',
+    'low_alloy_steel': 'steelblue',
+    'SA508': 'royalblue',
+    'WEP': 'mediumorchid',
+    'ordinary_concrete': 'gainsboro',
     'B4C_natural': 'olive',
     'B4C_enriched': 'deepskyblue',
     'SiC': 'teal',
@@ -558,7 +606,9 @@ def openmc_depletion(params, lattice_geometry, settings):
     elif 'Time Steps' in params:
         time_steps_list = params['Time Steps']
         power_list = [params['Power MWt'] * 1e6] * len(time_steps_list)
-        integrator = openmc.deplete.CECMIntegrator(operator, time_steps_list, power_list)
+        integrator = openmc.deplete.PredictorIntegrator(
+            operator, time_steps_list, power_list
+        )
 
     print("Starting depletion")
     integrator.integrate()
@@ -575,6 +625,8 @@ def openmc_depletion(params, lattice_geometry, settings):
     # 6) beginning-of-life estimated axial leakage percentage
     # 7) beginning-of-life total non-leakage probability (NaN if core radius is unavailable)
     # 8) beginning-of-life estimated total leakage percentage (NaN if core radius is unavailable)
+    # 9) cycle-length status
+    # 10) whether the cycle length was extrapolated beyond the depletion schedule
     (
         fuel_lifetime_days,
         time_steps,
@@ -584,6 +636,8 @@ def openmc_depletion(params, lattice_geometry, settings):
         bol_axial_leakage_percent,
         bol_total_non_leakage_probability,
         bol_total_leakage_percent,
+        cycle_length_status,
+        cycle_length_extrapolated,
     ) = corrected_keff_2d(
         depletion_2d_results_file,
         params['Active Height'] + 2 * params['Axial Reflector Thickness'],
@@ -699,12 +753,16 @@ def openmc_depletion(params, lattice_geometry, settings):
     # If Core Radius is not available, these values are returned as NaN.
     params['BOL Total Non-Leakage Probability'] = bol_total_non_leakage_probability
     params['Estimated Total Leakage (%)'] = bol_total_leakage_percent
+    params['Fuel Lifetime Status'] = str(cycle_length_status)
+    params['Fuel Lifetime Extrapolated'] = bool(cycle_length_extrapolated)
 
     return fuel_lifetime_days, mass_U235, mass_U238, pf_summary
 
 
 def run_depletion_analysis(params):
     openmc.run()
+    if params.get('Dynamic Shielding Calculation', False):
+        estimate_dynamic_shielding(params, _latest_statepoint_file())
     lattice_geometry = openmc.Geometry.from_xml()
     settings = openmc.Settings.from_xml()
     fuel_lifetime_days, mass_U235, mass_U238, pf_summary = \
@@ -715,7 +773,7 @@ def run_depletion_analysis(params):
     params['Mass U238'] = mass_U238
     params['Uranium Mass'] = (mass_U235 + mass_U238) / 1000
 
-# Use this function and comment the previous one if you run steady state
+# Use this function and comment the previous one if you run steady state 
 # def run_steady_state_analysis(params):
 #     import glob
 
@@ -795,7 +853,9 @@ def openmc_depletion_3d(params, lattice_geometry, settings):
     elif 'Time Steps' in params:
         time_steps_list = params['Time Steps']
         power_list = [params['Power MWt'] * 1e6] * len(time_steps_list)
-        integrator = openmc.deplete.CECMIntegrator(operator, time_steps_list, power_list)
+        integrator = openmc.deplete.PredictorIntegrator(
+            operator, time_steps_list, power_list
+        )
     else:
         raise ValueError("3D depletion requires either 'Burnup Steps' or 'Time Steps'.")
 
@@ -976,6 +1036,7 @@ def _run_static_snapshot(
         '_ZrH Density Override',
         '_Helium Density Override',
         '_Graphite Density Override',
+        '_Monolith Graphite Density Override',
     )
     original_density_overrides = {
         key: (key in params, params.get(key))
@@ -1137,6 +1198,7 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
             '_ZrH Density Override': 'ZrH',
             '_Helium Density Override': 'Helium',
             '_Graphite Density Override': 'Graphite',
+            '_Monolith Graphite Density Override': 'Monolith Graphite',
         }
         for override_key, material_name in density_output_names.items():
             if override_key not in base_density_overrides:
@@ -1160,7 +1222,9 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
         if params['Isothermal Temperature Coefficients']:
             base_seed = 104729 + 2000003 * case_number
             high_seed = 15485863 + 2000033 * case_number
-            if index == lifecycle['bol_index']:
+            if params.get('reactor type') == 'HPMR':
+                case_particles = HPMR_TEMPERATURE_COEFFICIENT_PARTICLES
+            elif index == lifecycle['bol_index']:
                 case_particles = BOL_TEMPERATURE_COEFFICIENT_PARTICLES
             elif index in eol_indices:
                 case_particles = EOL_TEMPERATURE_COEFFICIENT_PARTICLES
@@ -1594,6 +1658,22 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
     params.setdefault('Isothermal Temperature Coefficients', False)
     params.setdefault('Cold Shutdown Temperature', 300)
 
+    # WATTS executes the OpenMC plugin in a temporary directory that is removed
+    # after the plugin returns. Resolve shielding outputs before entering that
+    # directory so detailed results remain visible during the run and persist
+    # afterward.
+    if params.get('Dynamic Shielding Calculation', False):
+        shielding_root = params.get('Shielding Working Directory')
+        if shielding_root is None:
+            shielding_root = Path.cwd() / 'shielding_runs'
+        else:
+            shielding_root = Path(str(shielding_root)).expanduser()
+        params['Shielding Working Directory'] = str(shielding_root.resolve())
+        print(
+            "Dynamic shielding detailed outputs will be written to: "
+            f"{params['Shielding Working Directory']}"
+        )
+
     original_shutdown_margin_calc = params['Shutdown Margin Calc']
     original_isothermal_temperature_coefficients = (
         params['Isothermal Temperature Coefficients']
@@ -1610,15 +1690,24 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
         if params['Temperature Perturbation'] <= 0.0:
             raise ValueError("'Temperature Perturbation' must be greater than zero.")
 
-        print(
-            f"Using {BOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
-            "batch for the BOL temperature-coefficient snapshot, "
-            f"{TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch for "
-            "the MOL snapshot, and "
-            f"{EOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
-            "for both EOL bracketing snapshots. The operating depletion and "
-            "cold-shutdown calculations retain their normal particle settings."
-        )
+        if params.get('reactor type') == 'HPMR':
+            print(
+                f"Using {HPMR_TEMPERATURE_COEFFICIENT_PARTICLES} particles "
+                "per batch for all HPMR BOL, MOL, and EOL "
+                "temperature-coefficient snapshots. The operating depletion "
+                "and cold-shutdown calculations retain their normal particle "
+                "settings."
+            )
+        else:
+            print(
+                f"Using {BOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
+                "batch for the BOL temperature-coefficient snapshot, "
+                f"{TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch for "
+                "the MOL snapshot, and "
+                f"{EOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
+                "for both EOL bracketing snapshots. The operating depletion and "
+                "cold-shutdown calculations retain their normal particle settings."
+            )
 
     try:
         print(f"\n\nThe results/plots are saved at: {watts.Database().path}\n\n")

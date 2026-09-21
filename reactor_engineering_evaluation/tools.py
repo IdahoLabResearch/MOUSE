@@ -1,6 +1,8 @@
 # Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 import numpy as np 
 
+from core_design.openmc_materials_database import collect_materials_data
+
 def ellipsoid_shell(a, b, c):
     return 4*np.pi*np.power(((a*b)**1.6 + (a*c)**1.6 + (b*c)**1.6)/3, 1/1.6)
 
@@ -8,7 +10,7 @@ def circle_area(r):
     return (np.pi) * r **2
 
 
-def materials_densities(material):
+def materials_densities(material, params=None):
     material_densities = {
     "stainless_steel": 8.0,  # Approximate density of stainless steel
     "SS316": 8.0,            # Approximate density of SS316
@@ -19,7 +21,21 @@ def materials_densities(material):
     "B4C_natural": 2.52,     # Approximate density of boron carbide
     "WEP": 1.1,              # WEP density (water extended polymer)
     }
-    return material_densities[material] # in gram/cm^3
+    if material in material_densities:
+        return material_densities[material]  # in gram/cm^3
+    if params is None:
+        raise KeyError(
+            f"No engineering density is available for material {material!r}."
+        )
+    materials_database = collect_materials_data(params)
+    if material not in materials_database:
+        raise KeyError(
+            f"Material {material!r} is not in the MOUSE materials database."
+        )
+    density = materials_database[material].density
+    if density is None:
+        raise ValueError(f"Material {material!r} has no density.")
+    return float(density)
 
 def material_specific_heat(material):
     material_cp = {
@@ -28,21 +44,51 @@ def material_specific_heat(material):
     }
     return material_cp[material]  # J/(kg·K)
 
-def cylinder_annulus_mass(outer_radius , inner_radius,height, material ):
+def cylinder_annulus_mass(
+    outer_radius,
+    inner_radius,
+    height,
+    material,
+    params=None,
+):
 
     volume = 3.14* (outer_radius**2 - inner_radius**2) * height
-    mass = volume* materials_densities(material)/1000  # kg
+    mass = volume * materials_densities(material, params=params) / 1000  # kg
     return mass # in kg
 
 def calculate_shielding_masses(params):
     params['In Vessel Shield Mass'] = cylinder_annulus_mass(params['In Vessel Shield Outer Radius'],\
-    params['In Vessel Shield Inner Radius'], params['Vessel Height'], params['In Vessel Shield Material'] )
-    params['Outer Shield Outer Radius'] = params['Out Of Vessel Shield Thickness'] + params['Vessels Total Radius']
-    params['Outer Shield Inner Radius'] = params['Outer Shield Outer Radius'] - params['Out Of Vessel Shield Thickness']
+    params['In Vessel Shield Inner Radius'], params['Vessel Height'], params['In Vessel Shield Material'], params=params)
 
-    outer_shield_mass = cylinder_annulus_mass(params['Outer Shield Outer Radius'], params['Outer Shield Inner Radius'],\
-    params['Vessels Total Height'], params['Out Of Vessel Shield Material']) 
-    params['Out Of Vessel Shield Mass'] = params['Out Of Vessel Shield Effective Density Factor'] * outer_shield_mass
+    # Represent the out-of-vessel shield as an open-top cylindrical enclosure:
+    # an annular side shield surrounding the vessel system plus a full circular
+    # bottom shield.  A solid top shield is intentionally excluded so that the
+    # reactor-service penetrations and RVACS intake/exhaust path remain open.
+    shield_thickness = float(params['Out Of Vessel Shield Thickness'])
+    inner_radius = float(params['Vessels Total Radius'])
+    outer_radius = inner_radius + shield_thickness
+    shield_height = float(params['Vessels Total Height'])
+
+    params['Outer Shield Inner Radius'] = inner_radius
+    params['Outer Shield Outer Radius'] = outer_radius
+
+    side_volume = np.pi * (outer_radius**2 - inner_radius**2) * shield_height
+    bottom_volume = np.pi * outer_radius**2 * shield_thickness
+    total_shield_volume = side_volume + bottom_volume
+
+    material_density = materials_densities(
+        params['Out Of Vessel Shield Material'],
+        params=params,
+    )
+    effective_density_factor = float(
+        params['Out Of Vessel Shield Effective Density Factor']
+    )
+    params['Out Of Vessel Shield Mass'] = (
+        total_shield_volume
+        * material_density
+        * effective_density_factor
+        / 1000
+    )
 
 def mass_flow_rate(params):
     loop_factor = 1

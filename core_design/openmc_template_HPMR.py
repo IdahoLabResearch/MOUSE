@@ -6,6 +6,37 @@ from core_design.openmc_materials_database import collect_materials_data
 from core_design.utils import create_universe_plot, circle_area, create_cells
 
 
+def _load_depleted_fuel_override(params):
+    """Load the operating depleted HPMR fuel for a lifecycle static case."""
+    materials_xml = params.get('_Depleted Fuel Materials XML')
+    if not materials_xml:
+        return None
+
+    if '_Operating Fuel Material ID' not in params:
+        raise ValueError(
+            "Static lifecycle calculation is missing the operating fuel "
+            "material ID. Run the operating depletion before static cases."
+        )
+
+    operating_fuel_id = int(params['_Operating Fuel Material ID'])
+    depleted_materials = openmc.Materials.from_xml(materials_xml)
+    matches = [
+        material
+        for material in depleted_materials
+        if material.id == operating_fuel_id
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected one depleted fuel material with ID "
+            f"{operating_fuel_id}, but found {len(matches)} in "
+            f"{materials_xml}."
+        )
+
+    depleted_fuel = matches[0]
+    depleted_fuel.temperature = params['Common Temperature']
+    return depleted_fuel
+
+
 # **************************************************************************************************************************
 #                                                Sec. 0 : Helper Functions
 # **************************************************************************************************************************
@@ -300,7 +331,13 @@ def create_control_drums(params, materials_database):
     cr_out = openmc.ZCylinder(surface_id=44, x0=0.0, y0=0.0, r=cr_out_radius, name='cr_out')
     cr_gap = openmc.ZCylinder(surface_id=45, x0=0.0, y0=0.0, r=cr_gap_radius, name='cr_gap')
 
-    core_out = openmc.ZCylinder(surface_id=82, x0=0.0, y0=0.0, r=core_radius, name='core_out_2')
+    core_out = openmc.ZCylinder(
+        surface_id=82,
+        x0=0.0,
+        y0=0.0,
+        r=core_radius,
+        name='shielding_source_boundary',
+    )
     core_out.boundary_type = 'vacuum'
 
     # Define the one control drum cells
@@ -413,6 +450,12 @@ def build_openmc_model_HPMR(params):
     materials_database = collect_materials_data(params)
 
     fuel = materials_database[params['Fuel']]
+    depleted_fuel_override = _load_depleted_fuel_override(params)
+    if depleted_fuel_override is None:
+        params['_Operating Fuel Material ID'] = int(fuel.id)
+    else:
+        fuel = depleted_fuel_override
+        materials_database[params['Fuel']] = fuel
     coolant = materials_database[params['Cooling Device']]
     reflector = materials_database[params['Radial Reflector']]
     moderator = materials_database[params['Moderator']]
@@ -519,6 +562,22 @@ def build_openmc_model_HPMR(params):
     mgxs_lib.domains = [core]
     mgxs_lib.build_library()
     mgxs_lib.add_to_tallies_file(tallies_file, merge=False)
+
+    shielding_source_boundary = next(
+        surface for surface in core_geometry.get_all_surfaces().values()
+        if surface.name == 'shielding_source_boundary'
+    )
+    shielding_leakage = openmc.Tally(name='boc_shielding_leakage_current')
+    shielding_leakage.filters = [
+        openmc.SurfaceFilter(shielding_source_boundary),
+        openmc.EnergyFilter(group_edges),
+    ]
+    shielding_leakage.scores = ['current']
+    tallies_file.append(shielding_leakage)
+
+    shielding_kappa = openmc.Tally(name='boc_total_kappa_fission')
+    shielding_kappa.scores = ['kappa-fission']
+    tallies_file.append(shielding_kappa)
 
     # Peaking factor tally (pin power)
     pin_filter = openmc.DistribcellFilter(fuel_cell)

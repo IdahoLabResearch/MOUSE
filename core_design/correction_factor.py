@@ -130,7 +130,12 @@ def corrected_keff_static(statepoint_file, total_height, core_radius=None):
     )
 
 
-def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None):
+def corrected_keff_2d(
+    depletion_2d_results_file,
+    total_height,
+    core_radius=None,
+    plotting=True
+):
     """
     Apply a leakage correction to 2D depletion keff values using a simple
     non-leakage probability approximation.
@@ -167,6 +172,12 @@ def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None)
     estimated_total_leakage_bol_pct : float
         Estimated beginning-of-life total leakage [%]. Returned as np.nan when
         core_radius is not provided.
+    cycle_length_status : str
+        Indicates whether the cycle length was interpolated, extrapolated,
+        identified as subcritical at BOL, or limited to the simulated endpoint.
+    cycle_length_extrapolated : bool
+        True only when the reported cycle length was extrapolated beyond the
+        depletion schedule from the final two corrected keff points.
     """
 
     geometry = openmc.Geometry.from_xml()
@@ -333,76 +344,126 @@ def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None)
     # plt.show()
 
 
-    # Plot only the operating-period portion of the depletion history.
-    # This does not change the depletion calculation or cycle-length result.
-    plot_limit_days = 2000.0
+    if str(plotting).upper() == 'Y' or plotting is True:
+        # Plot only the operating-period portion of the depletion history.
+        # This does not change the depletion calculation or cycle-length result.
+        plot_limit_days = 2000.0
+        plot_indices = [
+            i for i, t in enumerate(time_steps)
+            if t <= plot_limit_days
+        ]
 
-    plot_indices = [
-        i for i, t in enumerate(time_steps)
-        if t <= plot_limit_days
-    ]
+        # Include the first point after the limit so the trend is visible.
+        if plot_indices:
+            last_index = min(plot_indices[-1] + 2, len(time_steps))
+        else:
+            last_index = min(2, len(time_steps))
 
-    # Include the first point after the limit so the downward trend is visible.
-    if plot_indices:
-        last_index = min(plot_indices[-1] + 2, len(time_steps))
-    else:
-        last_index = min(2, len(time_steps))
+        plt.figure()
+        plt.plot(
+            time_steps[:last_index],
+            keff_2d_values[:last_index],
+            marker='o',
+            linestyle='-',
+            color='r',
+            label='keff_2D'
+        )
+        plt.plot(
+            time_steps[:last_index],
+            keff_2d_corrected_values[:last_index],
+            marker='o',
+            linestyle='-',
+            color='g',
+            label='corrected_keff_2D'
+        )
+        plt.axhline(y=1.0, color='k', linestyle='--', label='k = 1')
+        plt.xlabel('Time [days]')
+        plt.ylabel('k-effective')
+        plt.title('Comparison of keff_2D and corrected_keff_2D vs. Time')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig('keff_comparison_vs_Time.png', dpi=300)
+        plt.close()
 
-    plt.figure()
-
-    plt.plot(
-        time_steps[:last_index],
-        keff_2d_values[:last_index],
-        marker='o',
-        linestyle='-',
-        color='r',
-        label='keff_2D'
-    )
-
-    plt.plot(
-        time_steps[:last_index],
-        keff_2d_corrected_values[:last_index],
-        marker='o',
-        linestyle='-',
-        color='g',
-        label='corrected_keff_2D'
-    )
-
-    plt.axhline(
-        y=1.0,
-        color='k',
-        linestyle='--',
-        label='k = 1'
-    )
-
-    plt.xlabel('Time [days]')
-    plt.ylabel('k-effective')
-    plt.title('Comparison of keff_2D and corrected_keff_2D vs. Time')
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig('keff_comparison_vs_Time.png', dpi=300)
-    plt.show()
+    if not keff_2d_corrected_values:
+        raise ValueError("No corrected depletion keff values were produced.")
 
     cycle_length = None
+    cycle_length_status = None
+    cycle_length_extrapolated = False
 
-    for i in range(1, len(keff_2d_corrected_values)):
-        k1 = keff_2d_corrected_values[i - 1]
-        k2 = keff_2d_corrected_values[i]
-        t1 = time_steps[i - 1]
-        t2 = time_steps[i]
-
-        if (k1 < 1.0 <= k2) or (k2 < 1.0 <= k1):
-            slope = (k2 - k1) / (t2 - t1)
-            cycle_length = t1 + (1.0 - k1) / slope
-            break
-
-    if cycle_length is not None:
-        round_cycle_length = round(cycle_length, 0)
-        print(f"Estimated fuel cycle length: {round_cycle_length} days")
+    # A design that is already subcritical cannot have a positive operating
+    # cycle. Keep the workflow running so it can be reported and screened out.
+    if keff_2d_corrected_values[0] <= 1.0:
+        cycle_length = 0.0
+        cycle_length_status = 'BOL subcritical'
+        print(
+            "WARNING: corrected BOL keff is at or below 1.0; the reported "
+            "operating cycle length is 0 days."
+        )
     else:
-        print("k = 1.0 not reached within the given time steps.")
-        raise ValueError("Cannot compute fuel cycle length: k=1.0 was never reached.")
+        # A fuel-cycle endpoint is a downward crossing of k = 1.
+        for i in range(1, len(keff_2d_corrected_values)):
+            k1 = keff_2d_corrected_values[i - 1]
+            k2 = keff_2d_corrected_values[i]
+            t1 = time_steps[i - 1]
+            t2 = time_steps[i]
+
+            if k1 >= 1.0 and k2 <= 1.0:
+                if k2 == k1:
+                    cycle_length = t2
+                else:
+                    slope = (k2 - k1) / (t2 - t1)
+                    cycle_length = t1 + (1.0 - k1) / slope
+                cycle_length_status = 'Interpolated k=1 crossing'
+                break
+
+    # If the schedule ends while the core is still supercritical, extrapolate
+    # only when the final trend is decreasing. This is a scoping estimate; the
+    # status is retained so downstream studies can distinguish it from a
+    # bracketed crossing.
+    if cycle_length is None:
+        if len(time_steps) >= 2:
+            t1, t2 = time_steps[-2], time_steps[-1]
+            k1 = keff_2d_corrected_values[-2]
+            k2 = keff_2d_corrected_values[-1]
+            slope = (k2 - k1) / (t2 - t1)
+        else:
+            slope = np.nan
+
+        if np.isfinite(slope) and slope < 0.0:
+            extrapolated_cycle_length = time_steps[-1] + (
+                1.0 - keff_2d_corrected_values[-1]
+            ) / slope
+            if extrapolated_cycle_length >= time_steps[-1]:
+                cycle_length = extrapolated_cycle_length
+                cycle_length_status = 'Extrapolated beyond depletion schedule'
+                cycle_length_extrapolated = True
+                print(
+                    "WARNING: corrected keff remained above 1.0 through the "
+                    "depletion schedule. Cycle length was extrapolated from "
+                    "the final two corrected keff points."
+                )
+
+        if cycle_length is None:
+            # A flat/rising terminal trend cannot support a defensible k=1
+            # extrapolation. Use the last simulated time as a lower bound so
+            # the cost workflow still completes, and flag the result clearly.
+            cycle_length = float(time_steps[-1])
+            cycle_length_status = 'Simulated endpoint lower bound'
+            print(
+                "WARNING: corrected keff remained above 1.0 and the final "
+                "trend was not decreasing. Fuel lifetime is reported as the "
+                "last simulated time (a lower bound); no extrapolation was "
+                "performed."
+            )
+
+    round_cycle_length = round(float(cycle_length), 0)
+    print(
+        f"Estimated fuel cycle length: {round_cycle_length} days "
+        f"[{cycle_length_status}]"
+    )
 
     return (
         round_cycle_length,
@@ -412,5 +473,7 @@ def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None)
         bol_axial_non_leakage_probability,
         estimated_axial_leakage_bol_pct,
         bol_total_non_leakage_probability,
-        estimated_total_leakage_bol_pct
+        estimated_total_leakage_bol_pct,
+        cycle_length_status,
+        cycle_length_extrapolated
     )

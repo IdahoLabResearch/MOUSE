@@ -299,29 +299,26 @@ def FOAK_to_NOAK(df, params):
         # Defaults to approximately the 10th unit, with 20 (2×10) units assumed for onsite learning.
     params['Assumed Number Of Units For Onsite Learning'] = params['NOAK Unit Number'] * 2
     
-    for multiplier_type in ['No Learning', 
-                            'Licensing Learning', 
-                            'Factory Primary Structure', 
-                            'Factory Drums',
-                            'Factory Other', 
-                            'Factory Be',
-                            'Factory BeO',
-                            'Non-nuclear off-the-shelf']:
+    component_learning_types = [
+        'No Learning',
+        'Licensing Learning',
+        'Factory Primary Structure',
+        'Factory Drums',
+        'Factory Other',
+        'Factory Be',
+        'Factory BeO',
+        'Non-nuclear off-the-shelf',
+        'UO2 Learning',
+        'TRISO Learning',
+    ]
+    for multiplier_type in component_learning_types:
         params[f"{multiplier_type} Cost Multiplier"] = learning_rate_multiplier(params[f'{multiplier_type}'], 
                                                                                 params['NOAK Unit Number'])
     params['Onsite Learning Cost Multiplier'] = learning_rate_multiplier(params['Onsite Learning'], 
                                                                          params['Assumed Number Of Units For Onsite Learning'])
 
     def get_multiplier(multiplier_type):
-        if multiplier_type in ['No Learning', 
-                               'Licensing Learning', 
-                               'Factory Primary Structure', 
-                               'Factory Drums',
-                               'Factory Other', 
-                               'Factory Be',
-                               'Factory BeO',
-                               'Onsite Learning',
-                               'Non-nuclear off-the-shelf']:
+        if multiplier_type in component_learning_types or multiplier_type == 'Onsite Learning':
             return params[f"{multiplier_type} Cost Multiplier"]
         else:
             return np.nan
