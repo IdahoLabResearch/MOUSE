@@ -1330,6 +1330,11 @@ PARAMS_REGISTRY = {
         'description': 'Number of fuel cycles between scheduled reactor control device replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'A75: Moderator Replacement Period (cycles)': {
+        'group': 'Operation', 'units': 'cycles',
+        'description': 'Number of complete fuel cycles between moderator replacements',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'A75: Moderator Booster Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
         'description': 'Number of complete fuel cycles between moderator booster replacements',

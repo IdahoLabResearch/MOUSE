@@ -70,6 +70,7 @@ class ReplacementAccountTests(unittest.TestCase):
             'A75: Inner Vessel Structure Replacement Period (cycles)': 10.0,
             'A75: Reflector Replacement Period (cycles)': 10.0,
             'A75: Reactor Control Devices Replacement Period (cycles)': 10.0,
+            'A75: Moderator Replacement Period (cycles)': 2.0,
             'A75: Moderator Booster Replacement Period (cycles)': 1.0,
             'Discount Rate': 0.0,
             'Maintenance to Direct Cost Ratio': 0.01,
@@ -80,6 +81,9 @@ class ReplacementAccountTests(unittest.TestCase):
         for estimated_cost_column in (foak, noak):
             booster = result.loc[
                 result['Account'] == 757, estimated_cost_column
+            ].iat[0]
+            moderator = result.loc[
+                result['Account'] == 753, estimated_cost_column
             ].iat[0]
             maintenance = result.loc[
                 result['Account'].isin([
@@ -92,6 +96,7 @@ class ReplacementAccountTests(unittest.TestCase):
                 result['Account'] == 759, estimated_cost_column
             ].iat[0]
             self.assertEqual(booster, 150.0)
+            self.assertEqual(moderator, 25.0)
             self.assertEqual(
                 maintenance,
                 [2.5, 1.0, 0.1, 0.3, 0.05, 0.02, 0.02, 0.01],

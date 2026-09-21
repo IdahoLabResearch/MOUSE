@@ -60,7 +60,7 @@ def calculate_accounts_31_32_75_82_cost(df, params):
             A20_replacement_period = np.array([
                 params['A75: Outer Vessel Structure Replacement Period (years)'],
                 refueling_period_yr * params['A75: Inner Vessel Structure Replacement Period (cycles)'],
-                refueling_period_yr,
+                refueling_period_yr * params.get('A75: Moderator Replacement Period (cycles)', 1),
                 refueling_period_yr * params['A75: Reflector Replacement Period (cycles)'],
                 refueling_period_yr * params['A75: Reactor Control Devices Replacement Period (cycles)'],
                 refueling_period_yr * params.get('A75: Moderator Booster Replacement Period (cycles)', 1),
