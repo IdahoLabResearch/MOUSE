@@ -14,7 +14,19 @@ def remove_irrelevant_account(df, params):
         def _optional_matches(variable_name, param_val, expected_val):
             """Return True if param_val equals expected_val, or if param_val is a list that contains expected_val."""
             def _normalized(value):
-                return value.strip() if isinstance(value, str) else value
+                if not isinstance(value, str):
+                    return value
+
+                value = value.strip()
+                # Workbook booleans are serialized into the CSV mirror as
+                # strings ("True" / "False"), whereas application params use
+                # Python booleans.  Normalize both representations before
+                # comparing optional-account conditions.
+                if value.casefold() == 'true':
+                    return True
+                if value.casefold() == 'false':
+                    return False
+                return value
 
             # The hybrid operation mode includes the same remote-monitoring
             # component as the existing Remotely Monitored mode. This keeps
