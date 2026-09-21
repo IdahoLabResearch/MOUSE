@@ -230,6 +230,7 @@ params['A75: Reflector Replacement Period (cycles)']     = np.floor(10/total_ref
 params['A75: Reactor Control Devices Replacement Period (cycles)'] = np.floor(10/total_refueling_period_yr)
 params['A75: Moderator Booster Replacement Period (cycles)'] = 1
 params['A75: Moderator Replacement Period (cycles)'] = 1
+params['A75: Moderator Replacement Period (cycles)'] = 1
 params['Maintenance to Direct Cost Ratio']                = 0.015
 params['A78: CAPEX to Decommissioning Cost Ratio'] = 0.15
 

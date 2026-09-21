@@ -270,6 +270,7 @@ def gen_hpmr_mouse(vtb_params):
     params['A75: Reactor Control Devices Replacement Period (cycles)'] = np.floor(10/total_refueling_period_yr)
     params['A75: Moderator Booster Replacement Period (cycles)'] = 1
 params['A75: Moderator Replacement Period (cycles)'] = 1
+params['A75: Moderator Replacement Period (cycles)'] = 1
     params['Mainenance to Direct Cost Ratio']                = 0.015
 
     # A78: Annualized Decommisioning Cost
