@@ -214,7 +214,7 @@ params['BoP Power kWe'] = 1000 * params['Power MWe'] * params['BoP per loop load
 
 # Integrated Heat Transfer Vessel
 params.update({
-    'Integrated Heat Transfer Vessel Thickness': 0, # cm
+    'Integrated Heat Transfer Vessel Thickness': 6, # cm
     'Integrated Heat Transfer Vessel Material': 'SA508',
 })
 GCMR_integrated_heat_transfer_vessel(params)
