@@ -1315,6 +1315,16 @@ PARAMS_REGISTRY = {
         'description': 'Service period in years between scheduled outer vessel structure replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'A75: Inner Vessel Structure Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Service period in years between scheduled inner vessel structure replacements',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'A75: Integrated Heat Transfer Vessel Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Service period in years between scheduled integrated heat transfer vessel replacements',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'A75: Inner Vessel Structure Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
         'description': 'Number of fuel cycles between scheduled inner vessel structure replacements',

@@ -57,9 +57,18 @@ def calculate_accounts_31_32_75_82_cost(df, params):
         refueling_period_yr = refueling_period / 365
         params_df = pd.DataFrame(params.items(), columns=['keys', 'values'])
         if params_df.loc[params_df['keys'].str.contains('replacement', case=False), 'keys'].size > 0:
+            if 'A75: Inner Vessel Structure Replacement Period (years)' in params:
+                inner_vessel_replacement_period = params[
+                    'A75: Inner Vessel Structure Replacement Period (years)'
+                ]
+            else:
+                inner_vessel_replacement_period = (
+                    refueling_period_yr
+                    * params['A75: Inner Vessel Structure Replacement Period (cycles)']
+                )
             A20_replacement_period = np.array([
                 params['A75: Outer Vessel Structure Replacement Period (years)'],
-                refueling_period_yr * params['A75: Inner Vessel Structure Replacement Period (cycles)'],
+                inner_vessel_replacement_period,
                 refueling_period_yr * params.get('A75: Moderator Replacement Period (cycles)', 1),
                 refueling_period_yr * params['A75: Reflector Replacement Period (cycles)'],
                 refueling_period_yr * params['A75: Reactor Control Devices Replacement Period (cycles)'],
@@ -71,6 +80,21 @@ def calculate_accounts_31_32_75_82_cost(df, params):
                                          df.loc[df['Account'] == 221.31,  estimated_cost_col].values.sum(),
                                          df.loc[df['Account'] == 221.2,   estimated_cost_col].values.sum(),
                                          df.loc[df['Account'] == 221.34,  estimated_cost_col].values.sum()])
+            replacement_accounts = [751, 752, 753, 754, 755, 757]
+
+            if 'A75: Integrated Heat Transfer Vessel Replacement Period (years)' in params:
+                A20_replacement_period = np.insert(
+                    A20_replacement_period,
+                    5,
+                    params['A75: Integrated Heat Transfer Vessel Replacement Period (years)'],
+                )
+                A20_capital_cost = np.insert(
+                    A20_capital_cost,
+                    5,
+                    df.loc[df['Account'] == 222.6, estimated_cost_col].values.sum(),
+                )
+                replacement_accounts.insert(5, 756)
+
             annualized_replacement_cost = (A20_capital_cost*_crf(params['Discount Rate'], A20_replacement_period))
             maintenance_source_accounts = [
                 [212, 213, 214, 215],
@@ -86,12 +110,8 @@ def calculate_accounts_31_32_75_82_cost(df, params):
                 df.loc[df['Account'].isin(accounts), estimated_cost_col].sum()
                 for accounts in maintenance_source_accounts
             ]) * params['Maintenance to Direct Cost Ratio']
-            df.loc[df['Account'] == 751, estimated_cost_col] = annualized_replacement_cost[0]
-            df.loc[df['Account'] == 752, estimated_cost_col] = annualized_replacement_cost[1]
-            df.loc[df['Account'] == 753, estimated_cost_col] = annualized_replacement_cost[2]
-            df.loc[df['Account'] == 754, estimated_cost_col] = annualized_replacement_cost[3]
-            df.loc[df['Account'] == 755, estimated_cost_col] = annualized_replacement_cost[4]
-            df.loc[df['Account'] == 757, estimated_cost_col] = annualized_replacement_cost[5]
+            for account, cost in zip(replacement_accounts, annualized_replacement_cost):
+                df.loc[df['Account'] == account, estimated_cost_col] = cost
             for account, cost in zip(
                 [759.1, 759.2, 759.3, 759.4, 759.5, 759.6, 759.7, 759.8],
                 maintenance_cost,
