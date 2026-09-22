@@ -416,6 +416,9 @@ params['Servicing Facility OCC Learning Rate'] = 0.30
 params['Servicing Facility Learning Cap'] = 5
 params['Cask Learning Rate'] = 0.15
 params['Cask Learning Cap'] = 100
+params['GEN Road Length'] = 200  # m
+params['Limited Perimeter'] = 279  # m
+params['Protected Perimeter'] = 180  # m
 
 # ***
 ## END of User Inputs
