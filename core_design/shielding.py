@@ -61,7 +61,7 @@ GROUP_EDGES_EV = np.array([
 ELECTRON_VOLT_J = 1.602176634e-19
 PSV_PER_SECOND_TO_MREM_PER_HOUR = 3.6e-4
 SHIELDING_IMPLEMENTATION_VERSION = (
-    "2026-09-21-fast-r2s-v8-conservative-zero-score-extrapolation"
+    "2026-09-21-fast-r2s-v9-statistical-quality-hard-failure"
 )
 
 
@@ -70,6 +70,25 @@ def _shielding_status(*args, **kwargs) -> None:
     kwargs.setdefault("file", sys.stderr)
     kwargs.setdefault("flush", True)
     print(*args, **kwargs)
+
+
+def _dose_relative_error(dose: float, dose_std: float) -> float:
+    """Return the relative one-sigma error, or infinity if unresolved."""
+    dose = float(dose)
+    dose_std = float(dose_std)
+    if not (np.isfinite(dose) and dose > 0.0):
+        return float("inf")
+    if not (np.isfinite(dose_std) and dose_std >= 0.0):
+        return float("inf")
+    return dose_std / dose
+
+
+def _dose_result_is_usable(result: Mapping[str, Any]) -> bool:
+    """Return whether a candidate has a resolved, statistically usable dose."""
+    dose = float(result.get("dose_mrem_per_h", float("nan")))
+    if not (np.isfinite(dose) and dose > 0.0):
+        return False
+    return bool(result.get("dose_quality_accepted", True))
 
 
 def _create_unique_run_directory(
@@ -1071,12 +1090,19 @@ def _photon_dose_rate(
     photon_particles = int(params.get("Shielding Photon Particles", 50_000))
     retry_multiplier = int(params.get("Shielding Photon Retry Multiplier", 4))
     maximum_retries = int(params.get("Shielding Photon Maximum Retries", 1))
+    relative_error_target = float(
+        params.get("Shielding Photon Relative Error Target", 0.30)
+    )
     if photon_batches <= 0 or photon_particles <= 0:
         raise ValueError("Shielding photon batches and particles must be positive.")
     if retry_multiplier < 2:
         raise ValueError("Shielding Photon Retry Multiplier must be at least 2.")
     if maximum_retries < 0:
         raise ValueError("Shielding Photon Maximum Retries cannot be negative.")
+    if not (0.0 < relative_error_target < 1.0):
+        raise ValueError(
+            "Shielding Photon Relative Error Target must be between zero and one."
+        )
 
     settings = _fixed_source_settings(
         params,
@@ -1141,14 +1167,33 @@ def _photon_dose_rate(
 
         dose = dose_per_source * scale
         dose_std = dose_std_per_source * scale
-        if dose > 0.0:
+        relative_error = _dose_relative_error(dose, dose_std)
+        if dose > 0.0 and relative_error <= relative_error_target:
             return dose, dose_std, total_photon_rate
-        if attempt < maximum_retries:
+        if attempt < maximum_retries and dose > 0.0:
+            _shielding_status(
+                "[MOUSE SHIELDING] Photon tally relative uncertainty is "
+                f"{100.0 * relative_error:.1f}%, above the configured "
+                f"{100.0 * relative_error_target:.1f}% target; retrying only "
+                f"the photon calculation with {retry_multiplier}x more particles."
+            )
+        elif attempt < maximum_retries:
             _shielding_status(
                 "[MOUSE SHIELDING] Photon tally was zero; retrying only the "
                 f"photon calculation with {retry_multiplier}x more particles.",
                 flush=True,
             )
+
+    if dose > 0.0:
+        _shielding_status(
+            "[MOUSE SHIELDING] WARNING: The photon tally remained statistically "
+            f"unresolved after {maximum_retries + 1} attempt(s): dose="
+            f"{dose:.5g} +/- {dose_std:.2g} mrem/h, relative uncertainty="
+            f"{100.0 * _dose_relative_error(dose, dose_std):.1f}%. A full "
+            "activation-plus-photon candidate retry may follow.",
+            flush=True,
+        )
+        return dose, dose_std, total_photon_rate
 
     _shielding_status(
         "[MOUSE SHIELDING] WARNING: The photon calculation still scored "
@@ -1193,12 +1238,24 @@ def evaluate_shielding_candidate(
         geometry_data,
         candidate_dir,
     )
+    relative_error = _dose_relative_error(dose, dose_std)
+    relative_error_target = float(
+        params.get("Shielding Photon Relative Error Target", 0.30)
+    )
+    quality_accepted = bool(
+        np.isfinite(relative_error) and relative_error <= relative_error_target
+    )
     result = {
         "thickness_cm": thickness_cm,
         "dose_mrem_per_h": dose,
         "dose_std_dev_mrem_per_h": dose_std,
+        "dose_relative_error": relative_error,
+        "dose_relative_error_target": relative_error_target,
+        "dose_quality_accepted": quality_accepted,
         "decay_photon_rate_per_s": photon_rate,
-        "dose_resolved": bool(np.isfinite(dose) and dose > 0.0),
+        "dose_resolved": bool(
+            np.isfinite(dose) and dose > 0.0 and quality_accepted
+        ),
     }
     (candidate_dir / "result.json").write_text(
         json.dumps(result, indent=2) + "\n",
@@ -1223,6 +1280,9 @@ def _serializable_shielding_inputs(params: Mapping[str, Any]) -> dict[str, Any]:
         "Shielding Photon Particles",
         "Shielding Photon Retry Multiplier",
         "Shielding Photon Maximum Retries",
+        "Shielding Photon Relative Error Target",
+        "Shielding Candidate Statistical Retry Multiplier",
+        "Shielding Candidate Statistical Maximum Retries",
         "Shielding Dose Limit",
         "Shielding Minimum Thickness",
         "Shielding Initial Upper Thickness",
@@ -1318,7 +1378,8 @@ def _conservative_exponential_tail_extrapolation(
         dose = float(result["dose_mrem_per_h"])
         dose_std = float(result["dose_std_dev_mrem_per_h"])
         if not (
-            np.isfinite(thickness)
+            _dose_result_is_usable(result)
+            and np.isfinite(thickness)
             and np.isfinite(dose)
             and dose > 0.0
             and np.isfinite(dose_std)
@@ -1503,6 +1564,20 @@ def estimate_dynamic_shielding(
         raise ValueError(
             "Shielding Extrapolation Confidence Multiplier cannot be negative."
         )
+    candidate_retry_multiplier = int(
+        params.get("Shielding Candidate Statistical Retry Multiplier", 4)
+    )
+    candidate_maximum_retries = int(
+        params.get("Shielding Candidate Statistical Maximum Retries", 1)
+    )
+    if candidate_retry_multiplier < 2:
+        raise ValueError(
+            "Shielding Candidate Statistical Retry Multiplier must be at least 2."
+        )
+    if candidate_maximum_retries < 0:
+        raise ValueError(
+            "Shielding Candidate Statistical Maximum Retries cannot be negative."
+        )
     evaluated: dict[float, dict[str, Any]] = {}
 
     def evaluate(value: float) -> dict[str, Any]:
@@ -1512,11 +1587,58 @@ def estimate_dynamic_shielding(
                 f"[MOUSE SHIELDING] Evaluating {rounded:.2f} cm "
                 f"{params.get('Out Of Vessel Shield Material', 'WEP')}..."
             )
-            result = evaluate_shielding_candidate(
-                params,
-                leakage_source,
-                rounded,
-                root / f"candidate_{rounded:.2f}_cm",
+            candidate_root = root / f"candidate_{rounded:.2f}_cm"
+            base_activation_particles = int(
+                params.get("Shielding Particles", 5_000)
+            )
+            base_photon_particles = int(
+                params.get("Shielding Photon Particles", 50_000)
+            )
+            statistical_attempts = []
+            result = None
+            for retry_index in range(candidate_maximum_retries + 1):
+                attempt_params = dict(params)
+                retry_scale = candidate_retry_multiplier ** retry_index
+                attempt_params["Shielding Particles"] = (
+                    base_activation_particles * retry_scale
+                )
+                attempt_params["Shielding Photon Particles"] = (
+                    base_photon_particles * retry_scale
+                )
+                attempt_directory = (
+                    candidate_root
+                    if retry_index == 0
+                    else candidate_root / f"statistical_retry_{retry_index}"
+                )
+                if retry_index:
+                    _shielding_status(
+                        "[MOUSE SHIELDING] Repeating the full neutron-activation "
+                        "and photon candidate at higher statistics: "
+                        f"{attempt_params['Shielding Particles']} activation and "
+                        f"{attempt_params['Shielding Photon Particles']} initial "
+                        "photon particles per batch."
+                    )
+                result = evaluate_shielding_candidate(
+                    attempt_params,
+                    leakage_source,
+                    rounded,
+                    attempt_directory,
+                )
+                result["statistical_retry_index"] = retry_index
+                result["activation_particles_per_batch"] = attempt_params[
+                    "Shielding Particles"
+                ]
+                result["initial_photon_particles_per_batch"] = attempt_params[
+                    "Shielding Photon Particles"
+                ]
+                statistical_attempts.append(dict(result))
+                if _dose_result_is_usable(result):
+                    break
+            if result is None:
+                raise RuntimeError("No shielding candidate calculation was performed.")
+            result["statistical_attempts"] = statistical_attempts
+            result["full_candidate_retry_count"] = int(
+                result["statistical_retry_index"]
             )
             result_dose = float(result["dose_mrem_per_h"])
             result_std = float(result["dose_std_dev_mrem_per_h"])
@@ -1524,30 +1646,36 @@ def estimate_dynamic_shielding(
                 value
                 for value in evaluated
                 if value < rounded
-                and np.isfinite(evaluated[value]["dose_mrem_per_h"])
+                and _dose_result_is_usable(evaluated[value])
             ]
             if thinner_values:
                 nearest_thinner = max(thinner_values)
                 thinner_dose = evaluated[nearest_thinner]["dose_mrem_per_h"]
-                if np.isfinite(result_dose) and result_dose > thinner_dose:
+                if (
+                    _dose_result_is_usable(result)
+                    and result_dose > thinner_dose
+                ):
                     _shielding_status(
                         "[MOUSE SHIELDING] WARNING: Mean dose increased from "
                         f"{thinner_dose:.5g} mrem/h at {nearest_thinner:.2f} cm "
                         f"to {result['dose_mrem_per_h']:.5g} mrem/h at "
                         f"{rounded:.2f} cm. This is likely Monte Carlo noise; "
-                        "the scoping calculation will continue without an "
-                        "uncertainty-driven rerun."
+                        "the point already passed the configured statistical "
+                        "quality checks and the search will continue."
                     )
             thicker_values = [
                 value
                 for value in evaluated
                 if value > rounded
-                and np.isfinite(evaluated[value]["dose_mrem_per_h"])
+                and _dose_result_is_usable(evaluated[value])
             ]
             if thicker_values:
                 nearest_thicker = min(thicker_values)
                 thicker_dose = evaluated[nearest_thicker]["dose_mrem_per_h"]
-                if np.isfinite(result_dose) and thicker_dose > result_dose:
+                if (
+                    _dose_result_is_usable(result)
+                    and thicker_dose > result_dose
+                ):
                     _shielding_status(
                         "[MOUSE SHIELDING] WARNING: Mean dose increases from "
                         f"{result['dose_mrem_per_h']:.5g} mrem/h at "
@@ -1557,15 +1685,25 @@ def estimate_dynamic_shielding(
                         "search uses only its local fail/pass bracket."
                     )
             evaluated[rounded] = result
-            if np.isfinite(result_dose):
+            if _dose_result_is_usable(result):
                 _shielding_status(
                     f"[MOUSE SHIELDING] {rounded:.2f} cm -> "
-                    f"{result_dose:.5g} +/- {result_std:.2g} mrem/h"
+                    f"{result_dose:.5g} +/- {result_std:.2g} mrem/h "
+                    f"(relative uncertainty "
+                    f"{100.0 * result['dose_relative_error']:.1f}%)"
+                )
+            elif np.isfinite(result_dose) and result_dose > 0.0:
+                _shielding_status(
+                    f"[MOUSE SHIELDING] {rounded:.2f} cm -> statistically "
+                    f"unresolved {result_dose:.5g} +/- {result_std:.2g} mrem/h "
+                    f"after {candidate_maximum_retries + 1} full candidate "
+                    "attempt(s); excluded from fitting"
                 )
             else:
                 _shielding_status(
                     f"[MOUSE SHIELDING] {rounded:.2f} cm -> unresolved "
-                    "zero-score photon tally; excluded from fitting"
+                    "zero-score photon tally after all statistical retries; "
+                    "excluded from fitting"
                 )
         return evaluated[rounded]
 
@@ -1587,7 +1725,7 @@ def estimate_dynamic_shielding(
     trial_thickness = initial_upper
     trial_result = evaluate(trial_thickness)
     trial_dose = float(trial_result["dose_mrem_per_h"])
-    if not np.isfinite(trial_dose):
+    if not _dose_result_is_usable(trial_result):
         criterion_met = False
         selected = trial_result
         low_result = None
@@ -1602,12 +1740,15 @@ def estimate_dynamic_shielding(
         else:
             minimum_result = evaluate(minimum)
             minimum_dose = float(minimum_result["dose_mrem_per_h"])
-            if np.isfinite(minimum_dose) and minimum_dose <= target:
+            if (
+                _dose_result_is_usable(minimum_result)
+                and minimum_dose <= target
+            ):
                 criterion_met = True
                 selected = minimum_result
                 low_result = None
                 high_result = minimum_result
-            elif np.isfinite(minimum_dose):
+            elif _dose_result_is_usable(minimum_result):
                 criterion_met = True
                 low_result = minimum_result
                 high_result = trial_result
@@ -1632,7 +1773,7 @@ def estimate_dynamic_shielding(
             trial_thickness = next_thickness
             trial_result = evaluate(trial_thickness)
             trial_dose = float(trial_result["dose_mrem_per_h"])
-            if not np.isfinite(trial_dose):
+            if not _dose_result_is_usable(trial_result):
                 unresolved_thickness = trial_thickness
                 break
             if trial_dose <= target:
@@ -1655,7 +1796,7 @@ def estimate_dynamic_shielding(
             midpoint_result = evaluate(midpoint)
             pre_fit_midpoint_evaluations = 1
             midpoint_dose = float(midpoint_result["dose_mrem_per_h"])
-            if not np.isfinite(midpoint_dose):
+            if not _dose_result_is_usable(midpoint_result):
                 _shielding_status(
                     "[MOUSE SHIELDING] Midpoint photon tally was unresolved; "
                     "retaining the existing resolved fail/pass bracket."
@@ -1695,7 +1836,10 @@ def estimate_dynamic_shielding(
             confirmation_thickness = proposed
             confirmation_performed = True
             confirmation_result = evaluate(proposed)
-            if confirmation_result["dose_mrem_per_h"] <= target:
+            if (
+                _dose_result_is_usable(confirmation_result)
+                and confirmation_result["dose_mrem_per_h"] <= target
+            ):
                 selected = confirmation_result
             else:
                 # Stop after one confirmation.  The existing upper point is
@@ -1716,7 +1860,7 @@ def estimate_dynamic_shielding(
     resolved_failing_results = [
         result
         for result in evaluated.values()
-        if np.isfinite(result["dose_mrem_per_h"])
+        if _dose_result_is_usable(result)
         and result["dose_mrem_per_h"] > target
     ]
     last_direct_failure_thickness = (
@@ -1724,6 +1868,25 @@ def estimate_dynamic_shielding(
         if resolved_failing_results
         else None
     )
+
+    def fail_shielding(reason: str) -> None:
+        failure_record = {
+            "error": reason,
+            "dose_limit_mrem_per_h": target,
+            "maximum_thickness_cm": maximum,
+            "last_direct_failure_thickness_cm": last_direct_failure_thickness,
+            "evaluations": [evaluated[key] for key in sorted(evaluated)],
+            "calculation_directory": str(root),
+        }
+        (root / "shielding_failure.json").write_text(
+            json.dumps(failure_record, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        _shielding_status(
+            "[MOUSE SHIELDING] ERROR: " + reason,
+            flush=True,
+        )
+        raise RuntimeError(reason)
 
     if not criterion_met:
         try:
@@ -1735,6 +1898,14 @@ def estimate_dynamic_shielding(
             extrapolated_prediction = float(
                 extrapolation_details["predicted_thickness_cm"]
             )
+            if extrapolated_prediction > maximum:
+                fail_shielding(
+                    "Conservative exponential extrapolation predicts a required "
+                    f"shield thickness of {extrapolated_prediction:.2f} cm, above "
+                    f"the configured maximum of {maximum:.2f} cm. The case is "
+                    "failed; the maximum thickness is not substituted for the "
+                    "required thickness."
+                )
             applied_thickness = min(
                 maximum,
                 _round_up_to_increment(
@@ -1759,36 +1930,20 @@ def estimate_dynamic_shielding(
                 "dose_resolved": False,
                 "dose_estimated": True,
             }
-            if estimated_criterion_met:
-                _shielding_status(
-                    "[MOUSE SHIELDING] No directly scored passing point was "
-                    "available. Conservative exponential extrapolation of the "
-                    "last two resolved positive-dose points predicts "
-                    f"{extrapolated_prediction:.2f} cm; the applied cost-model "
-                    f"thickness is {applied_thickness:.2f} cm."
-                )
-            else:
-                _shielding_status(
-                    "[MOUSE SHIELDING] Conservative exponential extrapolation "
-                    f"predicts {extrapolated_prediction:.2f} cm, above the "
-                    f"configured {maximum:.2f} cm limit. The configured maximum "
-                    "is retained and the estimated criterion remains unmet."
-                )
+            _shielding_status(
+                "[MOUSE SHIELDING] No directly scored passing point was "
+                "available. Conservative exponential extrapolation of the "
+                "last two resolved positive-dose points predicts "
+                f"{extrapolated_prediction:.2f} cm; the applied cost-model "
+                f"thickness is {applied_thickness:.2f} cm."
+            )
         except ValueError as error:
             extrapolation_error = str(error)
-            selected = {
-                "thickness_cm": float(maximum),
-                "dose_mrem_per_h": float("nan"),
-                "dose_std_dev_mrem_per_h": float("nan"),
-                "decay_photon_rate_per_s": float("nan"),
-                "dose_resolved": False,
-                "dose_estimated": False,
-            }
-            _shielding_status(
-                "[MOUSE SHIELDING] WARNING: Conservative exponential "
-                f"extrapolation was unavailable ({error}). The configured "
-                f"maximum thickness of {maximum:.2f} cm is retained and the "
-                "dose criterion is not claimed."
+            fail_shielding(
+                "No directly scored passing shield thickness was found and "
+                "conservative exponential extrapolation was unavailable: "
+                f"{error}. The case is failed; {maximum:.2f} cm is not used as "
+                "a fallback thickness."
             )
 
     params["Out Of Vessel Shield Thickness"] = selected["thickness_cm"]
@@ -1839,12 +1994,21 @@ def estimate_dynamic_shielding(
             "maximum_fitted_confirmation_calculations": 1,
             "search_method": (
                 "geometric bracket, at most one midpoint, local exponential "
-                "interpolation, at most one confirmation; unresolved zero-score "
-                "points are excluded and trigger conservative exponential tail "
-                "extrapolation from the last two resolved points"
+                "interpolation, at most one confirmation; zero-score and "
+                "high-relative-error points trigger adaptive photon and full-"
+                "candidate retries, remain excluded if unresolved, and may "
+                "trigger conservative exponential tail extrapolation from the "
+                "last two statistically usable points"
             ),
             "selection_uses_mean_dose": True,
-            "uncertainty_driven_retries": False,
+            "uncertainty_driven_retries": True,
+            "photon_relative_error_target": float(
+                params.get("Shielding Photon Relative Error Target", 0.30)
+            ),
+            "candidate_statistical_retry_multiplier": candidate_retry_multiplier,
+            "candidate_statistical_maximum_retries": candidate_maximum_retries,
+            "invalid_extrapolation_is_fatal": True,
+            "maximum_exceeded_is_fatal": True,
             "tail_extrapolation_confidence_multiplier": (
                 extrapolation_confidence_multiplier
             ),
@@ -1867,12 +2031,7 @@ def estimate_dynamic_shielding(
         encoding="utf-8",
     )
 
-    if criterion_met:
-        status = "MEETS"
-    elif estimated_criterion_met:
-        status = "IS ESTIMATED TO MEET"
-    else:
-        status = "DOES NOT MEET"
+    status = "MEETS" if criterion_met else "IS ESTIMATED TO MEET"
     _shielding_status("-" * 78)
     if criterion_met:
         _shielding_status(
@@ -1880,26 +2039,12 @@ def estimate_dynamic_shielding(
             f"{selected['thickness_cm']:.2f} cm "
             f"({selected['thickness_cm'] / 2.54:.2f} in)"
         )
-    elif thickness_extrapolated and estimated_criterion_met:
+    else:
         _shielding_status(
             "[MOUSE SHIELDING] Conservative extrapolated required thickness: "
             f"{selected['thickness_cm']:.2f} cm "
             f"({selected['thickness_cm'] / 2.54:.2f} in). This thickness was "
             "not directly verified by a nonzero photon tally."
-        )
-    elif thickness_extrapolated:
-        _shielding_status(
-            "[MOUSE SHIELDING] Conservative extrapolated required thickness "
-            f"({extrapolated_prediction:.2f} cm) exceeds the configured "
-            f"{maximum:.2f} cm limit. The configured maximum is retained for "
-            "costing and the dose criterion remains unmet."
-        )
-    else:
-        _shielding_status(
-            "[MOUSE SHIELDING] No directly passing or defensibly extrapolated "
-            f"thickness was found through {maximum:.2f} cm. The configured "
-            "maximum is retained for costing and the dose criterion is not "
-            "claimed."
         )
     _shielding_status(
         "[MOUSE SHIELDING] Estimated shutdown dose: "

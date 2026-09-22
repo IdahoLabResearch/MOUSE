@@ -167,6 +167,13 @@ update_params({
     'Shielding Photon Batches': 10,
     'Shielding Photon Retry Multiplier': 4,
     'Shielding Photon Maximum Retries': 1,
+    # A positive dose is not accepted merely because it is nonzero. Retry the
+    # photon calculation when its one-sigma relative uncertainty exceeds 30%.
+    'Shielding Photon Relative Error Target': 0.30,
+    # If photon-only retries remain unresolved, repeat the complete candidate,
+    # including neutron activation, at four times the base particle counts.
+    'Shielding Candidate Statistical Retry Multiplier': 4,
+    'Shielding Candidate Statistical Maximum Retries': 1,
     'Shielding Thickness Tolerance': 10.0,
     'Shielding Confirmation Increment': 5.0,
     # One-sided 95% upper estimate used only when a zero-score photon tally
@@ -178,7 +185,9 @@ update_params({
     'In Vessel Shield Thickness': 10.16,  # cm
     'In Vessel Shield Inner Radius': params['Core Radius'],
     'In Vessel Shield Material': 'B4C_natural',
-    'Out Of Vessel Shield Thickness': 39.37,  # initial/fallback value, cm
+    # Initial placeholder overwritten only after a direct or defensible
+    # extrapolated shielding solution is found. Invalid fits stop the case.
+    'Out Of Vessel Shield Thickness': 39.37,  # cm
     'Out Of Vessel Shield Material': 'WEP',
     'Out Of Vessel Shield Effective Density Factor': 0.5,
     'Vessel Radius': params['Core Radius'] + 10.16,
