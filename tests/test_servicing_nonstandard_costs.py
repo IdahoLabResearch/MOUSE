@@ -97,6 +97,25 @@ class ServicingNonstandardCostTest(unittest.TestCase):
         )
         self.assertEqual(accounts - NONSTANDARD_COST_ACCOUNTS, set())
 
+    def test_servicing_transport_and_helium_uncertainty_bounds_match_base_costs(self):
+        database = pd.read_excel(DATABASE, sheet_name="Servicing Campus Database")
+        rows = database.set_index("Account")
+
+        helium = rows.loc[747.3]
+        self.assertAlmostEqual(helium["Unit Cost Low End"], 0.9 * helium["Unit Cost"])
+        self.assertAlmostEqual(helium["Unit Cost High End"], 1.3 * helium["Unit Cost"])
+
+        for account in [747.51, 747.52, 747.53, 747.54]:
+            vehicle = rows.loc[account]
+            self.assertAlmostEqual(
+                vehicle["Fixed Cost Low End"],
+                0.9 * vehicle["Fixed Cost ($)"],
+            )
+            self.assertAlmostEqual(
+                vehicle["Fixed Cost High End"],
+                1.5 * vehicle["Fixed Cost ($)"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
