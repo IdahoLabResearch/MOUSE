@@ -79,7 +79,11 @@ def remove_fleet_mode_reactor_accounts(df):
 
     for excluded_account in FLEET_MODE_REACTOR_EXCLUDED_ACCOUNTS:
         matching_positions = np.flatnonzero(
-            np.isclose(account_numbers.to_numpy(dtype=float), excluded_account, equal_nan=False)
+            # Account numbers are identifiers, not measurements.  The default
+            # relative tolerance used by np.isclose treats 221.21 as matching
+            # 221.211, which incorrectly removes the parent account and its
+            # complete hierarchy.
+            account_numbers.to_numpy(dtype=float) == excluded_account
         )
         for position in matching_positions:
             parent_level = levels[position]
