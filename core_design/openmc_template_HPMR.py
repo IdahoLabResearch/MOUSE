@@ -6,6 +6,44 @@ from core_design.openmc_materials_database import collect_materials_data
 from core_design.utils import create_universe_plot, circle_area, create_cells
 
 
+HPMR_HEAT_PIPE_LAYOUT_COUNTS = {
+    'HP19': {'fuel_pins': 72, 'heat_pipes': 19},
+    'HP13': {'fuel_pins': 78, 'heat_pipes': 13},
+}
+
+
+def hpmr_assembly_layout_counts(layout_name, assembly_rings=6):
+    """Return fuel and heat-pipe counts for a supported HPMR layout."""
+    if int(assembly_rings) != 6:
+        raise ValueError(
+            "The explicit HPMR heat-pipe layouts require exactly six "
+            f"assembly rings; got {assembly_rings!r}."
+        )
+    layout = str(layout_name).upper()
+    if layout not in HPMR_HEAT_PIPE_LAYOUT_COUNTS:
+        raise ValueError(
+            "HPMR Heat Pipe Layout must be one of "
+            f"{sorted(HPMR_HEAT_PIPE_LAYOUT_COUNTS)}, got {layout_name!r}."
+        )
+    counts = HPMR_HEAT_PIPE_LAYOUT_COUNTS[layout]
+    return counts['fuel_pins'], counts['heat_pipes']
+
+
+def _hpmr_position_is_heat_pipe(layout, ring_idx, position_idx):
+    """Identify heat-pipe positions while retaining sixfold symmetry."""
+    if layout == 'HP19':
+        return ring_idx % 2 == 0 and position_idx % 2 == 0
+    if layout == 'HP13':
+        if ring_idx == 0:
+            return True
+        if ring_idx == 2:
+            return position_idx % 2 == 0
+        if ring_idx == 4:
+            return position_idx % 4 == 0
+        return False
+    raise ValueError(f"Unsupported HPMR heat-pipe layout {layout!r}.")
+
+
 def _load_depleted_fuel_override(params):
     """Load the operating depleted HPMR fuel for a lifecycle static case."""
     materials_xml = params.get('_Depleted Fuel Materials XML')
@@ -110,6 +148,23 @@ def create_assembly(params, fuel_pin_universe, htpipe_universe, materials_databa
     # Define the fuel assembly planes
     rods_pitch = params['Lattice Pitch']
     ass_rings = params['Number of Rings per Assembly']
+    heat_pipe_layout = str(
+        params.get('HPMR Heat Pipe Layout', 'HP19')
+    ).upper()
+    expected_fuel_pins, expected_heat_pipes = hpmr_assembly_layout_counts(
+        heat_pipe_layout, ass_rings
+    )
+    params['HPMR Heat Pipe Layout'] = heat_pipe_layout
+    if int(params.get('Fuel Pin Count per Assembly', expected_fuel_pins)) != expected_fuel_pins:
+        raise ValueError(
+            f"{heat_pipe_layout} requires {expected_fuel_pins} fuel pins per "
+            "assembly."
+        )
+    if int(params.get('Number of Heatpipes per Assembly', expected_heat_pipes)) != expected_heat_pipes:
+        raise ValueError(
+            f"{heat_pipe_layout} requires {expected_heat_pipes} heat pipes "
+            "per assembly."
+        )
     l2 = params['Assembly FTF'] / np.sqrt(3.0)
     l2 = l2 - 0.4 / np.sqrt(3.0)
     c2 = np.sqrt(3.) / 3.
@@ -166,16 +221,10 @@ def create_assembly(params, fuel_pin_universe, htpipe_universe, materials_databa
             num_positions = ring_idx * 6
 
         ring = []
-        if ring_idx % 2 == 0:
-            # Even ring (alternate heat pipe and fuel rod)
-            for i in range(num_positions):
-                if i % 2 == 0:
-                    ring.append(htpipe_universe)
-                else:
-                    ring.append(fuel_pin_universe)
-        else:
-            # Odd ring (all fuel rods)
-            for i in range(num_positions):
+        for i in range(num_positions):
+            if _hpmr_position_is_heat_pipe(heat_pipe_layout, ring_idx, i):
+                ring.append(htpipe_universe)
+            else:
                 ring.append(fuel_pin_universe)
 
         all_rings.append(ring)
@@ -202,7 +251,113 @@ def create_assembly(params, fuel_pin_universe, htpipe_universe, materials_databa
     return fuel_assembly, graphite_assembly, graphite_universe
 
 
-def create_hex_core_geometry(params, fuel_assembly, graphite_assembly, graphite_universe, materials_database):
+def create_hpmr_shutdown_rod_universe(params, materials_database):
+    """Create the fixed central HPMR channel in its ARO or ARI state.
+
+    The channel envelope is identical in both states.  During operation the
+    movable B4C absorber and its cladding are withdrawn together, leaving a
+    helium-filled channel.  During a shutdown-margin snapshot they are inserted
+    together.  The surrounding central assembly remains graphite.
+    """
+    number_of_rods = int(params.get('Number of Shutdown Rods', 0))
+    if number_of_rods == 0:
+        return None, []
+    if number_of_rods != 1:
+        raise ValueError(
+            "The HPMR geometry supports exactly one central shutdown rod."
+        )
+
+    required = (
+        'Shutdown Rod Absorber Radius',
+        'Shutdown Rod Clad Radius',
+        'Shutdown Rod Absorber',
+        'Shutdown Rod Cladding',
+    )
+    missing = [name for name in required if name not in params]
+    if missing:
+        raise KeyError(
+            "Incomplete HPMR central shutdown-rod definition; missing "
+            + ", ".join(missing)
+        )
+
+    absorber_radius = float(params['Shutdown Rod Absorber Radius'])
+    clad_radius = float(params['Shutdown Rod Clad Radius'])
+    if absorber_radius <= 0.0 or absorber_radius >= clad_radius:
+        raise ValueError(
+            "HPMR Shutdown Rod Absorber Radius must be positive and smaller "
+            "than Shutdown Rod Clad Radius."
+        )
+    if clad_radius >= 0.5 * float(params['Assembly FTF']):
+        raise ValueError(
+            "HPMR Shutdown Rod Clad Radius must be smaller than half the "
+            "assembly flat-to-flat distance."
+        )
+
+    # The legacy HPMR template reserves several fixed surface-ID ranges
+    # (5--16, 31--45, 82, 301--312, and 2000+).  Use a dedicated high range
+    # for the added shutdown channel so OpenMC's automatic ID assignment cannot
+    # consume an ID that the legacy geometry later reuses explicitly.
+    absorber_surface = openmc.ZCylinder(
+        surface_id=9001,
+        r=absorber_radius,
+        name='hpmr_shutdown_absorber_surface',
+    )
+    clad_surface = openmc.ZCylinder(
+        surface_id=9002,
+        r=clad_radius,
+        name='hpmr_shutdown_clad_surface',
+    )
+    moderator = materials_database[params['Moderator']]
+    helium = materials_database[params['Coolant']]
+    absorber = materials_database[params['Shutdown Rod Absorber']]
+    cladding = materials_database[params['Shutdown Rod Cladding']]
+
+    if params['Shutdown Margin Calc']:
+        print(
+            ">>> HPMR central shutdown rod: INSERTED enriched B4C "
+            f"radius = {absorber_radius} cm, clad radius = {clad_radius} cm"
+        )
+        inner_cells = [
+            openmc.Cell(
+                name='hpmr_shutdown_absorber_inserted',
+                fill=absorber,
+                region=-absorber_surface,
+            ),
+            openmc.Cell(
+                name='hpmr_shutdown_cladding_inserted',
+                fill=cladding,
+                region=+absorber_surface & -clad_surface,
+            ),
+        ]
+    else:
+        print(
+            ">>> HPMR central shutdown rod: WITHDRAWN; helium channel "
+            f"radius = {clad_radius} cm"
+        )
+        inner_cells = [
+            openmc.Cell(
+                name='hpmr_shutdown_channel_helium',
+                fill=helium,
+                region=-clad_surface,
+            )
+        ]
+
+    outer_cell = openmc.Cell(
+        name='hpmr_shutdown_channel_outer_graphite',
+        fill=moderator,
+        region=+clad_surface,
+    )
+    return openmc.Universe(cells=inner_cells + [outer_cell]), [absorber, cladding]
+
+
+def create_hex_core_geometry(
+    params,
+    fuel_assembly,
+    graphite_assembly,
+    graphite_universe,
+    materials_database,
+    central_shutdown_assembly=None,
+):
 
     # Define the hex core planes
     assembly_pitch = params['Assembly FTF']
@@ -253,7 +408,11 @@ def create_hex_core_geometry(params, fuel_assembly, graphite_assembly, graphite_
             num_positions = ring_idx * 6
 
         if ring_idx == 0:
-            ring = [graphite_assembly]
+            ring = [
+                central_shutdown_assembly
+                if central_shutdown_assembly is not None
+                else graphite_assembly
+            ]
 
         elif ring_idx == no_of_core_rings - 1:
             ring = [graphite_universe] * num_positions
@@ -307,8 +466,19 @@ def create_control_drums(params, materials_database):
     if num_drums not in allowed_counts:
         raise ValueError(f"Unsupported Number of Drums = {num_drums}. Allowed values are {allowed_counts}.")
 
-    # Define the control drums planes
-    theta = np.pi / 180.0
+    # Define the control drum absorber arc.  The legacy geometry used a fixed
+    # +/-60 degree wedge (120 degrees total); retain that orientation while
+    # allowing the requested arc to change consistently with the mass model.
+    absorber_arc_degrees = float(
+        params.get('Drum Absorber Arc Degrees', 120.0)
+    )
+    if not 0.0 < absorber_arc_degrees < 180.0:
+        raise ValueError(
+            "HPMR Drum Absorber Arc Degrees must be greater than 0 and less "
+            f"than 180 degrees, got {absorber_arc_degrees}."
+        )
+    params['Drum Absorber Arc Degrees'] = absorber_arc_degrees
+    half_arc_tangent = np.tan(np.deg2rad(absorber_arc_degrees / 2.0))
     cr_gap_radius = params['Drum Radius']
     cr_out_radius = cr_gap_radius - 0.05
     cr_in_radius = cr_out_radius - params['Drum Absorber Thickness']
@@ -325,8 +495,18 @@ def create_control_drums(params, materials_database):
     c_lower_right_1 = openmc.Plane(surface_id=311, a=-cr, b=1., d=-lc - x2 * cr + y2, name='c_lower_right_1')
     c_lower_left_1 = openmc.Plane(surface_id=312, a=cr, b=1., d=-lc + x2 * cr + y2, name='c_lower_left_1')
 
-    cr_top = openmc.Plane(surface_id=41, a=-np.tan(60 * theta), b=1.0, name='cr_top')
-    cr_bot = openmc.Plane(surface_id=42, a=-np.tan(-60 * theta), b=1.0, name='cr_bot')
+    cr_top = openmc.Plane(
+        surface_id=41,
+        a=-half_arc_tangent,
+        b=1.0,
+        name='cr_top',
+    )
+    cr_bot = openmc.Plane(
+        surface_id=42,
+        a=half_arc_tangent,
+        b=1.0,
+        name='cr_bot',
+    )
     cr_in = openmc.ZCylinder(surface_id=43, x0=0.0, y0=0.0, r=cr_in_radius, name='cr_in')
     cr_out = openmc.ZCylinder(surface_id=44, x0=0.0, y0=0.0, r=cr_out_radius, name='cr_out')
     cr_gap = openmc.ZCylinder(surface_id=45, x0=0.0, y0=0.0, r=cr_gap_radius, name='cr_gap')
@@ -462,6 +642,9 @@ def build_openmc_model_HPMR(params):
     gap = materials_database[params['Coolant']]
     control_drum_absorber = materials_database[params['Control Drum Absorber']]
     control_drum_reflector = materials_database[params['Control Drum Reflector']]
+    central_shutdown_assembly, shutdown_rod_materials = (
+        create_hpmr_shutdown_rod_universe(params, materials_database)
+    )
 
     # **************************************************************************************************************************
     #                                                Sec. 1.2 : GEOMETRY
@@ -480,7 +663,12 @@ def build_openmc_model_HPMR(params):
 
     # Create the hexagonal core geometry
     core_reg, core_reg_out = create_hex_core_geometry(
-        params, fuel_assembly, graphite_assembly, graphite_universe, materials_database
+        params,
+        fuel_assembly,
+        graphite_assembly,
+        graphite_universe,
+        materials_database,
+        central_shutdown_assembly=central_shutdown_assembly,
     )
 
     # Create the control drums
@@ -537,7 +725,7 @@ def build_openmc_model_HPMR(params):
 
     all_materials = fuel_materials + htpipe_materials + [
         coolant, reflector, moderator, gap, control_drum_absorber, control_drum_reflector
-    ]
+    ] + shutdown_rod_materials
 
     # Remove None materials
     all_materials_cleaned_list = [item for item in all_materials if item is not None]
