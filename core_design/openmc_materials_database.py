@@ -1,6 +1,122 @@
 # Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 # Importing libraries
 import openmc
+import math
+
+
+HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION = 0.36
+HPMR_HOMOG_TRISO_MAX_PACKING_FRACTION = 0.40
+HPMR_HOMOG_TRISO_REFERENCE_ENRICHMENT = 0.1975
+# Reconstructed from the documented 36%-packed AGR-2-style compact and the
+# legacy homogenized carbon density.  The original model did not retain a
+# separate compact-matrix density.
+HPMR_COMPACT_MATRIX_GRAPHITE_DENSITY_G_CM3 = 1.60
+HPMR_HOMOG_TRISO_REFERENCE_NUMBER_DENSITIES = {
+    'U235': 0.00130037929 * HPMR_HOMOG_TRISO_REFERENCE_ENRICHMENT,
+    'U238': 0.00130037929 * (1.0 - HPMR_HOMOG_TRISO_REFERENCE_ENRICHMENT),
+    'O16': 2.59371545E-03,
+    'O17': 1.05004397E-06,
+    'O18': 5.99797186E-06,
+    'Si28': 2.76954169E-03,
+    'Si29': 1.40694868E-04,
+    'Si30': 9.28556098E-05,
+    'C12': 7.31619752E-02,
+    'C13': 7.58819416E-04,
+}
+
+
+def _hpmr_homogenized_triso_number_densities(params):
+    """Return HPMR homogenized-fuel number densities in atom/b-cm.
+
+    The legacy HPMR material is retained exactly at its documented 36% TRISO
+    packing-fraction reference point.  At other packing fractions, U/O/Si and
+    coating carbon scale with particle loading while the displaced compact
+    matrix is replaced by compact graphite.  Packing fractions up to the
+    separately documented 40% study limit are permitted.  This makes
+    ``Packing Fraction`` a real neutronics and inventory input instead of an
+    unused label.
+    """
+    if params.get('reactor type') == 'HPMR':
+        packing_fraction = float(
+            params.get(
+                'Packing Fraction',
+                HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION,
+            )
+        )
+    else:
+        # collect_materials_data constructs the complete material catalog even
+        # when homog_TRISO is not used by the selected reactor.
+        packing_fraction = HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION
+    if not 0.0 < packing_fraction <= HPMR_HOMOG_TRISO_MAX_PACKING_FRACTION:
+        raise ValueError(
+            "HPMR Packing Fraction must be greater than zero and no greater "
+            f"than {HPMR_HOMOG_TRISO_MAX_PACKING_FRACTION:.2f}; got "
+            f"{packing_fraction}."
+        )
+
+    reference = HPMR_HOMOG_TRISO_REFERENCE_NUMBER_DENSITIES
+    reference_pf = HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION
+    particle_scale = packing_fraction / reference_pf
+
+    densities = {
+        nuclide: value * particle_scale
+        for nuclide, value in reference.items()
+        if not nuclide.startswith('C')
+    }
+
+    # Carbon in the legacy homogenized material contains both compact-matrix
+    # graphite and TRISO coating/kernel carbon.  Separate those two terms at
+    # the 36% reference point, then scale them independently.  A compact-
+    # matrix density of 1.60 g/cm3 reconstructs the documented AGR-2-style
+    # graphite matrix while preserving the legacy total carbon density exactly
+    # at PF = 0.36.
+    avogadro = 6.02214076e23
+    graphite_atom_density = (
+        HPMR_COMPACT_MATRIX_GRAPHITE_DENSITY_G_CM3
+        / 12.011 * avogadro / 1.0e24
+    )
+    carbon_reference_total = reference['C12'] + reference['C13']
+    matrix_carbon_reference = (1.0 - reference_pf) * graphite_atom_density
+    particle_carbon_reference = carbon_reference_total - matrix_carbon_reference
+    if particle_carbon_reference <= 0.0:
+        raise RuntimeError(
+            "The HPMR reference composition is inconsistent with its graphite "
+            "matrix density and packing fraction."
+        )
+
+    carbon_total = (
+        (1.0 - packing_fraction) * graphite_atom_density
+        + particle_scale * particle_carbon_reference
+    )
+    c12_fraction = reference['C12'] / carbon_reference_total
+    densities['C12'] = carbon_total * c12_fraction
+    densities['C13'] = carbon_total * (1.0 - c12_fraction)
+
+    # Preserve the requested enrichment while holding total uranium loading at
+    # the selected packing fraction.
+    uranium_total = densities.pop('U235') + densities.pop('U238')
+    enrichment = float(params['Enrichment'])
+    if not 0.0 < enrichment < 1.0:
+        raise ValueError("Enrichment must be between zero and one.")
+    densities['U235'] = uranium_total * enrichment
+    densities['U238'] = uranium_total * (1.0 - enrichment)
+
+    if not all(math.isfinite(value) and value > 0.0 for value in densities.values()):
+        raise RuntimeError("HPMR homogenized-fuel number densities must be positive.")
+
+    if params.get('reactor type') == 'HPMR':
+        params['Packing Fraction'] = packing_fraction
+        params['HPMR Homogenized TRISO Reference Packing Fraction'] = reference_pf
+        params['HPMR Homogenized TRISO Maximum Packing Fraction'] = (
+            HPMR_HOMOG_TRISO_MAX_PACKING_FRACTION
+        )
+        params['HPMR Homogenized TRISO Reference Enrichment'] = (
+            HPMR_HOMOG_TRISO_REFERENCE_ENRICHMENT
+        )
+        params['HPMR Compact Matrix Graphite Density'] = (
+            HPMR_COMPACT_MATRIX_GRAPHITE_DENSITY_G_CM3
+        )
+    return densities
 
 def collect_materials_data(params):
     
@@ -131,23 +247,13 @@ def collect_materials_data(params):
 
     # Homogenized TRISO fuel
     try:
-        U_total = 0.00130037929          # Total U atom density (U235+U238)
-        density = 8.08250295E-02  # Total density (atom/b-cm)
-        U235_frac = params['Enrichment'] * U_total
-        U238_frac = (1 - params['Enrichment']) * U_total
+        number_densities = _hpmr_homogenized_triso_number_densities(params)
+        density = sum(number_densities.values())
         homog_TRISO = openmc.Material(name='homog_TRISO')
         homog_TRISO.set_density('atom/b-cm', density)
         homog_TRISO.temperature = params['Common Temperature']
-        homog_TRISO.add_nuclide('U235', U235_frac, 'ao')
-        homog_TRISO.add_nuclide('U238', U238_frac, 'ao')
-        homog_TRISO.add_nuclide('O16', 2.59371545E-03, 'ao')
-        homog_TRISO.add_nuclide('O17', 1.05004397E-06, 'ao')
-        homog_TRISO.add_nuclide('O18', 5.99797186E-06, 'ao')
-        homog_TRISO.add_nuclide('Si28', 2.76954169E-03, 'ao')
-        homog_TRISO.add_nuclide('Si29', 1.40694868E-04, 'ao')
-        homog_TRISO.add_nuclide('Si30', 9.28556098E-05, 'ao')
-        homog_TRISO.add_nuclide('C12', 7.31619752E-02, 'ao')
-        homog_TRISO.add_nuclide('C13', 7.58819416E-04, 'ao')
+        for nuclide, number_density in number_densities.items():
+            homog_TRISO.add_nuclide(nuclide, number_density, 'ao')
         homog_TRISO.add_s_alpha_beta('c_Graphite')
         materials.append(homog_TRISO)
         materials_database.update({'homog_TRISO': homog_TRISO})

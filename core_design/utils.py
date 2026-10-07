@@ -479,6 +479,81 @@ def number_of_heatpipes_hmpr(params):
     params['Number of Heatpipes'] = params['Number of Heatpipes per Assembly'] * params['Fuel Assemblies Count']
 
 
+def calculate_average_heat_pipe_loading(params):
+    """Calculate average HPMR loading and enforce an optional design limit."""
+    number_of_heatpipes = int(params['Number of Heatpipes'])
+    if number_of_heatpipes <= 0:
+        raise ValueError("Number of Heatpipes must be greater than zero.")
+    loading = 1000.0 * float(params['Power MWt']) / number_of_heatpipes
+    params['Average Heat Pipe Loading'] = loading
+    maximum_loading = params.get('Maximum Average Heat Pipe Loading')
+    if maximum_loading is not None:
+        maximum_loading = float(maximum_loading)
+        if maximum_loading <= 0.0:
+            raise ValueError(
+                "Maximum Average Heat Pipe Loading must be greater than zero."
+            )
+        loading_pass = loading <= maximum_loading
+        params['Heat Pipe Loading Constraint Pass'] = loading_pass
+        if not loading_pass:
+            raise ValueError(
+                f"Average heat-pipe loading is {loading:.6g} kW/pipe, above "
+                f"the configured {maximum_loading:.6g} kW/pipe limit."
+            )
+    return loading
+
+
+def summarize_parametric_constraints(params):
+    """Add central-value scoping flags after lifecycle calculations finish."""
+    lifetime_days = float(params['Fuel Lifetime'])
+    rounded_years = int(np.floor(lifetime_days / 365.25 + 0.5))
+    corrected_keff = [
+        float(value) for value in params['keff 3D (2D corrected)']
+    ]
+    if not corrected_keff:
+        raise ValueError("No corrected operating keff values were reported.")
+
+    lifetime_status = str(params.get('Fuel Lifetime Status', ''))
+    bol_critical = corrected_keff[0] > 1.0
+    minimum_cycle_years = int(params.get('Minimum Rounded Cycle Length', 2))
+    maximum_cycle_years = int(params.get('Maximum Rounded Cycle Length', 6))
+    if minimum_cycle_years > maximum_cycle_years:
+        raise ValueError(
+            "Minimum Rounded Cycle Length cannot exceed Maximum Rounded "
+            "Cycle Length."
+        )
+    cycle_coverage = (
+        minimum_cycle_years <= rounded_years <= maximum_cycle_years
+        and lifetime_status == 'Interpolated k=1 crossing'
+        and not bool(params.get('Fuel Lifetime Extrapolated', False))
+    )
+    shutdown_pass = (
+        float(params['Most Limiting Shutdown Margin 3D (2D corrected)'])
+        > float(params.get('Minimum Shutdown Margin', 1000.0))
+    )
+    temperature_pass = (
+        float(params['Temp Coeff 3D (2D corrected)'])
+        < float(params.get('Maximum Temperature Coefficient', 0.0))
+    )
+    heat_pipe_pass = bool(
+        params.get('Heat Pipe Loading Constraint Pass', True)
+    )
+
+    params['Rounded Fuel Lifetime (years)'] = rounded_years
+    params['BOL Critical Constraint Pass'] = bol_critical
+    params['Cycle Length Coverage Pass'] = cycle_coverage
+    params['Shutdown Margin Constraint Pass'] = shutdown_pass
+    params['Temperature Coefficient Constraint Pass'] = temperature_pass
+    params['All Primary Constraints Pass'] = (
+        bol_critical
+        and cycle_coverage
+        and shutdown_pass
+        and temperature_pass
+        and heat_pipe_pass
+    )
+    return params['All Primary Constraints Pass']
+
+
 def calculate_total_number_of_TRISO_particles(params):
     compact_fuel_vol = cylinder_volume(params['Compact Fuel Radius'], params['Active Height'])
     one_particle_volume = sphere_volume(params['Fuel Pin Radii'][-1])

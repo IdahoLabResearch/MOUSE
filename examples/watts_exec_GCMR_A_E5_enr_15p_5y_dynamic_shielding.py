@@ -8,6 +8,8 @@ Users can modify parameters in the "params" dictionary below.
 """
 
 import numpy as np
+import os
+from pathlib import Path
 import watts  # Simulation workflows for one or multiple codes
 from core_design.openmc_template_GCMR import *
 from core_design.utils import *
@@ -34,6 +36,14 @@ def update_params(updates):
 # **************************************************************************************************************************
 update_params({
     'plotting': "Y",  # "Y" or "N": Yes or No
+    'Parametric Screening Mode': True,
+    'Parametric Study Case ID': 'GCMR_LEU_example',
+    'Parametric Study Seed ID': 'GCMR_P15Y4_example',
+    'Desired Rounded Cycle Length (years)': 4,
+    'Seed Scaling Basis': (
+        'Inventory scaling from the attached 15 MWt, 15%-enriched, '
+        '1877-day GCMR result; verify using calculated OpenMC lifetime.'
+    ),
     'cross_sections_xml_location': '/projects/MRP_MOUSE/openmc_data/endfb-viii.0-hdf5/cross_sections.xml', # on INL HPC
     'simplified_chain_thermal_xml': '/projects/MRP_MOUSE/openmc_data/chain_endf_b8.0.xml'                 # on INL HPC
 })
@@ -45,7 +55,7 @@ update_params({
     'reactor type': "GCMR",  # LTMR or GCMR
     'TRISO Fueled': "Yes",
     'Fuel': 'UCO',
-    'Enrichment': 0.15,  # The enrichment is a fraction. It has to be between 0 and 1
+    'Enrichment': 0.0495,  # fixed LEU comparison enrichment
     'UO2 atom fraction': 0.7,  # Mixing UO2 and UC by atom fraction
     'Radial Reflector': 'Graphite',
     'Axial Reflector': 'Graphite',
@@ -81,7 +91,7 @@ update_params({
     'Moderator Booster Radii': [0.5],  # cm
     'Lattice Pitch': 2.25,
     'Assembly Rings': 6,
-    'Core Rings': 5,
+    'Core Rings': 6,
 
     # Central assembly
     'Central Shutdown Rod Radius': 0.85,  # cm
@@ -96,26 +106,38 @@ update_params({
     'Surrounding Shutdown Rod Count': 2,
     'Surrounding Shutdown Assembly Count': 6,
 
-    # Explicit geometry values for this design. The geometry helper validates
-    # these values and does not replace them with calculated dimensions.
-    'Assembly FTF': 19.48557158514987,  # cm
-    'Active Height': 200.0,  # cm
-    'Radial Reflector Thickness': 9.742785792574935,  # cm
-    'Axial Reflector Thickness': 9.742785792574935,  # cm
-    'Core Radius': 107.17064371832429,  # cm
-    'Shutdown Rod Height': 200.0,  # cm
 })
+params['Assembly FTF'] = (
+    params['Lattice Pitch']
+    * (params['Assembly Rings'] - 1)
+    * np.sqrt(3.0)
+)
+params['Active Core Diameter'] = (
+    2.0 * params['Assembly FTF'] * params['Core Rings']
+)
+params['Core Aspect Ratio'] = 1.35
+params['Active Height'] = (
+    params['Core Aspect Ratio'] * params['Active Core Diameter']
+)
+params['Radial Reflector Thickness'] = 50.0
+params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']
+params['Core Radius'] = (
+    params['Assembly FTF'] * params['Core Rings']
+    + params['Radial Reflector Thickness']
+)
+params['Shutdown Rod Height'] = params['Active Height']
 
 # **************************************************************************************************************************
 #                                           Sec. 3: Control Drums
 # ************************************************************************************************************************** 
 update_params({
-    'Drum Count': 24,
-    'Drum Radius': 9.530986101432001,  # cm
-    'Drum Tube Radius': 9.742785792574935,  # cm
+    'Drum Count': 6 * (params['Core Rings'] - 1),
+    'Drum Radius': params['Assembly FTF'] / 2.0 * (45.0 / 46.0),
     'Drum Absorber Thickness': 1, # cm
-    'Drum Absorber Arc Degrees': 120.0,
-    'Drum Height': 219.48557158514987,  # cm
+    'Drum Absorber Arc Degrees': 150.0,
+    'Drum Height': (
+        params['Active Height'] + 2.0 * params['Axial Reflector Thickness']
+    ),
     })
 calculate_drums_volumes_and_masses(params)
 calculate_gcmr_shutdown_rods_volumes_and_masses(params)
@@ -140,6 +162,7 @@ params['Heat Flux'] = calculate_heat_flux_TRISO(params) # MW/m^2
 # statepoint can produce the shield result before the fuel-depletion sequence.
 update_params({
     'Dynamic Shielding Calculation': True,
+    'Shielding Working Directory': str(Path.cwd() / 'shielding_runs'),
     'Shielding Dose Limit': 0.5,  # mrem/h
     'Shielding Irradiation Years': 60.0,
     'Shielding Activation Step Days': 90.0,
@@ -164,12 +187,16 @@ update_params({
     # particles. The completed concrete activation calculation is retained.
     'Shielding Photon Retry Multiplier': 4,
     'Shielding Photon Maximum Retries': 1,
+    'Shielding Photon Relative Error Target': 0.30,
+    'Shielding Candidate Statistical Retry Multiplier': 4,
+    'Shielding Candidate Statistical Maximum Retries': 1,
     'Shielding Thickness Tolerance': 10.0,
     # Round the fitted dose-limit crossing upward to a 5 cm increment before
     # the single allowed confirmation calculation.
     'Shielding Confirmation Increment': 5.0,
+    'Shielding Extrapolation Confidence Multiplier': 1.645,
     'Shielding Initial Upper Thickness': 60.0,
-    'Shielding Maximum Thickness': 200.0,
+    'Shielding Maximum Thickness': 300.0,
     # At most one midpoint is evaluated before the exponential fit.
     'Shielding Maximum Search Iterations': 1,
     'In Vessel Shield Thickness': 0,
@@ -207,6 +234,8 @@ update_params({
 # computation time during early design exploration.
 params['Shutdown Margin Calc'] = True  # True or False
 params['Cold Shutdown Temperature'] = 300  # K
+params['Minimum Shutdown Margin'] = 1000.0  # pcm
+params['Maximum Temperature Coefficient'] = 0.0  # pcm/K; must be negative
 
 # --- Isothermal Temperature Coefficient ---
 # When True, two additional OpenMC simulations are run: one at 'Common Temperature'
@@ -228,6 +257,7 @@ params['Temperature Perturbation'] = 100  # K
 
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_GCMR, heat_flux_monitor, params)
+summarize_parametric_constraints(params)
 fuel_calculations(params)  # calculate the fuel mass and SWU
 
 # --- Previously calculated OpenMC results ---
@@ -424,6 +454,9 @@ update_params({
 # **************************************************************************************************************************
 params['Number of Samples'] = 100  # number of samples for cost uncertainty analysis
 # Estimate costs using the cost database file and save the output to an Excel file
-estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx')
+mouse_root = Path(os.environ.get('MOUSE_ROOT', Path(__file__).resolve().parents[1]))
+estimate = detailed_bottom_up_cost_estimate(
+    str(mouse_root / 'cost' / 'Cost_Database.xlsx')
+)
 elapsed_time = (time.time() - time_start) / 60  # calculate execution time
 print('Execution time:', np.round(elapsed_time, 1), 'minutes')

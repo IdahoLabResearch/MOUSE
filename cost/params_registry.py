@@ -62,6 +62,31 @@ PARAMS_REGISTRY = {
         'description': 'File path to the simplified depletion chain XML file for thermal reactors',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'Parametric Screening Mode': {
+        'group': 'Settings', 'units': '',
+        'description': 'Marks a reduced-cost scoping calculation that reports central-value design-constraint flags.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Parametric Study Case ID': {
+        'group': 'Settings', 'units': '',
+        'description': 'Unique case identifier from the parametric-study manifest.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Parametric Study Seed ID': {
+        'group': 'Settings', 'units': '',
+        'description': 'Core-design seed identifier shared by hardware variants.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Desired Rounded Cycle Length (years)': {
+        'group': 'Settings', 'units': 'years',
+        'description': 'Cycle-length coverage bin targeted by the inventory-scaled seed; the calculated fuel lifetime remains the result.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Seed Scaling Basis': {
+        'group': 'Settings', 'units': '',
+        'description': 'Baseline result and proportional fissile-inventory scaling used to construct the scoping seed.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     # =========================================================
     # Materials
     # =========================================================
@@ -84,6 +109,26 @@ PARAMS_REGISTRY = {
         'group': 'Materials', 'units': 'fraction',
         'description': 'Uranium-235 enrichment fraction (0 to 1)',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'HPMR Homogenized TRISO Reference Packing Fraction': {
+        'group': 'Materials', 'units': 'fraction',
+        'description': 'Packing fraction at which the legacy HPMR homogenized-TRISO composition is reproduced exactly.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'HPMR Homogenized TRISO Maximum Packing Fraction': {
+        'group': 'Materials', 'units': 'fraction',
+        'description': 'Maximum HPMR packing fraction allowed in this scoping study.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'HPMR Homogenized TRISO Reference Enrichment': {
+        'group': 'Materials', 'units': 'fraction',
+        'description': 'Documented enrichment of the legacy 36%-packed HPMR homogenized-TRISO reference composition.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'HPMR Compact Matrix Graphite Density': {
+        'group': 'Materials', 'units': 'g/cm3',
+        'description': 'Compact graphite-matrix density reconstructed for packing-fraction scaling of the legacy HPMR homogenized fuel.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'H_Zr_ratio': {
         'group': 'Materials', 'units': 'atomic ratio',
@@ -359,6 +404,16 @@ PARAMS_REGISTRY = {
         'description': 'Total core radius including the radial reflector',
         'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
+    'Active Core Diameter': {
+        'group': 'Geometry', 'units': 'cm',
+        'description': 'Flat-to-flat active fueled-core diameter used to define the aspect ratio; reflector thickness is excluded.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Core Aspect Ratio': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Active fuel height divided by the active fueled-core diameter.',
+        'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
+
     'hexagonal Core Edge Length': {
         'group': 'Geometry', 'units': 'cm',
         'description': 'Edge length of the hexagonal core (HPMR)',
@@ -376,22 +431,22 @@ PARAMS_REGISTRY = {
 
     'Number of Shutdown Rods': {
         'group': 'Geometry', 'units': '',
-        'description': 'Total shutdown-rod count. LTMR accepts user-selected 6- or 12-rod predefined layouts; GCMR calculates the total from the central and surrounding assembly inputs.',
+        'description': 'Total shutdown-rod count. LTMR accepts predefined 6- or 12-rod layouts, GCMR calculates the total from its shutdown assemblies, and HPMR uses one central rod.',
         'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Absorber Radius': {
         'group': 'Geometry', 'units': 'cm',
-        'description': 'Outer radius of the LTMR shutdown-rod B4C absorber',
+        'description': 'Outer radius of a cylindrical shutdown-rod B4C absorber (LTMR/HPMR)',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Clad Radius': {
         'group': 'Geometry', 'units': 'cm',
-        'description': 'Outer radius of the LTMR shutdown-rod cladding',
+        'description': 'Outer radius of cylindrical shutdown-rod cladding (LTMR/HPMR)',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Height': {
         'group': 'Geometry', 'units': 'cm',
-        'description': 'Physical height of each LTMR shutdown rod; defaults to the active core height in the example input',
+        'description': 'Physical height of each shutdown rod; normally equal to the active core height',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Fuel Pin Count per Assembly': {
@@ -413,6 +468,11 @@ PARAMS_REGISTRY = {
         'group': 'Geometry', 'units': '',
         'description': 'Number of heat pipes per hexagonal assembly (HPMR)',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'HPMR Heat Pipe Layout': {
+        'group': 'Geometry', 'units': '',
+        'description': 'Named six-ring HPMR assembly layout defining the symmetric fuel and heat-pipe positions',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     # =========================================================
     # Control Drums
@@ -603,6 +663,16 @@ PARAMS_REGISTRY = {
         'description': 'Calculated average fuel surface heat flux at full power',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
+    'Average Heat Pipe Loading': {
+        'group': 'Overall System', 'units': 'kW/heat pipe',
+        'description': 'Average thermal power divided by the modeled number of heat pipes.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Maximum Average Heat Pipe Loading': {
+        'group': 'Overall System', 'units': 'kW/heat pipe',
+        'description': 'Maximum accepted average HPMR heat-pipe loading used as a parametric design constraint.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'Burnup Steps': {
         'group': 'Overall System', 'units': 'MWd/kg',
         'description': 'Cumulative burnup values at each depletion time step',
@@ -619,6 +689,16 @@ PARAMS_REGISTRY = {
    'Shutdown Margin Calc': {
         'group': 'OpenMC Settings', 'units': '',
         'description': 'Whether shutdown margin is calculated. When True, the shutdown-state keff is evaluated with the absorber facing the core (ARI) at Cold Shutdown Temperature, and shutdown margin metrics are reported from ((1 - k_s) / k_s).',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Minimum Shutdown Margin': {
+        'group': 'OpenMC Settings', 'units': 'pcm',
+        'description': 'Minimum accepted lifecycle shutdown margin for the scoping study.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Maximum Temperature Coefficient': {
+        'group': 'OpenMC Settings', 'units': 'pcm/K',
+        'description': 'Maximum accepted limiting isothermal temperature coefficient for the scoping study.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Cold Shutdown Temperature': {
@@ -647,6 +727,61 @@ PARAMS_REGISTRY = {
     'Fuel Lifetime': {
         'group': 'Physics Results', 'units': 'days',
         'description': 'Estimated fuel cycle length — time for the 3D-corrected keff to fall to 1.0',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Fuel Lifetime Status': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Method or boundary condition used to report the fuel lifetime.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Fuel Lifetime Extrapolated': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Whether the reported fuel lifetime was extrapolated beyond the simulated depletion schedule.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Rounded Fuel Lifetime (years)': {
+        'group': 'Physics Results', 'units': 'years',
+        'description': 'Calculated fuel lifetime converted to years and rounded to the nearest integer using half-up rounding.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Minimum Rounded Cycle Length': {
+        'group': 'OpenMC Settings', 'units': 'years',
+        'description': 'Minimum rounded calculated cycle length accepted by the parametric coverage constraint.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Maximum Rounded Cycle Length': {
+        'group': 'OpenMC Settings', 'units': 'years',
+        'description': 'Maximum rounded calculated cycle length accepted by the parametric coverage constraint.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'BOL Critical Constraint Pass': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Central-value flag indicating whether corrected beginning-of-life operating keff exceeds 1.0.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Cycle Length Coverage Pass': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Flag indicating whether the rounded calculated fuel lifetime is within the 2-through-6-year study range and is based on a simulated k=1 crossing.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Shutdown Margin Constraint Pass': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Central-value flag indicating whether the most limiting lifecycle shutdown margin exceeds the specified minimum.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Temperature Coefficient Constraint Pass': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Central-value flag indicating whether the most limiting lifecycle temperature coefficient is below the specified maximum.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Heat Pipe Loading Constraint Pass': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Flag indicating whether average HPMR heat-pipe loading is at or below the configured maximum.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'All Primary Constraints Pass': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Combined central-value flag for BOL criticality, the configured simulated cycle-length range, shutdown margin, negative temperature coefficient, and any configured heat-pipe loading limit.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Depletion Time Steps': {
