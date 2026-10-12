@@ -1,5 +1,7 @@
 # Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 import os
+import tempfile
+import zipfile
 import pandas as pd
 import numpy as np
 import csv
@@ -499,31 +501,56 @@ def detailed_bottom_up_cost_estimate(cost_database_filename):
 
     detailed_cost_table = bottom_up_cost_estimate(cost_database_filename, params)
     detailed_central_cost_table = bottom_up_cost_estimate_central(cost_database_filename, params)
-    pretty_df = transform_dataframe(detailed_cost_table)
-
-    with pd.ExcelWriter(output_filename) as writer:
-        pretty_df.to_excel(writer, sheet_name="cost estimate", index=False)
-
-        if detailed_central_cost_table is not None:
-            numerical_columns = detailed_central_cost_table.select_dtypes(include=[np.number]).columns
-            nan_mask = detailed_central_cost_table[numerical_columns].isna().any(axis=1)
-            if nan_mask.any():
-                print("WARNING: NaN values in central facility accounts:")
-                print(detailed_central_cost_table[nan_mask][['Account', 'Account Title'] + list(numerical_columns)])
-            pretty_central_df = transform_dataframe(detailed_central_cost_table)
-            pretty_central_df.to_excel(writer, sheet_name="central facility cost estimate", index=False)
-
-        save_params_to_excel_file(writer, params)
-
     # Always compute per-account LCOE contributions so they appear in Excel.
     # The PNG plot is only generated if params['plotting'] == "Y" —
     # that gate lives inside cost_drivers_estimate.
     lcoe_enriched_table, _ = cost_drivers_estimate(detailed_cost_table, params)
+    output_cost_table = lcoe_enriched_table if lcoe_enriched_table is not None else detailed_cost_table
+    pretty_df = transform_dataframe(output_cost_table)
 
-    if lcoe_enriched_table is not None:
-        pretty_lcoe_df = transform_dataframe(lcoe_enriched_table)
-        with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
-            pretty_lcoe_df.to_excel(writer, sheet_name="cost estimate", index=False)
+    # Build the workbook once in the destination directory, verify it is a
+    # complete Excel package, then replace the previous output atomically.
+    # This prevents a failed second-pass sheet replacement from leaving a
+    # partially written file for Excel to repair.
+    output_dir = os.path.dirname(output_filename)
+    output_basename = os.path.basename(output_filename)
+    file_descriptor, temporary_filename = tempfile.mkstemp(
+        dir=output_dir,
+        prefix=f".{output_basename}.",
+        suffix=".xlsx",
+    )
+    os.close(file_descriptor)
+
+    try:
+        with pd.ExcelWriter(temporary_filename, engine="openpyxl") as writer:
+            pretty_df.to_excel(writer, sheet_name="cost estimate", index=False)
+
+            if detailed_central_cost_table is not None:
+                numerical_columns = detailed_central_cost_table.select_dtypes(include=[np.number]).columns
+                nan_mask = detailed_central_cost_table[numerical_columns].isna().any(axis=1)
+                if nan_mask.any():
+                    print("WARNING: NaN values in central facility accounts:")
+                    print(detailed_central_cost_table[nan_mask][['Account', 'Account Title'] + list(numerical_columns)])
+                pretty_central_df = transform_dataframe(detailed_central_cost_table)
+                pretty_central_df.to_excel(writer, sheet_name="central facility cost estimate", index=False)
+
+            save_params_to_excel_file(writer, params)
+
+        with zipfile.ZipFile(temporary_filename) as workbook_archive:
+            invalid_member = workbook_archive.testzip()
+            required_members = {"[Content_Types].xml", "xl/workbook.xml", "xl/worksheets/sheet1.xml"}
+            missing_members = required_members.difference(workbook_archive.namelist())
+
+        if invalid_member is not None:
+            raise RuntimeError(f"Generated workbook contains an invalid ZIP member: {invalid_member}")
+        if missing_members:
+            raise RuntimeError(f"Generated workbook is missing required Excel files: {sorted(missing_members)}")
+
+        os.replace(temporary_filename, output_filename)
+    except Exception:
+        if os.path.exists(temporary_filename):
+            os.remove(temporary_filename)
+        raise
 
     print(f"\n\nThe cost estimate and all the parameters are saved at {output_filename}\n\n")
     return detailed_cost_table
