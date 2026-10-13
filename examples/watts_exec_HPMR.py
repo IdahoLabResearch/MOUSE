@@ -34,7 +34,7 @@ def update_params(updates):
 update_params({
     'plotting': "Y",  # "Y" or "N": Yes or No
     'cross_sections_xml_location': '/projects/MRP_MOUSE/openmc_data/endfb-viii.0-hdf5/cross_sections.xml', # on INL HPC
-    'simplified_chain_thermal_xml': '/projects/MRP_MOUSE/openmc_data/simplified_thermal_chain11.xml'       # on INL HPC
+    'simplified_chain_thermal_xml': '/projects/MRP_MOUSE/openmc_data/chain_endf_b8.0.xml'       # on INL HPC
 })
 
 # **************************************************************************************************************************
@@ -51,7 +51,7 @@ update_params({
     'Axial Reflector': 'Graphite',
     'Moderator': 'monolith_graphite',
     'Coolant': 'Helium',
-    'Control Drum Absorber': 'B4C_natural',
+    'Control Drum Absorber': 'B4C_enriched',
     'Control Drum Reflector': 'Graphite',
     'Cooling Device': 'heatpipe',
     'Common Temperature': 1000,  #K
@@ -77,7 +77,7 @@ update_params({
 })
 params['Assembly FTF'] = (params['Lattice Pitch'] * (params['Number of Rings per Assembly'] - 1) + 1.4 * params['Fuel Pin Radii'][-1]) * np.sqrt(3)
 params['hexagonal Core Edge Length'] = (params['Assembly FTF'] * (params['Number of Rings per Core']-1)) + (params['Assembly FTF']/2) + 6.6
-params['Radial Reflector Thickness'] = 50 #cm
+params['Radial Reflector Thickness'] = 78 #cm
 params['Core Radius'] = 0.5*np.sqrt(3)*params['hexagonal Core Edge Length'] + params['Radial Reflector Thickness']
 params['Active Height'] = 262.617 # cm
 params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']
@@ -89,8 +89,8 @@ number_of_heatpipes_hmpr(params)
 # ************************************************************************************************************************** 
 
 update_params({
-    'Drum Count': 12,   # allowed: 6, 12, 18, 24
-    'Drum Radius': 0.4 * params['Radial Reflector Thickness'], 
+    'Drum Count': 24,   # allowed: 6, 12, 18, 24
+    'Drum Radius': 17 ,
     'Drum Absorber Thickness': 1,  # cm
     'Drum Absorber Arc Degrees': 120.0,  # degrees; must be greater than 0 and less than 180
     'Drum Height': params['Active Height']
@@ -120,7 +120,11 @@ update_params({
     'Power MWt': 15,
     'Thermal Efficiency': 0.36,
     'Heat Flux Criteria': 0.9,  # MW/m^2 
-    'Time Steps': [t * 86400 for t in [0.01, 0.99, 3, 6, 20, 70, 100, 165, 365, 365, 365, 365, 365, 365, 365.00]]  # seconds
+'Burnup Steps': [
+    0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0,
+    20.0, 30.0, 40.0, 50.0, 60.0, 80.0,
+    100.0, 120.0, 150.0
+]
 })
 params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency']
 params['Heat Flux'] = calculate_heat_flux(params)
@@ -139,7 +143,7 @@ calculate_average_heat_pipe_loading(params)
 # A positive SDM means the reactor can be safely shut down with all drums inserted.
 # Recommended: True for final design verification; can be set to False to save
 # computation time during early design exploration.
-params['Shutdown Margin Calc'] = False  # True or False
+params['Shutdown Margin Calc'] = True  # True or False
 
 # Used only by temperature-coefficient snapshots to apply a density-only
 # graphite thermal-expansion correction; geometry remains fixed.
@@ -151,7 +155,7 @@ params['Graphite Linear Expansion Coefficient'] = 4.3e-6  # 1/K
 # coefficient is then calculated in units of pcm/K.
 # A negative coefficient indicates the reactor is self-stabilizing (desired behavior).
 # Recommended: True for safety analysis; can be set to False to save computation time.
-# params['Isothermal Temperature Coefficients'] = True  # True or False
+params['Isothermal Temperature Coefficients'] = True  # True or False
 
 # --- Temperature Perturbation ---
 # The temperature step (in Kelvin) used for the isothermal temperature coefficient calculation.
@@ -161,7 +165,7 @@ params['Graphite Linear Expansion Coefficient'] = 4.3e-6  # 1/K
 # avoiding nonlinear effects. 
 # Units: Kelvin
 # This parameter is REQUIRED only when 'Isothermal Temperature Coefficients' is True.
-# params['Temperature Perturbation'] = 100  # K
+params['Temperature Perturbation'] = 100  # K
 
 heat_flux_monitor = monitor_heat_flux(params)
 run_openmc(build_openmc_model_HPMR, heat_flux_monitor, params)
@@ -173,7 +177,7 @@ fuel_calculations(params)  # calculate the fuel mass and SWU
 params.update({
     'Primary Loop Purification': True,
     'Secondary HX Mass': 0,
-    'Primary Loop Count': 2,
+    'Primary Loop Count': 1,
     'Primary Loop Inlet Temperature': 650 + 273.15, # K
     'Primary Loop Outlet Temperature': 650 + 273.15, # K
     'Secondary Loop Inlet Temperature': 300 + 273.15, # K
@@ -250,9 +254,9 @@ params['Replacement Coolant Inventory'] = 0
 total_refueling_period = params['Fuel Lifetime'] + params['Refueling Period'] + params['Startup Duration after Refueling'] # days
 total_refueling_period_yr = total_refueling_period/365
 params['A75: Outer Vessel Structure Replacement Period (years)'] = 20
-params['A75: Inner Vessel Structure Replacement Period (cycles)'] = np.floor(10/total_refueling_period_yr)
-params['A75: Reflector Replacement Period (cycles)']     = np.floor(10/total_refueling_period_yr)
-params['A75: Reactor Control Devices Replacement Period (cycles)'] = np.floor(10/total_refueling_period_yr)
+params['A75: Inner Vessel Structure Replacement Period (years)'] = 10
+params['A75: Reflector Replacement Period (years)'] = 10
+params['A75: Reactor Control Devices Replacement Period (years)'] = 10
 params['A75: Moderator Booster Replacement Period (cycles)'] = 1
 params['A75: Moderator Replacement Period (cycles)'] = 1
 params['Maintenance to Direct Cost Ratio']                = 0.015
@@ -319,7 +323,7 @@ update_params({
 # **************************************************************************************************************************
 #                                           Sec. 11: Post Processing
 # **************************************************************************************************************************
-params['Number of Samples'] = 1  # number of samples for cost uncertainty analysis
+params['Number of Samples'] = 100  # number of samples for cost uncertainty analysis
 # Estimate costs using the cost database file and save the output to an Excel file
 estimate = detailed_bottom_up_cost_estimate('cost/Cost_Database.xlsx')
 elapsed_time = (time.time() - time_start) / 60  # calculate execution time
