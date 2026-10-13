@@ -391,7 +391,7 @@ PARAMS_REGISTRY = {
 
     'Shutdown Rod Height': {
         'group': 'Geometry', 'units': 'cm',
-        'description': 'Physical height of each shutdown rod; for HPMR this is needed only when Number of Shutdown Rods is 1 and must equal Active Height.',
+        'description': 'User-controlled physical height of each shutdown rod. For HPMR it is needed only when Number of Shutdown Rods is 1; it directly determines absorber and cladding inventory and cost.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Fuel Pin Count per Assembly': {

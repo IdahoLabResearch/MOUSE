@@ -104,6 +104,8 @@ update_params({
     'Shutdown Rod Cladding': 'SS304',
     'Shutdown Rod Absorber Radius': 10.0,  # cm
     'Shutdown Rod Clad Radius': 10.2,  # cm
+    # User-controlled physical rod height. It directly sets absorber and
+    # cladding inventory/cost; the default spans the active fuel height.
     'Shutdown Rod Height': params['Active Height'],  # cm
 })
 

@@ -417,7 +417,11 @@ def calculate_drums_volumes_and_masses(params):
 
 
 def calculate_shutdown_rods_volumes_and_masses(params):
-    """Calculate cylindrical shutdown-rod absorber and cladding inventories."""
+    """Calculate cylindrical shutdown-rod inventory and cost-scaling masses.
+
+    ``Shutdown Rod Height`` is an explicit user input, so absorber and
+    cladding volumes scale directly with that value.
+    """
     number_of_rods = int(params['Number of Shutdown Rods'])
     rod_height = float(params['Shutdown Rod Height'])
     absorber_radius = float(params['Shutdown Rod Absorber Radius'])
