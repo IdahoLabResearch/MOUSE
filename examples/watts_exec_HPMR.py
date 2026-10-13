@@ -45,7 +45,8 @@ update_params({
     'reactor type': "HPMR",
     'TRISO Fueled': "Yes",
     'Fuel': 'homog_TRISO',     
-    'Enrichment': 0.19985,
+    'Enrichment': 0.1975,
+    'Packing Fraction': 0.17,
     'Radial Reflector': 'Graphite',
     'Axial Reflector': 'Graphite',
     'Moderator': 'monolith_graphite',
@@ -63,22 +64,24 @@ update_params({
 
 update_params({
     'Fuel Pin Materials': ['homog_TRISO', 'Helium'],
-    'Fuel Pin Radii': [1.00, 1.05], #cm
+    'Fuel Pin Radii': [1.15, 1.20], # cm; fuel region radius, then outer gap radius
     'Heat Pipe Materials': ['heatpipe', 'Helium'],
     'Heat Pipe Radii': [1.10, 1.15],
     'Number of Rings per Assembly': 6,
-    'Number of Rings per Core': 3,
-    'Lattice Pitch': 3.4,
+    'Number of Rings per Core': 5,
+    'Lattice Pitch': 3.2,
+    # HP19: 19 heat pipes and 72 fuel pins per assembly.
+    # HP13: 13 heat pipes and 78 fuel pins per assembly. Choosing HP13 adds
+    # fuel positions but raises the average thermal duty per heat pipe.
+    'HPMR Heat Pipe Layout': 'HP19',
 })
 params['Assembly FTF'] = (params['Lattice Pitch'] * (params['Number of Rings per Assembly'] - 1) + 1.4 * params['Fuel Pin Radii'][-1]) * np.sqrt(3)
 params['hexagonal Core Edge Length'] = (params['Assembly FTF'] * (params['Number of Rings per Core']-1)) + (params['Assembly FTF']/2) + 6.6
 params['Radial Reflector Thickness'] = 50 #cm
 params['Core Radius'] = 0.5*np.sqrt(3)*params['hexagonal Core Edge Length'] + params['Radial Reflector Thickness']
-params['Active Height'] = 2 * params['Core Radius'] #cm  
+params['Active Height'] = 262.617 # cm
 params['Axial Reflector Thickness'] = params['Radial Reflector Thickness']
-params['Fuel Pin Count per Assembly'] = calculate_number_fuel_elements_hpmr(params['Number of Rings per Assembly'])
 params['Fuel Assemblies Count'] = (3 * params['Number of Rings per Core']**2) - (3 * params['Number of Rings per Core'])
-params['Fuel Pin Count'] = params['Fuel Assemblies Count'] * params['Fuel Pin Count per Assembly']
 number_of_heatpipes_hmpr(params)
 
 # **************************************************************************************************************************
@@ -89,23 +92,39 @@ update_params({
     'Drum Count': 12,   # allowed: 6, 12, 18, 24
     'Drum Radius': 0.4 * params['Radial Reflector Thickness'], 
     'Drum Absorber Thickness': 1,  # cm
+    'Drum Absorber Arc Degrees': 120.0,  # degrees; must be greater than 0 and less than 180
     'Drum Height': params['Active Height']
 })
 
+# HPMR supports only 0 (no central rod) or 1 (one central rod). The following
+# absorber, cladding, and radius inputs are needed only when this is 1.
+update_params({
+    'Number of Shutdown Rods': 1,
+    'Shutdown Rod Absorber': 'B4C_enriched',
+    'Shutdown Rod Cladding': 'SS304',
+    'Shutdown Rod Absorber Radius': 10.0,  # cm
+    'Shutdown Rod Clad Radius': 10.2,  # cm
+    'Shutdown Rod Height': params['Active Height'],  # cm
+})
+
 calculate_drums_volumes_and_masses(params)
+calculate_shutdown_rods_volumes_and_masses(params)
 calculate_reflector_and_moderator_mass_HPMR(params)
 
 # **************************************************************************************************************************
 #                                           Sec. 4: Overall System
 # ************************************************************************************************************************** 
 update_params({
-    'Power MWt': 7, 
+    'Power MWt': 15,
     'Thermal Efficiency': 0.36,
     'Heat Flux Criteria': 0.9,  # MW/m^2 
     'Time Steps': [t * 86400 for t in [0.01, 0.99, 3, 6, 20, 70, 100, 165, 365, 365, 365, 365, 365, 365, 365.00]]  # seconds
 })
 params['Power MWe'] = params['Power MWt'] * params['Thermal Efficiency']
 params['Heat Flux'] = calculate_heat_flux(params)
+# Calculated diagnostic, not a design constraint. Published heat-pipe concepts
+# span roughly 3--20+ kW/pipe; apply a qualified design-specific limit separately.
+calculate_average_heat_pipe_loading(params)
 
 # **************************************************************************************************************************
 #                                           Sec. 5: Running OpenMC
@@ -119,6 +138,10 @@ params['Heat Flux'] = calculate_heat_flux(params)
 # Recommended: True for final design verification; can be set to False to save
 # computation time during early design exploration.
 params['Shutdown Margin Calc'] = False  # True or False
+
+# Used only by temperature-coefficient snapshots to apply a density-only
+# graphite thermal-expansion correction; geometry remains fixed.
+params['Graphite Linear Expansion Coefficient'] = 4.3e-6  # 1/K
 
 # --- Isothermal Temperature Coefficient ---
 # When True, two additional OpenMC simulations are run: one at 'Common Temperature'

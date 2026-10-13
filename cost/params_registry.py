@@ -127,17 +127,17 @@ PARAMS_REGISTRY = {
 
     'Shutdown Rod Absorber': {
         'group': 'Materials', 'units': '',
-        'description': 'Neutron absorber material used in the movable shutdown rods',
+        'description': 'Neutron absorber material used in shutdown rods; for HPMR it is needed only when Number of Shutdown Rods is 1.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Cladding': {
         'group': 'Materials', 'units': '',
-        'description': 'Cladding material that moves with each shutdown-rod absorber',
+        'description': 'Cladding material that moves with each shutdown-rod absorber; for HPMR it is needed only when Number of Shutdown Rods is 1.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Graphite Linear Expansion Coefficient': {
         'group': 'Materials', 'units': '1/K',
-        'description': 'Mean linear thermal-expansion coefficient used to adjust GCMR graphite number density in density-aware temperature-coefficient cases.',
+        'description': 'Mean linear thermal-expansion coefficient used to adjust GCMR and HPMR graphite number density in density-aware temperature-coefficient cases.',
         'source': 'User Input; IG-110 proxy from ORNL/TM-2017/705, Table 2.2, page 3',
         'hidden': False, 'array_mode': None},
 
@@ -376,22 +376,22 @@ PARAMS_REGISTRY = {
 
     'Number of Shutdown Rods': {
         'group': 'Geometry', 'units': '',
-        'description': 'Total shutdown-rod count. LTMR accepts user-selected 6- or 12-rod predefined layouts; GCMR calculates the total from the central and surrounding assembly inputs.',
+        'description': 'Total shutdown-rod count. HPMR accepts only 0 or 1 central rod; LTMR accepts 6 or 12; GCMR calculates the total from its layout inputs.',
         'source': 'User Input or Calculated', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Absorber Radius': {
         'group': 'Geometry', 'units': 'cm',
-        'description': 'Outer radius of the LTMR shutdown-rod B4C absorber',
+        'description': 'Outer radius of the shutdown-rod absorber; for HPMR this is needed only when Number of Shutdown Rods is 1.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Clad Radius': {
         'group': 'Geometry', 'units': 'cm',
-        'description': 'Outer radius of the LTMR shutdown-rod cladding',
+        'description': 'Outer radius of the shutdown-rod cladding; for HPMR this is needed only when Number of Shutdown Rods is 1.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Shutdown Rod Height': {
         'group': 'Geometry', 'units': 'cm',
-        'description': 'Physical height of each LTMR shutdown rod; defaults to the active core height in the example input',
+        'description': 'Physical height of each shutdown rod; for HPMR this is needed only when Number of Shutdown Rods is 1 and must equal Active Height.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Fuel Pin Count per Assembly': {
@@ -402,6 +402,16 @@ PARAMS_REGISTRY = {
     'Fuel Assemblies Count': {
         'group': 'Geometry', 'units': '',
         'description': 'Total number of fuel assemblies in the core (HPMR)',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'HPMR Heat Pipe Layout': {
+        'group': 'Geometry', 'units': '',
+        'description': 'HPMR assembly layout: HP19 uses 19 heat pipes and 72 fuel pins; HP13 uses 13 heat pipes and 78 fuel pins. The selected layout sets these counts automatically.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'Average Heat Pipe Loading': {
+        'group': 'Geometry', 'units': 'kW/pipe',
+        'description': 'Calculated reactor thermal power divided by the total number of HPMR heat pipes; diagnostic only, not an enforced limit.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Number of Heatpipes': {

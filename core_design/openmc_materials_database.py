@@ -1,6 +1,66 @@
 # Copyright 2025, Battelle Energy Alliance, LLC, ALL RIGHTS RESERVED
 # Importing libraries
 import openmc
+import math
+
+
+HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION = 0.36
+HPMR_HOMOG_TRISO_MAX_PACKING_FRACTION = 0.40
+HPMR_HOMOG_TRISO_REFERENCE_ENRICHMENT = 0.1975
+HPMR_COMPACT_MATRIX_GRAPHITE_DENSITY_G_CM3 = 1.60
+HPMR_HOMOG_TRISO_REFERENCE_NUMBER_DENSITIES = {
+    'U235': 0.00130037929 * HPMR_HOMOG_TRISO_REFERENCE_ENRICHMENT,
+    'U238': 0.00130037929 * (1.0 - HPMR_HOMOG_TRISO_REFERENCE_ENRICHMENT),
+    'O16': 2.59371545E-03, 'O17': 1.05004397E-06, 'O18': 5.99797186E-06,
+    'Si28': 2.76954169E-03, 'Si29': 1.40694868E-04, 'Si30': 9.28556098E-05,
+    'C12': 7.31619752E-02, 'C13': 7.58819416E-04,
+}
+
+
+def _hpmr_homogenized_triso_number_densities(params):
+    """Return HPMR homogenized-fuel number densities in atom/b-cm."""
+    packing_fraction = float(params.get(
+        'Packing Fraction', HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION
+    )) if params.get('reactor type') == 'HPMR' else HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION
+    if not 0.0 < packing_fraction <= HPMR_HOMOG_TRISO_MAX_PACKING_FRACTION:
+        raise ValueError(
+            "HPMR Packing Fraction must be greater than zero and no greater "
+            f"than {HPMR_HOMOG_TRISO_MAX_PACKING_FRACTION:.2f}; got {packing_fraction}."
+        )
+    reference = HPMR_HOMOG_TRISO_REFERENCE_NUMBER_DENSITIES
+    particle_scale = packing_fraction / HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION
+    densities = {
+        nuclide: value * particle_scale for nuclide, value in reference.items()
+        if not nuclide.startswith('C')
+    }
+    graphite_atom_density = (
+        HPMR_COMPACT_MATRIX_GRAPHITE_DENSITY_G_CM3 / 12.011
+        * 6.02214076e23 / 1.0e24
+    )
+    carbon_reference_total = reference['C12'] + reference['C13']
+    matrix_carbon_reference = (
+        (1.0 - HPMR_HOMOG_TRISO_REFERENCE_PACKING_FRACTION)
+        * graphite_atom_density
+    )
+    particle_carbon_reference = carbon_reference_total - matrix_carbon_reference
+    carbon_total = (
+        (1.0 - packing_fraction) * graphite_atom_density
+        + particle_scale * particle_carbon_reference
+    )
+    c12_fraction = reference['C12'] / carbon_reference_total
+    densities['C12'] = carbon_total * c12_fraction
+    densities['C13'] = carbon_total * (1.0 - c12_fraction)
+    uranium_total = densities.pop('U235') + densities.pop('U238')
+    enrichment = float(params['Enrichment'])
+    if not 0.0 < enrichment < 1.0:
+        raise ValueError("Enrichment must be between zero and one.")
+    densities['U235'] = uranium_total * enrichment
+    densities['U238'] = uranium_total * (1.0 - enrichment)
+    if not all(math.isfinite(value) and value > 0.0 for value in densities.values()):
+        raise RuntimeError("HPMR homogenized-fuel number densities must be positive.")
+    if params.get('reactor type') == 'HPMR':
+        params['Packing Fraction'] = packing_fraction
+    return densities
 
 def collect_materials_data(params):
     
@@ -131,23 +191,13 @@ def collect_materials_data(params):
 
     # Homogenized TRISO fuel
     try:
-        U_total = 0.00130037929          # Total U atom density (U235+U238)
-        density = 8.08250295E-02  # Total density (atom/b-cm)
-        U235_frac = params['Enrichment'] * U_total
-        U238_frac = (1 - params['Enrichment']) * U_total
+        number_densities = _hpmr_homogenized_triso_number_densities(params)
+        density = sum(number_densities.values())
         homog_TRISO = openmc.Material(name='homog_TRISO')
         homog_TRISO.set_density('atom/b-cm', density)
         homog_TRISO.temperature = params['Common Temperature']
-        homog_TRISO.add_nuclide('U235', U235_frac, 'ao')
-        homog_TRISO.add_nuclide('U238', U238_frac, 'ao')
-        homog_TRISO.add_nuclide('O16', 2.59371545E-03, 'ao')
-        homog_TRISO.add_nuclide('O17', 1.05004397E-06, 'ao')
-        homog_TRISO.add_nuclide('O18', 5.99797186E-06, 'ao')
-        homog_TRISO.add_nuclide('Si28', 2.76954169E-03, 'ao')
-        homog_TRISO.add_nuclide('Si29', 1.40694868E-04, 'ao')
-        homog_TRISO.add_nuclide('Si30', 9.28556098E-05, 'ao')
-        homog_TRISO.add_nuclide('C12', 7.31619752E-02, 'ao')
-        homog_TRISO.add_nuclide('C13', 7.58819416E-04, 'ao')
+        for nuclide, number_density in number_densities.items():
+            homog_TRISO.add_nuclide(nuclide, number_density, 'ao')
         homog_TRISO.add_s_alpha_beta('c_Graphite')
         materials.append(homog_TRISO)
         materials_database.update({'homog_TRISO': homog_TRISO})
@@ -394,7 +444,9 @@ def collect_materials_data(params):
 
     # Monolith graphite
     monolith_graphite = openmc.Material(name='monolith_graphite')
-    monolith_graphite.set_density('g/cm3', 1.63)
+    monolith_graphite.set_density(
+        'g/cm3', float(params.get('_Monolith Graphite Density Override', 1.63))
+    )
     monolith_graphite.temperature = params['Common Temperature']
     monolith_graphite.add_nuclide('C12', 0.9893, 'ao')
     monolith_graphite.add_nuclide('C13', 0.0107, 'ao')

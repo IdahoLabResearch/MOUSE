@@ -326,12 +326,18 @@ def calculate_drums_volumes_and_masses(params):
             )
 
     drum_volume = np.pi * drum_radius * drum_radius * drum_height
-    if params.get('reactor type') == 'GCMR':
+    if params.get('reactor type') in {'GCMR', 'HPMR'}:
         absorber_angle = float(
             params.get('Drum Absorber Arc Degrees', 120.0)
         )
-        # Validate the same angle definition used to construct the OpenMC planes.
-        gcmr_drum_absorber_plane_coefficient(absorber_angle)
+        if params.get('reactor type') == 'GCMR':
+            # Validate the same angle definition used to construct the OpenMC planes.
+            gcmr_drum_absorber_plane_coefficient(absorber_angle)
+        elif not 0.0 < absorber_angle < 180.0:
+            raise ValueError(
+                "HPMR Drum Absorber Arc Degrees must be greater than 0 and "
+                f"less than 180 degrees, got {absorber_angle}."
+            )
         params['Drum Absorber Arc Degrees'] = absorber_angle
         drum_absorp_vol = (
             np.pi
@@ -411,7 +417,7 @@ def calculate_drums_volumes_and_masses(params):
 
 
 def calculate_shutdown_rods_volumes_and_masses(params):
-    """Calculate LTMR shutdown-rod absorber and cladding inventories."""
+    """Calculate cylindrical shutdown-rod absorber and cladding inventories."""
     number_of_rods = int(params['Number of Shutdown Rods'])
     rod_height = float(params['Shutdown Rod Height'])
     absorber_radius = float(params['Shutdown Rod Absorber Radius'])
@@ -419,6 +425,8 @@ def calculate_shutdown_rods_volumes_and_masses(params):
 
     if number_of_rods <= 0:
         raise ValueError("Number of Shutdown Rods must be greater than zero.")
+    if params.get('reactor type') == 'HPMR' and number_of_rods != 1:
+        raise ValueError("The HPMR model supports exactly one central shutdown rod.")
     if rod_height <= 0.0:
         raise ValueError("Shutdown Rod Height must be greater than zero.")
     if absorber_radius <= 0.0:
@@ -755,7 +763,17 @@ def calculate_reflector_and_moderator_mass_HPMR(params):
     # Moderator = big hex minus the fuel and heatpipes
     fuel_area = params['Fuel Pin Count'] * circle_area(params['Fuel Pin Radii'][-1])
     heatpipe_area = params['Number of Heatpipes'] * circle_area(params['Heat Pipe Radii'][-1])
-    params['Moderator Total Area'] = big_hex_area - fuel_area - heatpipe_area
+    shutdown_channel_area = 0.0
+    if int(params.get('Number of Shutdown Rods', 0)):
+        shutdown_channel_area = (
+            int(params['Number of Shutdown Rods'])
+            * circle_area(params['Shutdown Rod Clad Radius'])
+        )
+    params['Moderator Total Area'] = (
+        big_hex_area - fuel_area - heatpipe_area - shutdown_channel_area
+    )
+    if params['Moderator Total Area'] < 0.0:
+        raise ValueError("Calculated HPMR moderator area is negative.")
     params['Moderator Mass'] = (
         params['Moderator Total Area']
         * params['Active Height']

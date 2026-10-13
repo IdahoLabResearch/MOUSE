@@ -20,12 +20,14 @@ import pandas
 BOL_TEMPERATURE_COEFFICIENT_PARTICLES = 30000
 TEMPERATURE_COEFFICIENT_PARTICLES = 4000
 EOL_TEMPERATURE_COEFFICIENT_PARTICLES = 15000
+HPMR_TEMPERATURE_COEFFICIENT_PARTICLES = 4000
 
 # Current MOUSE material densities at the operating reference temperature.
 NAK_REFERENCE_DENSITY_G_CM3 = 0.85
 ZRH_REFERENCE_DENSITY_G_CM3 = 5.6
 HELIUM_REFERENCE_DENSITY_G_CM3 = 0.000166
 GRAPHITE_REFERENCE_DENSITY_G_CM3 = 1.60
+HPMR_MONOLITH_GRAPHITE_REFERENCE_DENSITY_G_CM3 = 1.63
 
 # Mean linear expansion coefficient reported for unalloyed epsilon-ZrH1.83.
 # The model uses H/Zr = 1.85. Geometry is held fixed in this density-only
@@ -147,9 +149,34 @@ def _temperature_density_overrides(
             ),
         }
 
+    if reactor_type == 'HPMR':
+        reference_temperature_k = float(reference_temperature_k)
+        temperature_k = float(temperature_k)
+        if reference_temperature_k <= 0.0 or temperature_k <= 0.0:
+            raise ValueError("HPMR density temperatures must be greater than zero K.")
+        graphite_expansion = float(
+            params.get('Graphite Linear Expansion Coefficient', 4.3e-6)
+        )
+        if graphite_expansion < 0.0:
+            raise ValueError("Graphite Linear Expansion Coefficient cannot be negative.")
+        graphite_scale = 1.0 + graphite_expansion * (
+            temperature_k - reference_temperature_k
+        )
+        if graphite_scale <= 0.0:
+            raise ValueError("HPMR graphite thermal-expansion scale must be positive.")
+        return {
+            '_Graphite Density Override': float(
+                GRAPHITE_REFERENCE_DENSITY_G_CM3 / graphite_scale ** 3
+            ),
+            '_Monolith Graphite Density Override': float(
+                HPMR_MONOLITH_GRAPHITE_REFERENCE_DENSITY_G_CM3
+                / graphite_scale ** 3
+            ),
+        }
+
     raise ValueError(
         "Density-aware temperature coefficients are implemented only for "
-        f"LTMR and GCMR, not {reactor_type!r}."
+        f"LTMR, GCMR, and HPMR, not {reactor_type!r}."
     )
 
 
@@ -425,10 +452,51 @@ def calculate_number_fuel_elements_hpmr(rings_over_one_edge):
     return total_number_of_rings - number_of_heatpipe_pins
 
 
+HPMR_HEAT_PIPE_LAYOUT_COUNTS = {
+    'HP19': {'fuel_pins': 72, 'heat_pipes': 19},
+    'HP13': {'fuel_pins': 78, 'heat_pipes': 13},
+}
+
+
+def hpmr_assembly_layout_counts(layout_name, assembly_rings=6):
+    """Return fuel-pin and heat-pipe counts for a supported HPMR layout."""
+    if int(assembly_rings) != 6:
+        raise ValueError(
+            "The explicit HPMR heat-pipe layouts require exactly six "
+            f"assembly rings; got {assembly_rings!r}."
+        )
+    layout = str(layout_name).upper()
+    if layout not in HPMR_HEAT_PIPE_LAYOUT_COUNTS:
+        raise ValueError(
+            "HPMR Heat Pipe Layout must be one of "
+            f"{sorted(HPMR_HEAT_PIPE_LAYOUT_COUNTS)}, got {layout_name!r}."
+        )
+    counts = HPMR_HEAT_PIPE_LAYOUT_COUNTS[layout]
+    return counts['fuel_pins'], counts['heat_pipes']
+
+
 def number_of_heatpipes_hmpr(params):
-    tot_rings_per_assembly = calculate_number_of_rings(params['Number of Rings per Assembly'])
-    params['Number of Heatpipes per Assembly'] = tot_rings_per_assembly - params['Fuel Pin Count per Assembly']
-    params['Number of Heatpipes'] = params['Number of Heatpipes per Assembly'] * params['Fuel Assemblies Count']
+    fuel_pins, heat_pipes = hpmr_assembly_layout_counts(
+        params.get('HPMR Heat Pipe Layout', 'HP19'),
+        params['Number of Rings per Assembly'],
+    )
+    params['HPMR Heat Pipe Layout'] = str(
+        params.get('HPMR Heat Pipe Layout', 'HP19')
+    ).upper()
+    params['Fuel Pin Count per Assembly'] = fuel_pins
+    params['Number of Heatpipes per Assembly'] = heat_pipes
+    params['Fuel Pin Count'] = fuel_pins * params['Fuel Assemblies Count']
+    params['Number of Heatpipes'] = heat_pipes * params['Fuel Assemblies Count']
+
+
+def calculate_average_heat_pipe_loading(params):
+    """Store the calculated average thermal duty in kW per heat pipe."""
+    number_of_heatpipes = int(params['Number of Heatpipes'])
+    if number_of_heatpipes <= 0:
+        raise ValueError("Number of Heatpipes must be greater than zero.")
+    loading = 1000.0 * float(params['Power MWt']) / number_of_heatpipes
+    params['Average Heat Pipe Loading'] = loading
+    return loading
 
 
 def calculate_total_number_of_TRISO_particles(params):
@@ -976,6 +1044,7 @@ def _run_static_snapshot(
         '_ZrH Density Override',
         '_Helium Density Override',
         '_Graphite Density Override',
+        '_Monolith Graphite Density Override',
     )
     original_density_overrides = {
         key: (key in params, params.get(key))
@@ -1137,6 +1206,7 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
             '_ZrH Density Override': 'ZrH',
             '_Helium Density Override': 'Helium',
             '_Graphite Density Override': 'Graphite',
+            '_Monolith Graphite Density Override': 'Monolith Graphite',
         }
         for override_key, material_name in density_output_names.items():
             if override_key not in base_density_overrides:
@@ -1160,7 +1230,9 @@ def _run_lifecycle_snapshot_calculations(build_openmc_model, params):
         if params['Isothermal Temperature Coefficients']:
             base_seed = 104729 + 2000003 * case_number
             high_seed = 15485863 + 2000033 * case_number
-            if index == lifecycle['bol_index']:
+            if params.get('reactor type') == 'HPMR':
+                case_particles = HPMR_TEMPERATURE_COEFFICIENT_PARTICLES
+            elif index == lifecycle['bol_index']:
                 case_particles = BOL_TEMPERATURE_COEFFICIENT_PARTICLES
             elif index in eol_indices:
                 case_particles = EOL_TEMPERATURE_COEFFICIENT_PARTICLES
@@ -1610,15 +1682,23 @@ def run_openmc(build_openmc_model, heat_flux_monitor, params):
         if params['Temperature Perturbation'] <= 0.0:
             raise ValueError("'Temperature Perturbation' must be greater than zero.")
 
-        print(
-            f"Using {BOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
-            "batch for the BOL temperature-coefficient snapshot, "
-            f"{TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch for "
-            "the MOL snapshot, and "
-            f"{EOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
-            "for both EOL bracketing snapshots. The operating depletion and "
-            "cold-shutdown calculations retain their normal particle settings."
-        )
+        if params.get('reactor type') == 'HPMR':
+            print(
+                f"Using {HPMR_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
+                "batch for all HPMR temperature-coefficient snapshots. The "
+                "operating depletion and cold-shutdown calculations retain "
+                "their normal particle settings."
+            )
+        else:
+            print(
+                f"Using {BOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per "
+                "batch for the BOL temperature-coefficient snapshot, "
+                f"{TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch for "
+                "the MOL snapshot, and "
+                f"{EOL_TEMPERATURE_COEFFICIENT_PARTICLES} particles per batch "
+                "for both EOL bracketing snapshots. The operating depletion and "
+                "cold-shutdown calculations retain their normal particle settings."
+            )
 
     try:
         print(f"\n\nThe results/plots are saved at: {watts.Database().path}\n\n")
