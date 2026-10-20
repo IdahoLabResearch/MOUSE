@@ -137,6 +137,9 @@ def escalate_cost_database(file_name, escalation_year, params, sheet_name="Cost 
     extra_economic_parameters = dict(zip(df_extra_params["Parameter"], df_extra_params["Value"]))
 
     for parameter, value in extra_economic_parameters.items():
-        params[parameter] = value
+        # Workbook values are defaults.  Callers (including the web app) may
+        # provide a scenario-specific economic assumption that must take
+        # precedence over the database default.
+        params.setdefault(parameter, value)
 
     return df

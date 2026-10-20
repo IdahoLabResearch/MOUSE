@@ -223,6 +223,16 @@ class EstimateServiceTest(unittest.TestCase):
                 self.assertGreater(float(foak_lcoe.sum()), 0.0)
                 self.assertGreater(float(noak_lcoe.sum()), 0.0)
 
+    def test_licensing_cost_learns_between_foak_and_noak(self):
+        for reactor_type, result in self.results.items():
+            with self.subTest(reactor_type=reactor_type):
+                params = result.params
+                self.assertEqual(100, params['NOAK Unit Number'])
+                self.assertAlmostEqual(0.20, params['Licensing Learning'])
+                self.assertLess(
+                    params['Licensing Learning Cost Multiplier'], 1.0,
+                )
+
     def test_reflector_masses_are_positive(self):
         for reactor_type, result in self.results.items():
             with self.subTest(reactor_type=reactor_type):

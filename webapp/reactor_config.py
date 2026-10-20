@@ -16,6 +16,23 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 ESCALATION_YEAR = 2025
 
+# Wright's-law learning rates used by the cost database.  Keeping these with
+# the app's reactor defaults ensures the app sends the complete learning-rate
+# set that ``FOAK_to_NOAK`` requires.  Licensing is deliberately non-zero:
+# subsequent, substantially similar licensing applications take less effort
+# than the first application.
+LEARNING_RATE_DEFAULTS = {
+    'No Learning': 0.0,
+    'Licensing Learning': 0.20,
+    'Factory Primary Structure': 0.184432,
+    'Factory Drums': 0.24138,
+    'Factory Other': 0.229628,
+    'Factory Be': 0.415054,
+    'Factory BeO': 0.399149,
+    'Non-nuclear off-the-shelf': 0.05,
+    'Onsite Learning': 0.08,
+}
+
 # openmc and watts must already be stubbed in sys.modules before this module is imported.
 from core_design.utils import (
     calculate_lattice_radius,
@@ -1110,6 +1127,11 @@ def build_params(reactor_type, power_mwt, enrichment, user_overrides,
         raise ValueError(f"Unknown reactor type: {reactor_type!r}. Choose LTMR, GCMR, or HPMR.")
 
     builders[reactor_type](params)
+
+    # The cost engine calculates a multiplier for every learning category.
+    # The app must provide these values explicitly; standalone scripts often
+    # load them from a separate parameter workbook.
+    params.update(LEARNING_RATE_DEFAULTS)
 
     # Apply user overrides (these come last so they win)
     params.update(user_overrides)
