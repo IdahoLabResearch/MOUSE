@@ -758,7 +758,8 @@ def _run_estimate(reactor_type, power_mwt, enrichment, interest_rate, discount_r
                   tax_credit_type, tax_credit_value, plant_lifetime,
                   n_rings_per_assembly=None, active_height=None,
                   n_assembly_rings=None, n_core_rings=None,
-                  tax_credit_units=None):
+                  tax_credit_units=None, noak_unit_number=100,
+                  licensing_learning_rate=0.20):
     result = run_estimate(EstimateInputs(
         reactor_type=reactor_type,
         power_mwt=power_mwt,
@@ -779,6 +780,8 @@ def _run_estimate(reactor_type, power_mwt, enrichment, interest_rate, discount_r
         n_assembly_rings=n_assembly_rings,
         n_core_rings=n_core_rings,
         tax_credit_units=tax_credit_units,
+        noak_unit_number=noak_unit_number,
+        licensing_learning_rate=licensing_learning_rate,
     ))
     return (result.display_df, result.enriched_df,
             result.detailed_sorted_df, result.params)
@@ -797,7 +800,7 @@ def _lcoe_at_noak_unit(reactor_type, power_mwt, enrichment, interest_rate, disco
                        n_rings_per_assembly=None, active_height=None,
                        n_assembly_rings=None, n_core_rings=None,
                        noak_unit_number=10,
-                       tax_credit_units=None):
+                       tax_credit_units=None, licensing_learning_rate=0.20):
     """Returns (mean, std, per_account_df) for one NOAK Unit Number.
 
     The per_account_df includes Account, Account Title, FOAK and NOAK
@@ -825,6 +828,7 @@ def _lcoe_at_noak_unit(reactor_type, power_mwt, enrichment, interest_rate, disco
         n_core_rings=n_core_rings,
         tax_credit_units=tax_credit_units,
         noak_unit_number=noak_unit_number,
+        licensing_learning_rate=licensing_learning_rate,
     ))
     return result.mean, result.std, result.diag_df, result.diag_params
 
@@ -2598,6 +2602,24 @@ with streamlit_analytics.track():
                 'Minimum: 10 years. Maximum: 100 years.'
             ),
         )
+        noak_unit_number = st.slider(
+            'Nth-of-a-Kind Unit',
+            min_value=2, max_value=100, value=100, step=1,
+            help=(
+                'The deployment number represented by the NOAK results. '
+                'Learning effects apply through unit 100.'
+            ),
+        )
+        licensing_learning_rate = st.slider(
+            'Licensing Learning Rate per Doubling (%)',
+            min_value=0.0, max_value=50.0, value=20.0, step=1.0,
+            format='%.0f%%',
+            help=(
+                'Reduction in licensing cost for every doubling of cumulative '
+                'deployments. At the 100th unit, the default 20% rate produces '
+                'a licensing-cost multiplier of about 0.23 relative to FOAK.'
+            ),
+        ) / 100.0
 
         st.markdown('**Government Subsidy (IRA Tax Credits)**')
         tax_credit_type = st.selectbox(
@@ -3117,6 +3139,8 @@ with streamlit_analytics.track():
             n_assembly_rings=n_assembly_rings,
             n_core_rings=n_core_rings,
             tax_credit_units=tax_credit_units,
+            noak_unit_number=noak_unit_number,
+            licensing_learning_rate=licensing_learning_rate,
         )
     except SubcriticalError as exc:
         _precompute_slot.empty()
@@ -3273,6 +3297,7 @@ with streamlit_analytics.track():
                 n_core_rings=n_core_rings,
                 noak_unit_number=_N,
                 tax_credit_units=tax_credit_units,
+                licensing_learning_rate=licensing_learning_rate,
             )
             _mid_results[_N] = (_m_i, _s_i)
         except Exception as _e:

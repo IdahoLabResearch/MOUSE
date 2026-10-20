@@ -42,6 +42,8 @@ class EstimateInputs:
     n_assembly_rings: Optional[int] = None
     n_core_rings: Optional[int] = None
     tax_credit_units: Optional[int] = None
+    noak_unit_number: int = 100
+    licensing_learning_rate: float = 0.20
 
 
 @dataclass
@@ -78,6 +80,8 @@ def _base_overrides(inputs: EstimateInputs) -> dict:
         'Startup Duration after Emergency Shutdown': inputs.startup_duration,
         'Startup Duration after Refueling': inputs.startup_duration_refueling,
         'Levelization Period': inputs.plant_lifetime,
+        'NOAK Unit Number': int(inputs.noak_unit_number),
+        'Licensing Learning': float(inputs.licensing_learning_rate),
     }
     if inputs.tax_credit_type == 'PTC':
         overrides['PTC credit value'] = inputs.tax_credit_value
