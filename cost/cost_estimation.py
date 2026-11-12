@@ -938,7 +938,7 @@ def bottom_up_cost_estimate_manufacturing_campus(
     return result
 
 
-def create_campus_cost_dictionary(df, campus_name):
+def create_campus_cost_dictionary(df, campus_name, lcoe_accounts=None):
     """Extract shared-campus summary and high-level accounts for a CSV row."""
     accounts = {
         10: 'Capitalized Pre-Construction Costs',
@@ -953,8 +953,10 @@ def create_campus_cost_dictionary(df, campus_name):
         'TCI per reactor': 'TCI per reactor',
         'Annual Cost': 'Annual Cost',
         'Annual Cost per reactor': 'Annual Cost per reactor',
-        'LCOE': 'LCOE',
     }
+    if lcoe_accounts is None:
+        lcoe_accounts = {'LCOE': 'LCOE'}
+    accounts.update(lcoe_accounts)
     tracked_costs = {}
 
     for account, label in accounts.items():
@@ -971,11 +973,25 @@ def create_campus_cost_dictionary(df, campus_name):
 
 
 def create_servicing_campus_cost_dictionary(df):
-    return create_campus_cost_dictionary(df, 'Servicing Campus')
+    return create_campus_cost_dictionary(
+        df,
+        'Servicing Campus',
+        {
+            'Steady-State LCOE': 'Steady-State LCOE',
+            'Cash-Flow-Consistent LCOE': 'Cash-Flow-Consistent LCOE',
+        },
+    )
 
 
 def create_manufacturing_campus_cost_dictionary(df):
-    return create_campus_cost_dictionary(df, 'Manufacturing Campus')
+    return create_campus_cost_dictionary(
+        df,
+        'Manufacturing Campus',
+        {
+            'Steady-State LCOE': 'Steady-State LCOE',
+            'Cash-Flow-Consistent LCOE': 'Cash-Flow-Consistent LCOE',
+        },
+    )
 
 
 def _result_value(df, account, column='Value'):
@@ -1482,8 +1498,22 @@ def build_fleet_total_cost_estimate(
          + annual_cash_flow['Servicing Campus Annual Cost']) * discount
     ).sum() / discounted_generation
     add_row(
-        'LCOE',
-        'Total Fleet Levelized Cost of Electricity',
+        'Steady-State LCOE',
+        (
+            'Steady-State LCOE (assuming full fleet operation throughout '
+            'the analysis period)'
+        ),
+        '$/MWh',
+        reactor_value('LCOE'),
+        campus_value(manufacturing_cost_table, 'Steady-State LCOE'),
+        campus_value(servicing_cost_table, 'Steady-State LCOE'),
+    )
+    add_row(
+        'Cash-Flow-Consistent LCOE',
+        (
+            'Cash-Flow-Consistent LCOE (including fleet deployment and '
+            'operating timeline)'
+        ),
         '$/MWh',
         reactor_lcoe,
         manufacturing_lcoe,
@@ -1622,6 +1652,35 @@ def estimate_fleet_mode_costs(cost_database_filename, params):
         cash_flow_samples.append(cash_flow)
         total_cost_samples.append(total_cost)
 
+    def append_cash_flow_lcoe(result, campus_column):
+        values = np.asarray([
+            _result_value(
+                total_cost,
+                'Cash-Flow-Consistent LCOE',
+                campus_column,
+            )
+            for total_cost in total_cost_samples
+        ])
+        return pd.concat([
+            result,
+            pd.DataFrame([{
+                'Account': 'Cash-Flow-Consistent LCOE',
+                'Account Title': (
+                    'Cash-Flow-Consistent LCOE (including fleet deployment '
+                    'and operating timeline) ($/MWh)'
+                ),
+                'Value': values.mean(),
+                'Value std': values.std(ddof=1 if sample_count > 1 else 0),
+            }]),
+        ], ignore_index=True)
+
+    servicing_result = append_cash_flow_lcoe(
+        servicing_result, 'Servicing Campus'
+    )
+    manufacturing_result = append_cash_flow_lcoe(
+        manufacturing_result, 'Manufacturing Campus'
+    )
+
     return {
         'reactor': reactor_result,
         'servicing': servicing_result,
@@ -1653,7 +1712,8 @@ def create_fleet_total_cost_dictionary(df):
         'Steady-State Annual Cost per reactor': (
             'Steady-State Annual Cost per reactor'
         ),
-        'LCOE': 'LCOE',
+        'Steady-State LCOE': 'Steady-State LCOE',
+        'Cash-Flow-Consistent LCOE': 'Cash-Flow-Consistent LCOE',
     }
     tracked_costs = {}
     for account, label in labels.items():
@@ -1666,14 +1726,20 @@ def create_fleet_total_cost_dictionary(df):
         tracked_costs[f'Total Fleet {label}'] = row['Total Fleet']
         tracked_costs[f'Total Fleet {label} std'] = row['Total Fleet std']
 
-    lcoe_row = df.loc[df['Account'] == 'LCOE'].iloc[0]
-    for column, label in {
-        'Reactor Fleet': 'Reactor LCOE Contribution',
-        'Manufacturing Campus': 'Manufacturing LCOE Contribution',
-        'Servicing Campus': 'Servicing LCOE Contribution',
+    for account, prefix in {
+        'Steady-State LCOE': 'Steady-State',
+        'Cash-Flow-Consistent LCOE': 'Cash-Flow-Consistent',
     }.items():
-        tracked_costs[f'Total Fleet {label}'] = lcoe_row[column]
-        tracked_costs[f'Total Fleet {label} std'] = lcoe_row[f'{column} std']
+        lcoe_row = df.loc[df['Account'] == account].iloc[0]
+        for column, label in {
+            'Reactor Fleet': 'Reactor LCOE Contribution',
+            'Manufacturing Campus': 'Manufacturing LCOE Contribution',
+            'Servicing Campus': 'Servicing LCOE Contribution',
+        }.items():
+            tracked_costs[f'Total Fleet {prefix} {label}'] = lcoe_row[column]
+            tracked_costs[f'Total Fleet {prefix} {label} std'] = (
+                lcoe_row[f'{column} std']
+            )
     return tracked_costs
 
 
@@ -1809,7 +1875,10 @@ def detailed_bottom_up_cost_estimate(cost_database_filename):
                 column for column in fleet_total_output.columns
                 if column not in ['Account', 'Account Title', 'Units']
             ]
-            lcoe_mask = fleet_total_output['Account'] == 'LCOE'
+            lcoe_mask = fleet_total_output['Account'].isin([
+                'Steady-State LCOE',
+                'Cash-Flow-Consistent LCOE',
+            ])
             fleet_total_output.loc[~lcoe_mask, cost_columns] = (
                 fleet_total_output.loc[~lcoe_mask, cost_columns].round(0)
             )

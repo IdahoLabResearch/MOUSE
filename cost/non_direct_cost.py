@@ -364,7 +364,13 @@ def energy_cost_levelized_manufacturing_campus(params, df):
         pd.DataFrame([
             {'Account': 'Annual Cost', 'Account Title': 'Annual Manufacturing Campus Cost During Deployment'},
             {'Account': 'Annual Cost per reactor', 'Account Title': 'Annual Manufacturing Cost per Reactor Produced'},
-            {'Account': 'LCOE', 'Account Title': 'Manufacturing Campus Contribution to Fleet LCOE ($/MWh)'},
+            {
+                'Account': 'Steady-State LCOE',
+                'Account Title': (
+                    'Steady-State LCOE (assuming full fleet operation '
+                    'throughout the analysis period) ($/MWh)'
+                ),
+            },
         ]),
     ], ignore_index=True)
 
@@ -381,7 +387,9 @@ def energy_cost_levelized_manufacturing_campus(params, df):
         discounted_cost = capital_cost + annual_cost * deployment_discount_sum
         df.loc[df['Account'] == 'Annual Cost', cost_column] = annual_cost
         df.loc[df['Account'] == 'Annual Cost per reactor', cost_column] = annual_cost / production_rate
-        df.loc[df['Account'] == 'LCOE', cost_column] = discounted_cost / discounted_generation
+        df.loc[df['Account'] == 'Steady-State LCOE', cost_column] = (
+            discounted_cost / discounted_generation
+        )
 
     return df
 
@@ -400,7 +408,13 @@ def energy_cost_levelized_servicing_campus(params, df):
         pd.DataFrame([
             {'Account': 'Annual Cost', 'Account Title': 'Annual Servicing Campus Cost'},
             {'Account': 'Annual Cost per reactor', 'Account Title': 'Annual Servicing Campus Cost per Operating Reactor'},
-            {'Account': 'LCOE', 'Account Title': 'Servicing Campus Contribution to Fleet LCOE ($/MWh)'},
+            {
+                'Account': 'Steady-State LCOE',
+                'Account Title': (
+                    'Steady-State LCOE (assuming full fleet operation '
+                    'throughout the analysis period) ($/MWh)'
+                ),
+            },
         ]),
     ], ignore_index=True)
 
@@ -416,7 +430,9 @@ def energy_cost_levelized_servicing_campus(params, df):
 
         df.loc[df['Account'] == 'Annual Cost', cost_column] = annual_cost
         df.loc[df['Account'] == 'Annual Cost per reactor', cost_column] = annual_cost / generating_sites
-        df.loc[df['Account'] == 'LCOE', cost_column] = discounted_cost / discounted_generation
+        df.loc[df['Account'] == 'Steady-State LCOE', cost_column] = (
+            discounted_cost / discounted_generation
+        )
 
     return df
 

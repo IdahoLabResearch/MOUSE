@@ -51,7 +51,8 @@ class ServicingCampusCostTest(unittest.TestCase):
             'TCI', 'TCI per reactor', 'Annual Cost During Deployment',
             'Annual Cost per reactor During Deployment',
             'Steady-State Annual Cost',
-            'Steady-State Annual Cost per reactor', 'LCOE',
+            'Steady-State Annual Cost per reactor', 'Steady-State LCOE',
+            'Cash-Flow-Consistent LCOE',
         ]
         table = pd.DataFrame({
             'Account': accounts,
@@ -64,19 +65,27 @@ class ServicingCampusCostTest(unittest.TestCase):
             'Servicing Campus': [0.0] * len(accounts),
             'Servicing Campus std': [0.0] * len(accounts),
         })
-        table.loc[table['Account'] == 'LCOE', [
+        table.loc[table['Account'] == 'Steady-State LCOE', [
             'Reactor Fleet', 'Reactor Fleet std',
             'Manufacturing Campus', 'Manufacturing Campus std',
             'Servicing Campus', 'Servicing Campus std',
         ]] = [7.00, 0.30, 1.25, 0.15, 1.50, 0.20]
+        table.loc[table['Account'] == 'Cash-Flow-Consistent LCOE', [
+            'Reactor Fleet', 'Reactor Fleet std',
+            'Manufacturing Campus', 'Manufacturing Campus std',
+            'Servicing Campus', 'Servicing Campus std',
+        ]] = [8.00, 0.40, 1.50, 0.20, 2.00, 0.30]
         output = create_fleet_total_cost_dictionary(table)
 
         component_sum = sum(output[name] for name in [
-            'Total Fleet Reactor LCOE Contribution',
-            'Total Fleet Manufacturing LCOE Contribution',
-            'Total Fleet Servicing LCOE Contribution',
+            'Total Fleet Cash-Flow-Consistent Reactor LCOE Contribution',
+            'Total Fleet Cash-Flow-Consistent Manufacturing LCOE Contribution',
+            'Total Fleet Cash-Flow-Consistent Servicing LCOE Contribution',
         ])
-        self.assertAlmostEqual(component_sum, output['Total Fleet LCOE'])
+        self.assertAlmostEqual(
+            component_sum,
+            output['Total Fleet Cash-Flow-Consistent LCOE'],
+        )
 
     @classmethod
     def setUpClass(cls):
@@ -156,8 +165,8 @@ class ServicingCampusCostTest(unittest.TestCase):
                 delta=0.01,
             )
         self.assertLess(
-            result_value(two_facilities, 'LCOE'),
-            result_value(one_facility, 'LCOE'),
+            result_value(two_facilities, 'Steady-State LCOE'),
+            result_value(one_facility, 'Steady-State LCOE'),
         )
 
     def test_servicing_facility_occ_learning_stops_after_five_facilities(self):
