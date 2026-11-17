@@ -1,11 +1,11 @@
 Parameter,Value,Note,Reference,Notes
-indirect to direct field-related cost,0.06538993205254329,,,
-FTEs Per Onsite Operator (24/7),5,,,
-FTEs Per Offsite Operator (24/7),5,,,
-FTEs Per Security Staff (24/7),5,,,
-Hours Per FTE,1800,,,
-Work Hours Per Shift,10,,,
-Maintenance to Direct Cost Ratio,0.03,,,
+indirect to direct field-related cost,0.06538993205254329
+FTEs Per Onsite Operator (24/7),5
+FTEs Per Offsite Operator (24/7),5
+FTEs Per Security Staff (24/7),5
+Hours Per FTE,1800
+Work Hours Per Shift,10
+Maintenance to Direct Cost Ratio,0.03
 Onsite Learning,0.08,FOAK to NOAK Learning Rates,"Assessment of Factory Fabrication Considerations
 for Nuclear Microreactors
  10.1080/00295450.2023.2206779",Calculated based on Refernce Paper + Gyutae's work. Refer to TEM Slides for rationale and methodology
