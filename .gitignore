@@ -16,3 +16,10 @@ webapp/.venv/
 webapp/.streamlit/secrets.toml
 webapp/analytics.db
 webapp/.last_reboot
+*.zip
+*.tar.gz
+GCMR_*/
+HPMR_*/
+LTMR_*/
+MOUSE_GCMR_HPMR_LEU_one_shot/
+run_work/
