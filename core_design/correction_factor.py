@@ -9,6 +9,10 @@ import glob
 import csv
 import re
 
+from core_design.fuel_lifetime import (
+    estimate_fuel_lifetime, record_fuel_lifetime, require_cost_eligible_lifetime,
+)
+
 
 def natural_sort_key(s):
     """Sort keys in a natural order (e.g., n0, n1, ..., n11)."""
@@ -130,7 +134,9 @@ def corrected_keff_static(statepoint_file, total_height, core_radius=None):
     )
 
 
-def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None):
+def corrected_keff_2d(
+    depletion_2d_results_file, total_height, core_radius=None, *, lifetime_params=None
+):
     """
     Apply a leakage correction to 2D depletion keff values using a simple
     non-leakage probability approximation.
@@ -146,11 +152,15 @@ def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None)
         Effective radial core radius [cm] for total leakage estimation.
         If None, only axial leakage is computed and total leakage metrics are
         returned as np.nan.
+    lifetime_params : mutable mapping or None
+        When supplied, record the lifetime status and simulated endpoint here.
+        The existing eight-value return contract is preserved.
 
     Returns
     -------
     round_cycle_length : float
-        Estimated fuel cycle length [days], based on the corrected keff curve crossing 1.0.
+        Fuel lifetime [days], rounded to the nearest day. An unbracketed
+        prediction or simulated lower bound is provisional, not cost eligible.
     time_steps : list[float]
         Cumulative depletion time points [days].
     keff_2d_values : list[float]
@@ -384,25 +394,14 @@ def corrected_keff_2d(depletion_2d_results_file, total_height, core_radius=None)
     plt.savefig('keff_comparison_vs_Time.png', dpi=300)
     plt.show()
 
-    cycle_length = None
-
-    for i in range(1, len(keff_2d_corrected_values)):
-        k1 = keff_2d_corrected_values[i - 1]
-        k2 = keff_2d_corrected_values[i]
-        t1 = time_steps[i - 1]
-        t2 = time_steps[i]
-
-        if (k1 < 1.0 <= k2) or (k2 < 1.0 <= k1):
-            slope = (k2 - k1) / (t2 - t1)
-            cycle_length = t1 + (1.0 - k1) / slope
-            break
-
-    if cycle_length is not None:
-        round_cycle_length = round(cycle_length, 0)
-        print(f"Estimated fuel cycle length: {round_cycle_length} days")
-    else:
-        print("k = 1.0 not reached within the given time steps.")
-        raise ValueError("Cannot compute fuel cycle length: k=1.0 was never reached.")
+    lifetime = estimate_fuel_lifetime(time_steps, keff_2d_corrected_values)
+    recorded = {} if lifetime_params is None else lifetime_params
+    record_fuel_lifetime(recorded, lifetime)
+    round_cycle_length = recorded['Fuel Lifetime']
+    if lifetime_params is None:
+        # Legacy callers receive only the numeric tuple, so do not let an
+        # unlabelled provisional prediction escape as an ordinary lifetime.
+        require_cost_eligible_lifetime(recorded)
 
     return (
         round_cycle_length,

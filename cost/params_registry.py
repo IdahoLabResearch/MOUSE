@@ -656,7 +656,22 @@ PARAMS_REGISTRY = {
     # =========================================================
     'Fuel Lifetime': {
         'group': 'Physics Results', 'units': 'days',
-        'description': 'Estimated fuel cycle length — time for the 3D-corrected keff to fall to 1.0',
+        'description': 'Operating lifetime in days. For depletion-derived results, consult Fuel Lifetime Status: extrapolated predictions and simulated-endpoint lower bounds cannot be used for costs; a subcritical start reports zero.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Fuel Lifetime Status': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'Whether depletion-derived lifetime is an interpolated k=1 crossing, an extrapolated prediction, a simulated-endpoint lower bound, or a subcritical beginning-of-life result.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Fuel Lifetime Extrapolated': {
+        'group': 'Physics Results', 'units': '',
+        'description': 'True when the reported lifetime is a provisional prediction beyond the simulated depletion endpoint; cost estimation is blocked.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'Fuel Lifetime Simulated Endpoint (days)': {
+        'group': 'Physics Results', 'units': 'days',
+        'description': 'Last simulated depletion time, retained alongside the lifetime result so predictions beyond the calculation can be identified.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Depletion Time Steps': {

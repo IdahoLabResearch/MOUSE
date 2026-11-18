@@ -9,6 +9,9 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from core_design.correction_factor import corrected_keff_2d, corrected_keff_static
+from core_design.fuel_lifetime import (
+    estimate_fuel_lifetime, record_fuel_lifetime, require_cost_eligible_lifetime,
+)
 #from core_design.correction_factor import corrected_keff_steady_state       #Use this line and comment the previuos line if you run steady state
 from core_design.peaking_factor import compute_pin_peaking_factors
 
@@ -655,8 +658,13 @@ def openmc_depletion(params, lattice_geometry, settings):
     ) = corrected_keff_2d(
         depletion_2d_results_file,
         params['Active Height'] + 2 * params['Axial Reflector Thickness'],
-        core_radius=params.get('Core Radius', np.nan)
+        core_radius=params.get('Core Radius', np.nan),
+        lifetime_params=params,
     )
+
+    # A requested shutdown-margin calculation does not make this operating
+    # depletion a shutdown-state calculation. Always validate its lifetime.
+    require_cost_eligible_lifetime(params)
 
     try:
         pf_summary, pf_per_step = compute_pin_peaking_factors(".")
@@ -821,24 +829,8 @@ def _sum_nuclide_mass(materials, nuclide):
 
 
 def _estimate_keff_crossing_time_days(time_days, keff_values):
-    if len(time_days) != len(keff_values):
-        raise ValueError("time_days and keff_values must have the same length.")
-    if len(time_days) < 2:
-        raise ValueError("At least two depletion points are required to estimate fuel lifetime.")
-
-    for idx in range(1, len(keff_values)):
-        k1 = keff_values[idx - 1]
-        k2 = keff_values[idx]
-        if (k1 - 1.0) * (k2 - 1.0) <= 0.0:
-            if k2 == k1:
-                return time_days[idx]
-            return time_days[idx - 1] + (1.0 - k1) * (time_days[idx] - time_days[idx - 1]) / (k2 - k1)
-
-    k1 = keff_values[-2]
-    k2 = keff_values[-1]
-    if k2 == k1:
-        raise ValueError("Cannot extrapolate fuel lifetime because the last two keff values are identical.")
-    return time_days[-1] + (1.0 - k2) * (time_days[-1] - time_days[-2]) / (k2 - k1)
+    """Compatibility wrapper; operating workflows also record/validate status."""
+    return estimate_fuel_lifetime(time_days, keff_values).lifetime_days
 
 
 def openmc_depletion_3d(params, lattice_geometry, settings):
@@ -876,7 +868,16 @@ def openmc_depletion_3d(params, lattice_geometry, settings):
     time_days = [float(t) / 86400.0 for t in time]
     keff_3d_values = [float(k) for k in keff[:, 0]]
 
-    fuel_lifetime_days = _estimate_keff_crossing_time_days(time_days, keff_3d_values)
+    lifetime = estimate_fuel_lifetime(time_days, keff_3d_values)
+    if params.get('Shutdown Margin Calc', False):
+        # The explicit 3D workflow deliberately depletes the inserted shutdown
+        # configuration before the operating one. Its subcritical keff is an
+        # SDM input, not an operating-lifetime failure or a cost input.
+        fuel_lifetime_days = lifetime.lifetime_days
+    else:
+        record_fuel_lifetime(params, lifetime, round_days=False)
+        require_cost_eligible_lifetime(params)
+        fuel_lifetime_days = params['Fuel Lifetime']
 
     original_materials = depletion_3d_results_file.export_to_materials(0)
     mass_U235 = _sum_nuclide_mass(original_materials, 'U235')
@@ -1632,6 +1633,7 @@ def _run_operating_depletion_and_lifecycle(
         temperature_coefficient_requested
     )
     run_depletion_analysis(params)
+    require_cost_eligible_lifetime(params)
     params['keff 2D ARO'] = list(params['keff 2D'])
     params['keff 2D ARO Uncertainty'] = list(params['keff 2D Uncertainty'])
     params['keff 3D (2D corrected) ARO'] = list(

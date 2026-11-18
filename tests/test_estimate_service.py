@@ -14,7 +14,7 @@ import os
 import sys
 import unittest
 import warnings
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -118,6 +118,9 @@ from webapp.estimate_service import (  # noqa: E402
     run_estimate,
     run_lcoe_at_noak_unit,
 )
+from core_design.fuel_lifetime import InvalidFuelLifetimeError  # noqa: E402
+from cost import cost_estimation  # noqa: E402
+from webapp.reactor_config import SubcriticalError  # noqa: E402
 
 
 BASE_INPUTS = {
@@ -213,6 +216,12 @@ class EstimateServiceTest(unittest.TestCase):
                                        places=6)
                 self.assertGreater(params['Capacity Factor'], 0)
 
+    def test_reference_data_lifetimes_do_not_require_depletion_status(self):
+        for reactor_type, result in self.results.items():
+            with self.subTest(reactor_type=reactor_type):
+                self.assertGreater(result.params['Fuel Lifetime'], 0)
+                self.assertNotIn('Fuel Lifetime Status', result.params)
+
     def test_cost_outputs_are_finite_and_positive(self):
         for reactor_type, result in self.results.items():
             with self.subTest(reactor_type=reactor_type):
@@ -266,6 +275,60 @@ class EstimateServiceTest(unittest.TestCase):
         self.assertTrue(math.isfinite(anchor.mean))
         self.assertIsNone(anchor.diag_df)
         self.assertEqual(10, anchor.diag_params['NOAK Unit Number'])
+
+
+class FuelLifetimeCostBoundaryTest(unittest.TestCase):
+    def invalid_cases(self):
+        return (
+            {'Fuel Lifetime': 0.0, 'Fuel Lifetime Status': 'BOL subcritical'},
+            {'Fuel Lifetime': 2500.0, 'Fuel Lifetime Status': 'Extrapolated beyond depletion schedule',
+             'Fuel Lifetime Extrapolated': True, 'Fuel Lifetime Simulated Endpoint (days)': 2000.0},
+            {'Fuel Lifetime': 2000.0, 'Fuel Lifetime Status': 'Simulated endpoint lower bound',
+             'Fuel Lifetime Simulated Endpoint (days)': 2000.0},
+            {'Fuel Lifetime': float('nan')},
+            {'Fuel Lifetime': -1.0},
+        )
+
+    def test_invalid_lifetimes_stop_before_database_or_cost_work(self):
+        for case in self.invalid_cases():
+            for estimate in (cost_estimation.bottom_up_cost_estimate,
+                             cost_estimation.bottom_up_cost_estimate_central):
+                with self.subTest(case=case, estimate=estimate.__name__):
+                    params = dict(case, **{'Estimate Central Facility': True})
+                    with patch.object(cost_estimation, 'escalate_cost_database') as database, \
+                         patch.object(cost_estimation, 'reactor_operation') as operation:
+                        with self.assertRaises(InvalidFuelLifetimeError):
+                            estimate('not-opened.xlsx', params)
+                    database.assert_not_called()
+                    operation.assert_not_called()
+
+    def test_disabled_central_facility_remains_a_no_op(self):
+        with patch.object(cost_estimation, 'escalate_cost_database') as database:
+            result = cost_estimation.bottom_up_cost_estimate_central(
+                'not-opened.xlsx', {'Fuel Lifetime': 0.0},
+            )
+        self.assertIsNone(result)
+        database.assert_not_called()
+
+    def test_detailed_estimate_does_not_write_output_for_invalid_lifetime(self):
+        params = {'Fuel Lifetime': 0.0, 'Fuel Lifetime Status': 'BOL subcritical'}
+        with patch.object(cost_estimation, 'escalate_cost_database') as database, \
+             patch.object(cost_estimation.pd, 'ExcelWriter') as writer, \
+             patch.object(cost_estimation.tempfile, 'mkstemp') as temporary_output:
+            with self.assertRaises(InvalidFuelLifetimeError):
+                cost_estimation.detailed_bottom_up_cost_estimate('not-opened.xlsx')
+        database.assert_not_called()
+        writer.assert_not_called()
+        temporary_output.assert_not_called()
+
+    def test_existing_app_subcritical_error_prevents_cost_estimation(self):
+        inputs = EstimateInputs(**BASE_INPUTS, **REACTOR_CASES['LTMR']['inputs'])
+        with patch('webapp.estimate_service._build_app_params',
+                   side_effect=SubcriticalError('Reactor is subcritical; zero operating lifetime.')), \
+             patch('webapp.estimate_service.bottom_up_cost_estimate') as estimate:
+            with self.assertRaises(SubcriticalError):
+                run_estimate(inputs)
+        estimate.assert_not_called()
 
 
 if __name__ == '__main__':

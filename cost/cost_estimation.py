@@ -5,6 +5,7 @@ import zipfile
 import pandas as pd
 import numpy as np
 import csv
+from core_design.fuel_lifetime import require_cost_eligible_lifetime
 from cost.cost_escalation import escalate_cost_database
 from cost.code_of_account_processing import remove_irrelevant_account, get_estimated_cost_column, find_children_accounts, create_cost_dictionary
 from cost.cost_scaling import scale_cost, scale_redundant_BOP_and_primary_loop, scale_central_facility_cost
@@ -348,6 +349,7 @@ def bottom_up_cost_estimate(cost_database_filename, params):
     # This catches cases where a user accidentally defines both ITC and PTC,
     # which are mutually exclusive under the IRA.
     validate_tax_credit_params(params)
+    require_cost_eligible_lifetime(params)
 
     escalated_cost = escalate_cost_database(cost_database_filename, params['Escalation Year'], params)
     escalated_cost_cleaned = remove_irrelevant_account(escalated_cost, params)
@@ -406,6 +408,7 @@ def bottom_up_cost_estimate_central(cost_database_filename, params):
     if not get_central_facility_cost:
         return None
 
+    require_cost_eligible_lifetime(params)
     escalated_central = escalate_cost_database(cost_database_filename,
                                                 params['Escalation Year'],
                                                 params,
