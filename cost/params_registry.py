@@ -1345,9 +1345,19 @@ PARAMS_REGISTRY = {
         'description': 'Number of fuel cycles between scheduled inner vessel structure replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'A75: Inner Vessel Structure Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar replacement interval for the inner vessel; overrides the cycle-based input when supplied.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'A75: Reflector Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
         'description': 'Number of fuel cycles between scheduled reflector replacements',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'A75: Reflector Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar replacement interval for the reflector; overrides the cycle-based input when supplied.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'A75: Reactor Control Devices Replacement Period (cycles)': {
@@ -1355,14 +1365,29 @@ PARAMS_REGISTRY = {
         'description': 'Number of fuel cycles between scheduled reactor control device replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'A75: Reactor Control Devices Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar replacement interval for reactor control devices; overrides the cycle-based input when supplied.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'A75: Moderator Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
         'description': 'Number of complete fuel cycles between moderator replacements',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'A75: Moderator Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar replacement interval for the moderator; overrides the cycle-based input when supplied. If neither is supplied, the existing one-cycle default applies.',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
     'A75: Moderator Booster Replacement Period (cycles)': {
         'group': 'Operation', 'units': 'cycles',
         'description': 'Number of complete fuel cycles between moderator booster replacements',
+        'source': 'User Input', 'hidden': False, 'array_mode': None},
+
+    'A75: Moderator Booster Replacement Period (years)': {
+        'group': 'Operation', 'units': 'years',
+        'description': 'Calendar replacement interval for the moderator booster; overrides the cycle-based input when supplied. If neither is supplied, the existing one-cycle default applies.',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
     'Maintenance to Direct Cost Ratio': {

@@ -14,7 +14,11 @@ def remove_irrelevant_account(df, params):
         def _optional_matches(variable_name, param_val, expected_val):
             """Return True if param_val equals expected_val, or if param_val is a list that contains expected_val."""
             def _normalized(value):
-                return value.strip() if isinstance(value, str) else value
+                if isinstance(value, str):
+                    value = value.strip()
+                    boolean_values = {'true': True, 'false': False}
+                    return boolean_values.get(value.casefold(), value)
+                return value
 
             # The hybrid operation mode includes the same remote-monitoring
             # component as the existing Remotely Monitored mode. This keeps

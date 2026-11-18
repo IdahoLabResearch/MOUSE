@@ -40,6 +40,42 @@ def _crf(rate, period):
     return factor
 
 
+def _replacement_period_years(
+    params, component, refueling_period_yr, default_cycles=None
+):
+    """Resolve calendar years or cycles, preserving the legacy zero-cycle opt-out."""
+    years_key = f'A75: {component} Replacement Period (years)'
+    cycles_key = f'A75: {component} Replacement Period (cycles)'
+    if years_key in params:
+        key, value = years_key, params[years_key]
+        multiplier = 1.0
+    elif cycles_key in params:
+        key, value = cycles_key, params[cycles_key]
+        multiplier = refueling_period_yr
+    elif default_cycles is not None:
+        key, value = cycles_key, default_cycles
+        multiplier = refueling_period_yr
+    else:
+        raise KeyError(f"Specify either '{years_key}' or '{cycles_key}'.")
+
+    try:
+        value = float(value)
+        multiplier = float(multiplier)
+        period = value * multiplier
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError(
+            f"'{key}' must be finite; years must be positive and cycles nonnegative."
+        ) from error
+    if (not np.isfinite(value) or not np.isfinite(multiplier)
+            or not np.isfinite(period) or multiplier <= 0 or value < 0
+            or (key == years_key and value == 0)):
+        raise ValueError(
+            f"'{key}' must be finite; years must be positive and cycles nonnegative, "
+            f"with a positive full-cycle duration. Received {value:g}."
+        )
+    return period
+
+
 def calculate_accounts_31_32_75_82_cost(df, params):
     estimated_cost_col_F = get_estimated_cost_column(df, 'F')
     estimated_cost_col_N = get_estimated_cost_column(df, 'N')
@@ -59,11 +95,11 @@ def calculate_accounts_31_32_75_82_cost(df, params):
         if params_df.loc[params_df['keys'].str.contains('replacement', case=False), 'keys'].size > 0:
             A20_replacement_period = np.array([
                 params['A75: Outer Vessel Structure Replacement Period (years)'],
-                refueling_period_yr * params['A75: Inner Vessel Structure Replacement Period (cycles)'],
-                refueling_period_yr * params.get('A75: Moderator Replacement Period (cycles)', 1),
-                refueling_period_yr * params['A75: Reflector Replacement Period (cycles)'],
-                refueling_period_yr * params['A75: Reactor Control Devices Replacement Period (cycles)'],
-                refueling_period_yr * params.get('A75: Moderator Booster Replacement Period (cycles)', 1),
+                _replacement_period_years(params, 'Inner Vessel Structure', refueling_period_yr),
+                _replacement_period_years(params, 'Moderator', refueling_period_yr, default_cycles=1),
+                _replacement_period_years(params, 'Reflector', refueling_period_yr),
+                _replacement_period_years(params, 'Reactor Control Devices', refueling_period_yr),
+                _replacement_period_years(params, 'Moderator Booster', refueling_period_yr, default_cycles=1),
             ])
             A20_capital_cost = np.array([df.loc[df['Account'] == 221.12, estimated_cost_col].values.sum(), 
                                          df.loc[df['Account'] == 221.13,  estimated_cost_col].values.sum(), 
