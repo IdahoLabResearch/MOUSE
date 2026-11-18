@@ -97,8 +97,8 @@ def scale_cost(initial_database, params):
 
             if pd.notna(row['Fixed Cost ($)']):
                 if params['Number of Samples'] > 1:
-                    if fixed_cost_dist == 'Lognormal':
-                        fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
+                    if fixed_cost_dist in ('Lognormal', 'Triangular'):
+                        fixed_cost = sampler(fixed_cost_dist, low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
                     elif fixed_cost_dist == 'Uniform': 
                         fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
                     else:
@@ -115,8 +115,8 @@ def scale_cost(initial_database, params):
 
             if pd.notna(row['Unit Cost']):
                 if params['Number of Samples'] > 1:
-                    if unit_cost_dist == 'Lognormal':
-                        unit_cost = sampler("Lognormal", low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
+                    if unit_cost_dist in ('Lognormal', 'Triangular'):
+                        unit_cost = sampler(unit_cost_dist, low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
                     elif unit_cost_dist == 'Uniform': 
                         unit_cost = sampler('Uniform', low=unit_cost_lo, high=unit_cost_hi)
                     else:
@@ -199,8 +199,8 @@ def scale_central_facility_cost(initial_database, params):
 
             if pd.notna(row['Fixed Cost ($)']):
                 if params['Number of Samples'] > 1:
-                    if fixed_cost_dist == 'Lognormal':
-                        fixed_cost = sampler("Lognormal", low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
+                    if fixed_cost_dist in ('Lognormal', 'Triangular'):
+                        fixed_cost = sampler(fixed_cost_dist, low_cost=fixed_cost_lo, high_cost=fixed_cost_hi, class3_cost=fixed_cost_0)
                     elif fixed_cost_dist == 'Uniform':
                         fixed_cost = sampler('Uniform', low=fixed_cost_lo, high=fixed_cost_hi)
                     else:
@@ -217,8 +217,8 @@ def scale_central_facility_cost(initial_database, params):
 
             if pd.notna(row['Unit Cost']):
                 if params['Number of Samples'] > 1:
-                    if unit_cost_dist == 'Lognormal':
-                        unit_cost = sampler("Lognormal", low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
+                    if unit_cost_dist in ('Lognormal', 'Triangular'):
+                        unit_cost = sampler(unit_cost_dist, low_cost=unit_cost_lo, high_cost=unit_cost_hi, class3_cost=unit_cost_0)
                     elif unit_cost_dist == 'Uniform':
                         unit_cost = sampler('Uniform', low=unit_cost_lo, high=unit_cost_hi)
                     else:

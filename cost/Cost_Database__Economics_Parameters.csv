@@ -9,11 +9,13 @@ Maintenance to Direct Cost Ratio,0.03
 Onsite Learning,0.08,FOAK to NOAK Learning Rates,"Assessment of Factory Fabrication Considerations
 for Nuclear Microreactors
  10.1080/00295450.2023.2206779",Calculated based on Refernce Paper + Gyutae's work. Refer to TEM Slides for rationale and methodology
-No Learning,0,,,
-Licensing Learning,0.2,,,
-Factory Primary Structure,0.1844316982010974,,,
-Factory Drums,0.24138,,,
-Factory Other,0.2296284802211553,,,
-Factory Be,0.4150537767859926,,,
-Factory BeO,0.3991490581140172,,,
+No Learning,0
+Licensing Learning,0.2
+Factory Primary Structure,0.1844316982010974
+Factory Drums,0.24138
+Factory Other,0.2296284802211553
+Factory Be,0.4150537767859926
+Factory BeO,0.3991490581140172
 Non-nuclear off-the-shelf,0.05,,"Park, et al., Bottom-up levelized cost estimation of low-enriched and low-pressure nuclear batteries. Nuclear Engineering and Design. 2025.",For off-the-shelf commercial components that are not produced in the FB Factory
+UO2 Learning,0.02,Inferred reduction per doubling,"AFC-CBR Module D1-1, Section D1-1.10.2 and Figure D1-1.6","Scenario assumption, not a measured deployment-learning rate. See docs/fuel_fabrication_assumptions.md."
+TRISO Learning,0.13,Inferred reduction per doubling,"AFC-CBR Module D1-3, Section D1-3-8 (historical production/automation discussion)","Scenario assumption, not a measured rate. Historical base already includes mature-production expectations; use 0 to disable additional learning. See docs/fuel_fabrication_assumptions.md."

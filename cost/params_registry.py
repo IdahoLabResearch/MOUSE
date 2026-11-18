@@ -2146,6 +2146,18 @@ PARAMS_REGISTRY = {
         'description': 'Learning rate for other factory-manufactured components',
         'source': 'User Input', 'hidden': False, 'array_mode': None},
 
+    'UO2 Learning': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'Assumed UO2 fuel-fabrication cost reduction per doubling of cumulative deployments; default 0.02.',
+        'source': 'User Input; inferred effective rate, see docs/fuel_fabrication_assumptions.md',
+        'hidden': False, 'array_mode': None},
+
+    'TRISO Learning': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'Assumed TRISO fuel-fabrication cost reduction per doubling of cumulative deployments; default 0.13.',
+        'source': 'User Input; inferred effective rate, see docs/fuel_fabrication_assumptions.md',
+        'hidden': False, 'array_mode': None},
+
     'Factory Be': {
         'group': 'Learning Rates', 'units': 'fraction',
         'description': 'Learning rate for factory-manufactured beryllium components',
@@ -2189,6 +2201,16 @@ PARAMS_REGISTRY = {
     'Factory Other Cost Multiplier': {
         'group': 'Learning Rates', 'units': 'fraction',
         'description': 'NOAK cost multiplier for other factory-built components based on Wright\'s Law',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'UO2 Learning Cost Multiplier': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'UO2 fabrication NOAK cost multiplier from the assumed learning rate, capped at unit 100.',
+        'source': 'Calculated', 'hidden': False, 'array_mode': None},
+
+    'TRISO Learning Cost Multiplier': {
+        'group': 'Learning Rates', 'units': 'fraction',
+        'description': 'TRISO fabrication NOAK cost multiplier from the assumed learning rate, capped at unit 100.',
         'source': 'Calculated', 'hidden': False, 'array_mode': None},
 
     'Factory Be Cost Multiplier': {

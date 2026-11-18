@@ -34,5 +34,9 @@ def sampler(distribution, **kwargs):
         return truncated_normal_sample(kwargs['mean'], kwargs['std'], kwargs['lower_bound'], kwargs['upper_bound'])
     elif distribution == "Uniform":
         return uniform_sample(kwargs['low'], kwargs['high'])    
+    elif distribution == "Triangular":
+        return np.random.triangular(
+            kwargs['low_cost'], kwargs['class3_cost'], kwargs['high_cost']
+        )
     else:
         raise ValueError("Unavailable Distribution")

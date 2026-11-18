@@ -27,6 +27,9 @@ LEARNING_RATE_DEFAULTS = {
     'Factory Primary Structure': 0.184432,
     'Factory Drums': 0.24138,
     'Factory Other': 0.229628,
+    # Effective fabrication learning assumptions, per doubling of deployments.
+    'UO2 Learning': 0.02,
+    'TRISO Learning': 0.13,
     'Factory Be': 0.415054,
     'Factory BeO': 0.399149,
     'Non-nuclear off-the-shelf': 0.05,
